@@ -4,6 +4,7 @@ import {
   DoubleOptionResponse,
   MultipleSelectionResponse,
   QuestionResponse,
+  MultipleSelectionTestResponse,
 } from './response';
 
 export interface DeepseekPort {
