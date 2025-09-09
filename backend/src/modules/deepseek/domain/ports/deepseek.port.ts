@@ -19,8 +19,4 @@ export interface DeepseekPort {
   ): Promise<AdviceResponse>;
   generateMultipleSelection(topico: string): Promise<MultipleSelectionResponse>;
   generatedoubleOption(topico: string): Promise<DoubleOptionResponse>;
-
-  generateMultOptionTest(
-    topico: string,
-  ): Promise<MultipleSelectionTestResponse>;
 }
