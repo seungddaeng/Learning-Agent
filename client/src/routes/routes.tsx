@@ -47,11 +47,11 @@ export const AppRoutes = () => {
             <Route element={<RoleRoute allowed={["estudiante"]} />}> 
               <Route path="/classes" element={<ClassMenu />} />
               <Route path="/reinforcement" element={<Reinforcement />} />
-              <Route path="/test" element={<Test />} />
+              <Route path="/test" element={<Test/>} />
               <Route path="/interview" element={<Interview />} />
             </Route>
 
-            <Route path="/upload-pdf" element={<UploadDocumentPage />} />
+            <Route path="/document" element={<UploadDocumentPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Route>

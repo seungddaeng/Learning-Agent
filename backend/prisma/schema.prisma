@@ -143,6 +143,7 @@ model Document {
   size         Int
   contentType  String
   fileHash         String                    @unique // Hash SHA-256 del archivo
+  textHash         String?                   @unique // Hash SHA-256 del texto normalizado
   extractedText    String?                   @db.Text // Texto extraído
   status           DocumentStatus            @default(UPLOADED)
   
@@ -171,6 +172,7 @@ model Document {
   @@index([status])
   @@index([uploadedBy])
   @@index([fileHash])
+  @@index([textHash])
   @@index([contentType])
   @@index([courseId])
 }
@@ -324,6 +326,8 @@ model Exam {
   questions       ExamQuestion[]
 
   @@index([subject])
+
+  savedExam      SavedExam?
 }
 
 // === Preguntas de Examen ===
@@ -344,6 +348,9 @@ model SavedExam {
   title     String
   content   Json
   status    ExamStorageStatus @default(Guardado)
+
+  examId    String?           @unique
+  exam      Exam?             @relation(fields: [examId], references: [id], onDelete: Cascade)
 
   // FK “lógicas” (sin relación Prisma)
   courseId  String
