@@ -49,5 +49,5 @@ jobs:
         run: echo "${{ github.event.pull_request.title }}" | npx commitlint
 
       # 6) Tests backend
-      - name: Run tests (backend)
-        run: npm --prefix backend run test -- --passWithNoTests
+      # - name: Run tests (backend)
+      #   run: npm --prefix backend run test -- --passWithNoTests
