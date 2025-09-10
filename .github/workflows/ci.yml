@@ -39,9 +39,9 @@ jobs:
         if: hashFiles('client/package-lock.json') != ''
         run: npm --prefix client ci
 
-      # 4) Lint (ajusta el directorio si tu script vive en otro package.json)
-      - name: Run ESLint
-        run: npm run lint
+      - name: Run ESLint (client)
+        run: npm --prefix client run lint
+
 
       # 5) Commitlint (solo en PR)
       - name: Commitlint
