@@ -4,19 +4,22 @@ import { Card, Typography, theme, Alert, Button } from "antd";
 const { Title } = Typography;
 
 interface TrueOrFalseQuestionProps {
-  onNext?: () => void;
+  onNext: (isCorrect: boolean) => void;
   question?: string;
 }
 
-export default function TrueOrFalseQuestion({ onNext, question = "" }: TrueOrFalseQuestionProps) {
+export default function TrueOrFalseQuestion({
+  onNext,
+  question = "",
+}: TrueOrFalseQuestionProps) {
   const { token } = theme.useToken();
 
-  const handleSelect = (_value: boolean) => {
-    if (onNext) {
-      setTimeout(() => onNext(), 300);
-    } else {
-      setTimeout(() => window.location.reload(), 300);
-    }
+  // Simulación: "Verdadero" es la respuesta correcta
+  const correctAnswer = true;
+
+  const handleSelect = (selected: boolean) => {
+    const isCorrect = selected === correctAnswer;
+    setTimeout(() => onNext(isCorrect), 300);
   };
 
   if (!question) {
@@ -59,7 +62,7 @@ export default function TrueOrFalseQuestion({ onNext, question = "" }: TrueOrFal
         />
 
         <div style={{ marginTop: 8 }}>
-          <Button onClick={() => (onNext ? onNext() : window.location.reload())}>Recargar</Button>
+          <Button onClick={() => onNext(false)}>Recargar</Button>
         </div>
       </div>
     );
