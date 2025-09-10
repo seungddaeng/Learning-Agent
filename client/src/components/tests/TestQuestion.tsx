@@ -1,17 +1,12 @@
-
-
 import React from "react";
 import { Card, Typography, theme, Alert, Button } from "antd";
 
 const { Title } = Typography;
 
-
-
-
 interface TestQuestionProps {
-  onNext?: () => void;
+  onNext: (isCorrect: boolean) => void;
   question?: string;
-  options?: string[]; 
+  options?: string[];
 }
 
 export default function TestQuestion({
@@ -20,19 +15,14 @@ export default function TestQuestion({
   options,
 }: TestQuestionProps) {
   const { token } = theme.useToken();
-
-
-
   const safeOptions = Array.isArray(options) ? options : [];
 
+  // Simulación: la primera opción es la correcta
+  const correctIndex = 0;
 
-  const handleSelect = (_value: string) => {
-    if (onNext) {
-      setTimeout(() => onNext(), 300);
-    } else {
-      setTimeout(() => window.location.reload(), 300);
-    }
-
+  const handleSelect = (selectedIndex: number) => {
+    const isCorrect = selectedIndex === correctIndex;
+    setTimeout(() => onNext(isCorrect), 300);
   };
 
   if (safeOptions.length === 0) {
@@ -67,7 +57,7 @@ export default function TestQuestion({
           message="No hay opciones disponibles"
           description={
             <div>
-              Esta vista espera recibir `options` desde el backend. Asegúrate de usar
+              Esta vista espera recibir <code>options</code> desde el backend. Asegúrate de usar
               <strong> TestRunner </strong> para obtener preguntas generadas (POST a <code>/exams-chat/generate-options</code>).
             </div>
           }
@@ -76,9 +66,7 @@ export default function TestQuestion({
         />
 
         <div style={{ marginTop: 8 }}>
-          <Button onClick={() => (onNext ? onNext() : window.location.reload())}>
-            Intentar cargar / recargar
-          </Button>
+          <Button onClick={() => onNext(false)}>Intentar cargar / recargar</Button>
         </div>
       </div>
     );
@@ -113,12 +101,8 @@ export default function TestQuestion({
           boxShadow: token.boxShadow,
         }}
       >
-
-
         <Title level={3} style={{ margin: 0, color: token.colorTextHeading }}>
           {question}
-
-
         </Title>
       </Card>
 
@@ -131,14 +115,10 @@ export default function TestQuestion({
           maxWidth: 800,
         }}
       >
-
-
         {safeOptions.map((label, index) => (
           <div
             key={index}
-            onClick={() => handleSelect(String(index))}
-
-
+            onClick={() => handleSelect(index)}
             style={{
               backgroundColor: optionColors[index % optionColors.length],
               color: token.colorTextLightSolid,
@@ -161,11 +141,7 @@ export default function TestQuestion({
               (e.currentTarget as HTMLDivElement).style.boxShadow = token.boxShadow;
             }}
           >
-
-
             {label}
-
-
           </div>
         ))}
       </div>

@@ -5,6 +5,9 @@ export function useStudentTest() {
   const [questionCount, setQuestionCount] = useState<number>(0);
   const [currentQuestion, setCurrentQuestion] = useState<number>(1);
   const [questionType, setQuestionType] = useState<"multiple" | "truefalse">("multiple");
+  const [answers, setAnswers] = useState<boolean[]>([]);
+  const [startTime, setStartTime] = useState<number | null>(null);
+  const [endTime, setEndTime] = useState<number | null>(null);
 
   const openTestModal = useCallback(() => {
     setIsTestModalOpen(true);
@@ -22,16 +25,23 @@ export function useStudentTest() {
   const startExam = useCallback((count: number) => {
     setQuestionCount(count);
     setCurrentQuestion(1);
+    setAnswers([]);
+    setStartTime(Date.now());
+    setEndTime(null);
     randomizeType();
     setIsTestModalOpen(false);
   }, [randomizeType]);
+
+  const recordAnswer = useCallback((isCorrect: boolean) => {
+    setAnswers(prev => [...prev, isCorrect]);
+  }, []);
 
   const nextQuestion = useCallback(() => {
     if (currentQuestion < questionCount) {
       setCurrentQuestion(prev => prev + 1);
       randomizeType();
     } else {
-      console.log("Examen finalizado");
+      setEndTime(Date.now());
     }
   }, [currentQuestion, questionCount, randomizeType]);
 
@@ -44,9 +54,13 @@ export function useStudentTest() {
     questionCount,
     currentQuestion,
     questionType,
+    answers,
+    startTime,
+    endTime,
     openTestModal,
     closeTestModal,
     startExam,
-    nextQuestion
+    nextQuestion,
+    recordAnswer
   };
 }
