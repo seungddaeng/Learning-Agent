@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../../core/prisma/prisma.service';
-import { ChunkType } from '@prisma/client';
 import { DocumentChunk } from '../../domain/entities/document-chunk.entity';
 import type {
   DocumentChunkRepositoryPort,
@@ -26,6 +25,7 @@ export class PrismaDocumentChunkRepositoryAdapter
    */
   async save(chunk: DocumentChunk): Promise<DocumentChunk> {
     try {
+
       const savedChunk = await this.prisma.documentChunk.create({
         data: {
           id: chunk.id,
@@ -41,10 +41,6 @@ export class PrismaDocumentChunkRepositoryAdapter
           createdAt: chunk.createdAt,
         },
       });
-
-      this.logger.debug(
-        `Chunk guardado: ${chunk.id} (${chunk.content.length} chars)`,
-      );
 
       return this.mapToEntity(savedChunk);
     } catch (error) {
@@ -84,7 +80,7 @@ export class PrismaDocumentChunkRepositoryAdapter
         ),
       );
 
-      this.logger.log(`✅ ${savedChunks.length} chunks guardados exitosamente`);
+      this.logger.log(`${savedChunks.length} chunks guardados exitosamente`);
 
       return savedChunks.map((chunk) => this.mapToEntity(chunk));
     } catch (error) {
@@ -196,7 +192,7 @@ export class PrismaDocumentChunkRepositoryAdapter
       });
 
       this.logger.log(
-        `🗑️ Eliminados ${result.count} chunks del documento ${documentId}`,
+        `Eliminados ${result.count} chunks del documento ${documentId}`,
       );
     } catch (error) {
       this.logger.error(
@@ -216,7 +212,6 @@ export class PrismaDocumentChunkRepositoryAdapter
         where: { id },
       });
 
-      this.logger.debug(`Chunk eliminado: ${id}`);
     } catch (error) {
       this.logger.error(`Error eliminando chunk ${id}:`, error);
       throw new Error(`Error eliminando chunk: ${error}`);
@@ -287,7 +282,7 @@ export class PrismaDocumentChunkRepositoryAdapter
           MAX(LENGTH(content)) as max_length,
           AVG(LENGTH(content))::int as avg_length,
           SUM(LENGTH(content)) as total_length
-        FROM "DocumentChunk" 
+        FROM "document_chunks" 
         WHERE "documentId" = ${documentId}
       `;
 
@@ -318,6 +313,143 @@ export class PrismaDocumentChunkRepositoryAdapter
     }
   }
 
+  // ============ MÉTODOS PARA EMBEDDINGS ============
+
+  /**
+   * Actualiza el embedding de un chunk específico
+   */
+  async updateChunkEmbedding(
+    chunkId: string,
+    embedding: number[],
+  ): Promise<void> {
+    try {
+      // Usar $queryRaw para manejar el tipo vector
+      await this.prisma.$queryRaw`
+        UPDATE "document_chunks" 
+        SET embedding = ${JSON.stringify(embedding)}::vector, 
+            "updatedAt" = NOW()
+        WHERE id = ${chunkId}
+      `;
+
+    } catch (error) {
+      this.logger.error(
+        `Error actualizando embedding del chunk ${chunkId}:`,
+        error,
+      );
+      throw new Error(`Error actualizando embedding: ${error}`);
+    }
+  }
+
+  /**
+   * Actualiza embeddings de múltiples chunks en lote (más eficiente)
+   */
+  async updateBatchEmbeddings(
+    updates: Array<{ chunkId: string; embedding: number[] }>,
+  ): Promise<void> {
+    if (updates.length === 0) {
+      return;
+    }
+
+    try {
+      this.logger.log(`Actualizando ${updates.length} embeddings en lote...`);
+
+      // Usar transacción con $queryRaw para manejar el tipo vector
+      await this.prisma.$transaction(
+        updates.map(
+          ({ chunkId, embedding }) =>
+            this.prisma.$queryRaw`
+            UPDATE "document_chunks" 
+            SET embedding = ${JSON.stringify(embedding)}::vector,
+                "updatedAt" = NOW()
+            WHERE id = ${chunkId}
+          `,
+        ),
+      );
+
+      this.logger.log(`${updates.length} embeddings actualizados exitosamente`);
+    } catch (error) {
+      this.logger.error(
+        `Error actualizando ${updates.length} embeddings:`,
+        error,
+      );
+      throw new Error(`Error actualizando embeddings en lote: ${error}`);
+    }
+  }
+
+  /**
+   * Verifica si un chunk tiene embedding generado
+   */
+  async hasEmbedding(chunkId: string): Promise<boolean> {
+    try {
+      const result = await this.prisma.$queryRaw<
+        Array<{ has_embedding: boolean }>
+      >`
+        SELECT (embedding IS NOT NULL) as has_embedding
+        FROM "document_chunks"
+        WHERE id = ${chunkId}
+      `;
+
+      return result[0]?.has_embedding || false;
+    } catch (error) {
+      this.logger.error(
+        `Error verificando embedding del chunk ${chunkId}:`,
+        error,
+      );
+      return false;
+    }
+  }
+
+  /**
+   * Busca chunks que no tienen embeddings generados para un documento
+   */
+  async findChunksWithoutEmbeddings(
+    documentId: string,
+    options: FindChunksOptions = {},
+  ): Promise<FindChunksResult> {
+    try {
+      const { limit = 50, offset = 0 } = options;
+
+      // Usar consulta SQL directa para evitar problemas con el tipo vector
+      const chunks = await this.prisma.$queryRaw<
+        Array<{
+          id: string;
+          documentId: string;
+          content: string;
+          chunkIndex: number;
+          type: string;
+          metadata: any;
+          createdAt: Date;
+          updatedAt: Date;
+        }>
+      >`
+        SELECT id, "documentId", content, "chunkIndex", type, metadata, "createdAt", "updatedAt"
+        FROM "document_chunks"
+        WHERE "documentId" = ${documentId} AND embedding IS NULL
+        ORDER BY "chunkIndex" ASC
+        LIMIT ${limit} OFFSET ${offset}
+      `;
+
+      const totalResult = await this.prisma.$queryRaw<Array<{ count: bigint }>>`
+        SELECT COUNT(*) as count
+        FROM "document_chunks"
+        WHERE "documentId" = ${documentId} AND embedding IS NULL
+      `;
+
+      const total = Number(totalResult[0]?.count || 0);
+
+      return {
+        chunks: chunks.map((chunk) => this.mapToEntity(chunk)),
+        total,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error buscando chunks sin embeddings del documento ${documentId}:`,
+        error,
+      );
+      throw new Error(`Error buscando chunks sin embeddings: ${error}`);
+    }
+  }
+
   // ============ MÉTODOS PRIVADOS ============
 
   /**
@@ -329,7 +461,7 @@ export class PrismaDocumentChunkRepositoryAdapter
       prismaChunk.documentId,
       prismaChunk.content,
       prismaChunk.chunkIndex,
-      prismaChunk.chunkType, // Usar chunkType de Prisma
+      prismaChunk.type,
       prismaChunk.metadata || {},
       prismaChunk.createdAt,
     );

@@ -1,11 +1,11 @@
-import { Modal, Form, Input, DatePicker, Button, Select } from "antd";
+import { Modal, Form, DatePicker, Button, Select } from "antd";
 import { useEffect, useState } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
 import type { Clase } from "../interfaces/claseInterface";
-import { useUserContext } from "../context/UserContext";
+import { useUserStore } from "../store/userStore";
 
 interface CreateClaseModalProps {
   open: boolean;
@@ -21,7 +21,8 @@ export const CursosForm = ({
   clase,
 }: CreateClaseModalProps) => {
   const [startDate, setStartDate] = useState<Date | null>(null);
-  const { user, fetchUser } = useUserContext();
+  const user = useUserStore((s) => s.user);
+  const fetchUser = useUserStore((s) => s.fetchUser);
 
   useEffect(() => {
     if (!user || user === null) {
@@ -64,7 +65,7 @@ export const CursosForm = ({
       onSubmit({
         ...values,
         teacherId: user?.id || "",
-        id: clase?.id || "" ,
+        id: clase?.id || "",
       });
       resetForm();
       onClose();
@@ -82,11 +83,27 @@ export const CursosForm = ({
     value: `${t}${yearForSemester}`,
   }));
 
+  const handleSubmit = () => {
+    formik.handleSubmit()
+  }
+
+  const handleCancel = () => {
+    formik.resetForm();
+    onClose();
+  }
+
   return (
     <Modal
       open={open}
-      onCancel={onClose}
-      footer={null}
+      onCancel={handleCancel}
+      footer={[
+        <Button key="cancel" danger onClick={handleCancel}>
+          Cancelar
+        </Button>,
+        <Button type="primary" onClick={handleSubmit}>
+          {clase ? "Guardar Cambios" : "Registrar curso"}
+        </Button>
+      ]}
       centered
       title={clase ? "Editar Curso" : "Añadir Curso"}
     >
@@ -100,22 +117,6 @@ export const CursosForm = ({
         }}
         onFinish={formik.handleSubmit}
       >
-        <Form.Item
-          style={{ width: "100%" }}
-          label="Nombre"
-          validateStatus={
-            formik.errors.name && formik.touched.name ? "error" : ""
-          }
-          help={formik.touched.name && formik.errors.name}
-        >
-          <Input
-            name="name"
-            value={formik.values.name}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-          />
-        </Form.Item>
-
         <Form.Item
           style={{ width: "100%" }}
           label="Semestre"
@@ -203,12 +204,6 @@ export const CursosForm = ({
               );
             }}
           />
-        </Form.Item>
-
-        <Form.Item style={{ width: "70%" }}>
-          <Button type="primary" htmlType="submit" style={{ width: "100%" }}>
-            {clase ? "Guardar Cambios" : "Guardar"}
-          </Button>
         </Form.Item>
       </Form>
     </Modal>

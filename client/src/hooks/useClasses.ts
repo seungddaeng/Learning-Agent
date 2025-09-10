@@ -1,108 +1,127 @@
 import { useEffect, useState } from "react"
-import { claseService } from "../services/classesService"
-import { useClaseStore } from "../store/claseStore";
-import type { Clase } from "../interfaces/claseInterface";
-import { studentService } from "../services/studentService";
-import type { StudentInfo } from "../interfaces/studentInterface";
-import { useUserContext } from "../context/UserContext";
+import { classService } from "../services/classes.service";
+import type { Clase, CreateClassDTO } from "../interfaces/claseInterface";
+import { useUserStore } from "../store/userStore";
 
 const useClasses = () => {
-  const { clases, setClases, addClase } = useClaseStore();
-  const [objClass, setObjClass] = useState<Clase>();
-  const [curso, setCurso] = useState('')
-  const [students, setStudents] = useState<StudentInfo[]>([])
-  const { user, fetchUser } = useUserContext();
-
-  /*
-  const fetchUser = async () => {
-    const authData = localStorage.getItem("auth");
-    if (!authData) {
-      console.log("Sin datos Auth guardados en localstorage");
-      return;
-    }
-    const parsedData = JSON.parse(authData);
-    const user = await meAPI(parsedData.accessToken);
-    setUserData(user);
-  };*/
+  const [actualClass, setActualClass] = useState<Clase>();
+  const [classes, setClasses] = useState<Clase[]>([]);
+  const user = useUserStore((s) => s.user);
+  const fetchUser = useUserStore((s) => s.fetchUser);
 
   useEffect(() => {
-    fetchClases();
-    if (!user || user === null) {
-      fetchUser();
+    const prepareHook = async () => {
+      if (!user) {
+        await fetchUser();
+      }
     }
-  }, []);
+    prepareHook();
+  }, [user]);
 
-  const fetchClases = async () => {
-    const data = await claseService.getClases();
-    setClases(data);
+  //Endpoints GET
+  const fetchClassById = async (classId: string) => {
+    const res = await classService.getClassById(classId);
+    const success = res?.code == 200
+    if (success) {
+      setActualClass(res.data)
+    }
+    return {
+      state: success ? "success" : "error",
+      message: success ? "Clase recuperada exitosamente" : res?.error
+    }
+  }
+
+  const fetchClassesByStudent = async (studentId: string) => {
+    const res = await classService.getClassesByStudentId(studentId);
+    const success = res?.code == 200
+    if (success) {
+      setClasses(res.data)
+    }
+    return {
+      state: success ? "success" : "error",
+      message: success ? "Clases recuperadas exitosamente" : res?.error
+    }
+  }
+
+  const fetchClassesByCourse = async (courseId: string) => {
+    const res = await classService.getClassesByCourseId(courseId);
+    const success = res?.code == 200
+    if (success) {
+      setClasses(res.data)
+    }
+    return {
+      state: success ? "success" : "error",
+      message: success ? "Períodos recuperados exitosamente" : res?.error
+    }
   };
 
-  const createClass = async (newClase: Omit<Clase, 'id'>) => {
-    const objClass = await claseService.createClase(newClase);
-    addClase(objClass)
-  }
+  //Endpoints POST
+  const createClass = async (data: Omit<CreateClassDTO, 'teacherId'>) => {
+    if (!user) {
+      return {
+        state: "error",
+        message: "No se ha cargado la información del usuario"
+      }
+    }
 
-  const fetchClase = async (id: string) => {
-    const curso = await claseService.getClaseById(id)
-    setObjClass(curso);
-    setCurso(curso.name)
-    const students = await studentService.getStudentsByClassId(id)
-    setStudents(students)
-  }
+    const newClass = { ...data, teacherId: user.id }
 
-  const createStudents = async (newStudentGroup: Omit<StudentInfo, 'id'>) => {
-    console.log(newStudentGroup)
-    // const newStudents = {
-    //   ...newStudentGroup,
-    //   id: uuidv4()
-    // }
-    //await studentService.createStudentGroup(newStudents)
-    //setStudents(newStudents)
-  }
+    const res = await classService.createClass(newClass);
+    const success = res?.code == 201
+    return {
+      state: success ? "success" : "error",
+      message: success ? "Período creado exitosamente" : res?.error
+    }
+  };
 
+  //Endpoints PUT
   const updateClass = async (values: Clase) => {
-    try {
-      const id = values.id;
-      const classData = {
-        name: values.name, 
-        semester: values.semester, 
-        teacherId: values.teacherId, 
-        dateBegin: values.dateBegin, 
-        dateEnd: values.dateEnd
-      }
-      await claseService.updateClase(id, classData)
-      return {
-        success: true
-      }
-    } catch {
-      console.error(`Error updating class with id ${values.id}`)
-      return {
-        success: false
-      }
+    const res = await classService.updateClass(values.id, values);
+    const success = res?.code == 201
+    if (success) {
+      setActualClass(res.data)
+    }
+    return {
+      state: success ? "success" : "error",
+      message: success ? "Clase actualizada exitosamente" : res?.error
     }
   }
 
   const softDeleteClass = async (classId: string) => {
-    try {
-      const userId = user?.id || "";
-      return await claseService.softDeleteClase(classId, userId);
-    } catch (error) {
-      console.error(`Error deleting class with id ${classId}`)
+    if (!classId || !user) {
+      return {
+        success: "error",
+        message: "Ha ocurrido un error, inténtelo de nuevo"
+      }
+    }
+
+    const res = await classService.softDeleteClase(classId, user.id);
+    const success = res?.code == 201
+    if (success) {
+      setActualClass(res.data)
+      return {
+        state: "success",
+        message: "Clase eliminada exitosamente"
+      }
+    } else {
+      const state = res?.code == 409 ? "info" : "error"
+      return {
+        state,
+        message: res?.error
+      }
     }
   }
 
   return {
-    clases,
-    fetchClases,
+    actualClass,
+    classes,
+    fetchClassesByCourse,
+    fetchClassesByStudent,
     createClass,
-    fetchClase,
-    objClass,
-    curso,
-    students,
-    createStudents,
+    fetchClassById,
     updateClass,
     softDeleteClass,
-  };
+  }
 }
 
 export default useClasses

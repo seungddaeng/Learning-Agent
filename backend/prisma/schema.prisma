@@ -96,7 +96,7 @@ model TeacherProfile {
   academicUnit String?  // departamento/escuela
 
   // relation 1:N
-  classes      Classes[]
+  courses      Course[]
   
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -143,12 +143,17 @@ model Document {
   size         Int
   contentType  String
   fileHash         String                    @unique // Hash SHA-256 del archivo
+  textHash         String?                   @unique // Hash SHA-256 del texto normalizado
   extractedText    String?                   @db.Text // Texto extraído
   status           DocumentStatus            @default(UPLOADED)
   
   // Metadata del documento
   uploadedBy       String
   uploader         User                      @relation(fields: [uploadedBy], references: [id])
+  
+  // Relación opcional con Course/Materia para el contrato de documentos
+  courseId         String?
+  course           Course?                   @relation(fields: [courseId], references: [id])
   
   // Relations para RAG
   chunks           DocumentChunk[]
@@ -167,7 +172,9 @@ model Document {
   @@index([status])
   @@index([uploadedBy])
   @@index([fileHash])
+  @@index([textHash])
   @@index([contentType])
+  @@index([courseId])
 }
 
 model DocumentChunk {
@@ -313,14 +320,90 @@ model Exam {
   trueFalseCount    Int   @default(0) // verdadero/falso
   openAnalysisCount Int   @default(0) // abiertas: análisis
   openExerciseCount Int   @default(0) // abiertas: ejercicio
+  approvedAt      DateTime?  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  questions       ExamQuestion[]
 
-  createdAt      DateTime @default(now())
   @@index([subject])
+
+  savedExam      SavedExam?
+}
+
+// === Preguntas de Examen ===
+enum QuestionKind {
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  OPEN_ANALYSIS
+  OPEN_EXERCISE
+}
+// Estado de publicación del examen guardado
+enum ExamStorageStatus {
+  Guardado
+  Publicado
+}
+
+model SavedExam {
+  id        Int               @id @default(autoincrement())
+  title     String
+  content   Json
+  status    ExamStorageStatus @default(Guardado)
+
+  examId    String?           @unique
+  exam      Exam?             @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  // FK “lógicas” (sin relación Prisma)
+  courseId  String
+  teacherId String
+
+  createdAt DateTime          @default(now())
+
+  @@index([courseId, createdAt])
+  @@index([teacherId, createdAt])
+}
+
+model ExamQuestion {
+  id                 String       @id @default(cuid())
+  examId             String
+  exam               Exam         @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  kind               QuestionKind
+  text               String
+
+  // Campos específicos por tipo
+  options            Json?        // MCQ
+  correctOptionIndex Int?         // MCQ
+  correctBoolean     Boolean?     // TRUE_FALSE
+  expectedAnswer     String?      // OPEN_*
+
+  order              Int
+
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  @@unique([examId, order])       // no dos preguntas con el mismo orden en un examen
+  @@index([examId, order])
 }
 
 /* ===========================
    Academic Management (classes and enrollment)
    =========================== */
+
+model Course {
+  id            String            @id @default(uuid())
+  name          String
+  isActive      Boolean           @default(true)
+
+  teacherId     String
+  teacher       TeacherProfile    @relation(fields: [teacherId], references: [userId])
+  classes       Classes[]
+  
+  // Relación con documentos para el contrato
+  documents     Document[]
+
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+}
 
 model Classes {
   id            String            @id @default(uuid())
@@ -333,8 +416,11 @@ model Classes {
   // relation 1:N
   enrollment    Enrollment[]
 
-  teacherId     String
-  teacher       TeacherProfile    @relation(fields: [teacherId], references: [userId])
+  courseId      String            
+  course        Course            @relation(fields: [courseId], references: [id])
+  
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt @default(now())
 }
 
 // relation N:N - StudentProfile-Classes
