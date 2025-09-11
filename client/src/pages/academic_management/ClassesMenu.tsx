@@ -17,7 +17,6 @@ export function ClassMenu() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredClasses, setFilteredClasses] = useState<Clase[]>(classes);
   const navigate = useNavigate();
-  const pepito = 'juanito';
 
   useEffect(() => {
     fetchUser();
