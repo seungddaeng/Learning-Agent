@@ -9,8 +9,8 @@ import { AttendenceGroupStudentRow } from '../../infrastructure/http/dtos/attend
 import { Attendance } from '../../domain/entities/attendance.entity';
 
 @Injectable()
-export class AttendanceGroupStudentUseCase {
-    private readonly logger = new Logger(AttendanceGroupStudentUseCase.name)
+export class SaveAttendanceGroupStudentUseCase {
+    private readonly logger = new Logger(SaveAttendanceGroupStudentUseCase.name)
     constructor(
         @Inject(ATTENDANCE_REPO) private readonly attendanceRepo: AttendanceRepositoryPort,
         @Inject(ENROLLMENT_REPO) private readonly enrollmentRepo: EnrollmentRepositoryPort,
@@ -36,7 +36,7 @@ export class AttendanceGroupStudentUseCase {
         }
         if (course.teacherId != input.teacherId) {
             this.logger.error(`Class ${objClass.id}-${objClass.name} doesnt belongs to teacher ${input.teacherId}`);
-            throw new ForbiddenError(`No se ha podido recuperar la información del Docente`);
+            throw new ForbiddenError(`El docente no está autorizado para registrar asistencia en esta clase.`);
         }
         let totalRows = input.studentRows.length, errorRows = 0, existingRows = 0, successRows = 0;
         for (const row of input.studentRows) {
@@ -57,8 +57,9 @@ export class AttendanceGroupStudentUseCase {
                 continue;
             }
             successRows++;
-
-            await this.attendanceRepo.create(row.studentId, input.classId, input.date, row.isPresent);
+            const normalizedDate = new Date(input.date);
+            normalizedDate.setHours(12, 0, 0, 0);
+            await this.attendanceRepo.create(row.studentId, input.classId, normalizedDate, row.isPresent);
         }
         return { totalRows, errorRows, existingRows, successRows };
     }
