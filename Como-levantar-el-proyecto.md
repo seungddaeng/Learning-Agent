@@ -51,7 +51,7 @@ En **DBeaver**, crear la base de datos con los siguientes valores:
 5. Ejecutar semillas iniciales (usuarios):  
    - `npm run seed`  
 6. Levantar el backend en modo desarrollo:  
-   - `npm run start:dev`  
+   - `npm run start`  
 
 ---
 
