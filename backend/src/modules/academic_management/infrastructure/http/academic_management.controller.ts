@@ -25,6 +25,8 @@ import { responseAlreadyCreated, responseConflict, responseCreated, responseForb
 import { AlreadyCreatedError, ForbiddenError, NotFoundError,ConflictError } from 'src/shared/handler/errors';
 import { GetCourseByIdUseCase } from '../../application/queries/get-course-by-id.usecase';
 import { SoftDeleteSingleEnrollmentUseCase } from '../../application/commands/soft-delete-single-enrollment.useCase';
+import { AttendenceGroupStudentDTO } from './dtos/attendence-group-student.dto';
+import { SaveAttendanceGroupStudentUseCase } from '../../application/commands/save-attendance-group-student-usecase';
 const academicRoute = 'academic'
 
 @UseGuards(JwtAuthGuard)
@@ -47,6 +49,7 @@ export class AcademicManagementController {
     private readonly updateClass: UpdateClassUseCase,
     private readonly softDeleteClass: SoftDeleteClassUseCase,
     private readonly softDeleteStudent: SoftDeleteSingleEnrollmentUseCase,
+    private readonly saveAttendanceGroupStudent: SaveAttendanceGroupStudentUseCase,
   ) { }
 
   //Endpoints GET
@@ -251,7 +254,30 @@ export class AcademicManagementController {
       }
     }
   }
-
+  
+  @Post('attendance/:classId')
+  //classId:string ,teacherId:string, date:Date, studentRows: AttendenceGroupStudentRow[] 
+  async AttendeceGroupStudentsEndpoint(@Param('classId') classId: string,@Body() dto: AttendenceGroupStudentDTO) {
+    const path = academicRoute + `attendances/${classId}`
+    const description = `Registro de asistencias para la clase ${classId} por el docente ${dto.teacherId} en la fecha ${dto.date.toISOString().split('T')[0]}`;
+    try {
+      const attendanceData = await this.saveAttendanceGroupStudent.execute({
+        classId,
+        teacherId: dto.teacherId,
+        date: dto.date,
+        studentRows: dto.studentRows,
+      })
+      return responseCreated("Sin implementar", attendanceData, description, path)
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        return responseNotFound(error.message, "Sin implementar", description, path)
+      }else if (error instanceof ForbiddenError) {
+        return responseForbidden(error.message, "Sin implementar", description, path)
+      }else {
+        return responseInternalServerError(error.message, "Sin implementar", description, path)
+      }
+    }
+  }
 
   //Endpoints PUT
   @Put('classes/:id')

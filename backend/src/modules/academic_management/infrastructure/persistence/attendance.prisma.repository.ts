@@ -1,11 +1,37 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from '../../../../core/prisma/prisma.service';
-import { AttendanceRepositoryPort } from "../../domain/ports/attendance.repository.port";
+import { AttendanceRepositoryPort } from "../../domain/ports/attendance.repository.ports";
 import { Attendance } from "../../domain/entities/attendance.entity";
 
 @Injectable()
 export class AttendancePrismaRepository implements AttendanceRepositoryPort {
     constructor(private readonly prisma: PrismaService) { }
+    async findByStudentClassAndDate(studentId: string, classId: string,date:Date): Promise<Attendance | null> {
+        const start = new Date(date);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(date);
+        end.setHours(23, 59, 59, 999);
+        const attendance = await this.prisma.attendance.findFirst({
+            where: {
+                studentId,
+                classId,
+                date: {
+                    gte: start,
+                    lte: end,
+                },
+            },
+        });
+
+        if (!attendance) return null;
+
+        return new Attendance(
+            attendance.id,
+            attendance.studentId,
+            attendance.classId,
+            attendance.date,
+            attendance.isPresent
+        );
+    }
 
     async findByClassId(classId: string): Promise<Attendance[]> {
         const attendanceData = await this.prisma.attendance.findMany({ where: { classId } })
