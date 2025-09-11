@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Typography, Checkbox, Button, Card, theme } from 'antd';
 import { RightOutlined, CodeOutlined } from '@ant-design/icons';
+import apiClient from '../../api/apiClient';
 
 const { Paragraph } = Typography;
 
@@ -31,14 +32,14 @@ export default function MultipleQuestion({ onNext }: MultipleQuestionProps) {
     fetchQuestion();
   }, []);
   async function fetchQuestion() {
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_URL}${import.meta.env.VITE_CHATINT_DOUBLEOPTION_URL}`
-      );
-      const doubleOp = await res.json() as DoubleOptionResponse;
-      setDoubleOption(doubleOp);
-    } catch (error) { 
-      console.log(error);
+     try {
+      const response = await apiClient.get("/chatint/doubleOption?topico=programacion");
+      const obj = await response.data as DoubleOptionResponse;
+      console.log(obj);
+      setDoubleOption(obj);
+    } catch (error) {
+      console.error("Failed to fetch clases", error);
+      throw error;
     }
   }
 

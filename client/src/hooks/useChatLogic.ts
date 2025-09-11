@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import apiClient from "../api/apiClient";
 
 interface Message {
   text: string;
@@ -9,9 +10,6 @@ interface ChatWithIARequest {
   question: string;
 }
 
-interface ChatWithIAResponse {
-  answer: string;
-}
 
 const MIN_CHARACTERS = 1;
 
@@ -54,20 +52,22 @@ export const useChatLogic = () => {
       setInputValue("");
       setIsTyping(true);
       try {
-        const response = await fetch(`${import.meta.env.VITE_URL}${import.meta.env.VITE_CHAT_URL}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ question: userMessage.text } as ChatWithIARequest),
-        });
-        const data = await response.json() as ChatWithIAResponse;
-        setMessages((prev) => [...prev, { text: data.answer, sender: "bot" }]);
+        const response = await apiClient.post("/chat", {
+          question: userMessage.text
+        } as ChatWithIARequest);
+        
+        setMessages((prev) => [...prev, { 
+          text: response.data.answer, 
+          sender: "bot" 
+        }]);
       } catch (error) {
         console.error("Error al obtener respuesta de la IA:", error);
         setMessages((prev) => [
           ...prev,
-          { text: "Lo siento, hubo un error al obtener la respuesta.", sender: "bot" },
+          { 
+            text: "Lo siento, hubo un error al obtener la respuesta.", 
+            sender: "bot" 
+          },
         ]);
       } finally {
         setIsTyping(false);
