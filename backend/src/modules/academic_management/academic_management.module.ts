@@ -24,6 +24,7 @@ import { IdentityModule } from '../identity/identity.module';
 import { CoursePrismaRepository } from './infrastructure/persistence/course.prisma.repository';
 import { CreateCourseUseCase } from './application/commands/create-course.usecase';
 import { SoftDeleteSingleEnrollmentUseCase } from './application/commands/soft-delete-single-enrollment.useCase';
+import { AttendanceGroupStudentUseCase } from './application/commands/attendance-group-student-usecase';
 import { GetCoursesByTeacherUseCase } from './application/queries/get-courses-by-teacher.usecase';
 import { GetClassesByCourseUseCase } from './application/queries/get-classes-by-course.usecase';
 import { GetCourseByIdUseCase } from './application/queries/get-course-by-id.usecase';
@@ -59,6 +60,7 @@ import { AttendancePrismaRepository } from './infrastructure/persistence/attenda
     EnrollGroupStudentUseCase,
     UpdateClassUseCase,
     SoftDeleteClassUseCase,
+    AttendanceGroupStudentUseCase,
   ],
 })
 export class AcademicManagementModule {}

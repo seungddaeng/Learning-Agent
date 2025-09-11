@@ -9,6 +9,12 @@ export interface AttendanceRepositoryPort {
         classId: string
     ): Promise<Attendance[]>;
 
+    findByStudentClassAndDate(
+        studentId: string, 
+        classId: string,
+        date: Date,
+    ): Promise<Attendance | null>;
+
     countAttendanceByStudentAndClass(
         studentId: string, 
         classId: string
