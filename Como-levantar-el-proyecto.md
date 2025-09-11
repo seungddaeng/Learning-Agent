@@ -4,30 +4,27 @@
 - Tener **Node.js 20+** instalado.  
 - Tener **Docker Desktop** corriendo.  
 - Archivos `.env` configurados tanto para **frontend** como para **backend**.  
-
----
-## **Casi Requisitos**
-- no es necesario pero en caso de euerer levantar una base de datos Tener **DBeaver** (para la base de datos PostgreSQL).
+## **opcional**
+- En caso de querer levantar una base de datos Tener **DBeaver** (para la base de datos PostgreSQL).
 
 ---
 
 
 ## **Pasos**
 
----
 
-## **.env**
+## **1. .env**
 Configurar ambos .env para front y para back
 1. El .env de Frontend se crea en la carpeta client
 2. En .env de Backend se crea en la carpeta backend
 
-## **1. Infraestructura (Docker)**
+## **2. Infraestructura (Docker)**
 1. Ir a la carpeta de infraestructura:  
    - `cd infra`  
    - `cd docker`  
 2. Levantar los servicios:  
    - `docker compose --env-file .env -f compose.dev.yml up -d`  
-   -`docker compose --env-file .env -f minio.compose.yml  up -d`
+   - `docker compose --env-file .env -f minio.compose.yml  up -d`
 
 En **DBeaver**, crear la base de datos con los siguientes valores:  
 - **POSTGRES_USER** = `app_user`  
@@ -36,7 +33,7 @@ En **DBeaver**, crear la base de datos con los siguientes valores:
 
 ---
 
-## **2. Backend**
+## **3. Backend**
 1. Ir a la carpeta backend:  
    - `cd backend`  
 2. Instalar dependencias:  
@@ -55,7 +52,7 @@ En **DBeaver**, crear la base de datos con los siguientes valores:
 
 ---
 
-## **3. Frontend (Client)**
+## **4. Frontend (Client)**
 1. Ir a la carpeta client:  
    - `cd client`  
 2. Instalar dependencias:  
