@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Spin, Alert, Button } from "antd";
+import { Alert, Button, theme } from "antd";
 import TestQuestion from "./TestQuestion";
 import TrueOrFalseQuestion from "./TrueOrFalseQuestion";
 
@@ -17,6 +17,7 @@ interface Props {
 }
 
 export default function TestRunner({ onAnswered }: Props): JSX.Element {
+  const { token } = theme.useToken();
   const [item, setItem] = useState<ServerResp | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,8 +65,51 @@ export default function TestRunner({ onAnswered }: Props): JSX.Element {
 
   if (loading) {
     return (
-      <div style={{ display: "flex", justifyContent: "center", padding: 24 }}>
-        <Spin />
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "60vh",
+          padding: 32,
+          color: token.colorText,
+          background: "transparent",
+        }}
+      >
+        <h2 style={{ fontSize: 24, fontWeight: 600, marginBottom: 24 }}>
+          Generando pregunta...
+        </h2>
+        <div
+          style={{
+            width: "100%",
+            maxWidth: 400,
+            height: 10,
+            background: token.colorBorderSecondary,
+            borderRadius: 5,
+            overflow: "hidden",
+            position: "relative",
+          }}
+        >
+          <div
+            style={{
+              height: "100%",
+              width: "40%",
+              background: token.colorPrimary,
+              position: "absolute",
+              animation: "loadingBar 1.5s infinite linear",
+            }}
+          />
+        </div>
+        <style>
+          {`
+            @keyframes loadingBar {
+              0% { left: -40%; }
+              50% { left: 30%; }
+              100% { left: 100%; }
+            }
+          `}
+        </style>
       </div>
     );
   }
