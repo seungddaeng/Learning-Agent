@@ -25,6 +25,7 @@ import { responseAlreadyCreated, responseConflict, responseCreated, responseForb
 import { AlreadyCreatedError, ForbiddenError, NotFoundError,ConflictError } from 'src/shared/handler/errors';
 import { GetCourseByIdUseCase } from '../../application/queries/get-course-by-id.usecase';
 import { SoftDeleteSingleEnrollmentUseCase } from '../../application/commands/soft-delete-single-enrollment.useCase';
+import { absencesByClassDTO } from './dtos/absences-by-class.dto';
 const academicRoute = 'academic'
 
 @UseGuards(JwtAuthGuard)
@@ -181,7 +182,21 @@ export class AcademicManagementController {
       }
     }
   }
-
+  @Get('/attendances/:classId/absences')
+  async getStudentAbsencesByClass(@Param('classId') id: string,dto:absencesByClassDTO) {
+    const path = academicRoute + `/attendances/${id}/absences`
+    const description = "Get all student absences for a class"
+    try {
+      // const teacherInfo = await this.getTeacherInfoById.execute(id);
+      // return responseSuccess("Sin implementar", teacherInfo, description, path)
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        return responseNotFound(error.message, "Sin implementar", description, path)
+      } else {
+        return responseInternalServerError(error.message, "Sin implementar", description, path)
+      }
+    }
+  }  
 
   //Endpoints POST
   @Post('course')
