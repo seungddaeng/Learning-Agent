@@ -34,7 +34,7 @@ import UploadButton from "../../components/shared/UploadButton";
 import { processFile } from "../../utils/enrollGroupByFile";
 import type { StudentInfo } from "../../interfaces/studentInterface";
 import CourseExamsPanel from "../courses/CourseExamsPanel";
-import AttendanceModal from "../../components/attendanceModal";
+import AttendanceModal from "../../components/AttendanceModal";
 
 const { Text } = Typography;
 const { TabPane } = Tabs;
@@ -117,7 +117,7 @@ export function CourseDetailPage() {
     if (res.state === "error") {
       message.error(res.message);
     }
-  }, [id, fetchStudentsByClass]);
+  }, [id]);
 
   useEffect(() => {
     const preparePeriods = async () => {
@@ -848,7 +848,8 @@ export function CourseDetailPage() {
         <AttendanceModal
           open={attendanceModalOpen}
           onClose={() => setAttendanceModalOpen(false)}
-          //TODO: pasar la lista de estudiantes inscritos
+          students={students ? students : []}
+          classId={id || ""}
         />
       </div>
     </PageTemplate>

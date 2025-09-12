@@ -4,7 +4,7 @@ import type { AttendanceRepositoryPort } from '../../domain/ports/attendance.rep
 import type { EnrollmentRepositoryPort } from '../../domain/ports/enrollment.repository.ports';
 import type { ClassesRepositoryPort } from '../../domain/ports/classes.repository.ports';
 import type { CourseRepositoryPort } from '../../domain/ports/courses.repository.ports';
-import { ForbiddenError, NotFoundError } from '../../../../shared/handler/errors';
+import { ConflictError, ForbiddenError, NotFoundError } from '../../../../shared/handler/errors';
 import { AttendenceGroupStudentRow } from '../../infrastructure/http/dtos/attendence-group-student.dto';
 import { Attendance } from '../../domain/entities/attendance.entity';
 
@@ -60,6 +60,11 @@ export class SaveAttendanceGroupStudentUseCase {
             const normalizedDate = new Date(input.date);
             normalizedDate.setHours(12, 0, 0, 0);
             await this.attendanceRepo.create(row.studentId, input.classId, normalizedDate, row.isPresent);
+        }
+
+        if (existingRows === totalRows) {
+            this.logger.error(`Attendance on class ${input.classId} already saved today. Trying to overwrite attendances on POST endpoint.`)
+            throw new ConflictError(`Ya se ha guardado la asistencia del día de hoy`)
         }
         return { totalRows, errorRows, existingRows, successRows };
     }

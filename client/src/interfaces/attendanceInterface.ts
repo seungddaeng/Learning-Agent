@@ -2,7 +2,7 @@ export interface CreateAttendanceInterface {
     classId: string,
     teacherId: string,
     date: Date,
-    attendances: AttendanceRow[]
+    studentRows: AttendanceRow[]
 }
 
 export interface AttendanceRow {
