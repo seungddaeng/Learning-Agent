@@ -27,7 +27,7 @@ const useAttendance = () => {
         const attendanceData = {
             teacherId: user.id,
             date: attendanceInfo.date,
-            attendances: attendanceInfo.attendances
+            studentRows: attendanceInfo.studentRows
         };
         const res = await attendanceService.saveAttendanceList(classId, attendanceData);
         const success = res?.code === 201
