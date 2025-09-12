@@ -273,7 +273,9 @@ export class AcademicManagementController {
         return responseNotFound(error.message, "Sin implementar", description, path)
       }else if (error instanceof ForbiddenError) {
         return responseForbidden(error.message, "Sin implementar", description, path)
-      }else {
+      }else if (error instanceof ConflictError) {
+        return responseConflict(error.message, "Sin implementar", description, path)
+      } else {
         return responseInternalServerError(error.message, "Sin implementar", description, path)
       }
     }

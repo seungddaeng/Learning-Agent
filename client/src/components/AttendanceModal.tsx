@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Modal, Table, Checkbox, Button } from "antd";
+import { Modal, Table, Checkbox, Button, message } from "antd";
 import { CalendarOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
@@ -117,8 +117,14 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
       studentRows: attendanceData
     }
 
-    await saveAttendanceList(attendanceInfo)
-
+    const res = await saveAttendanceList(attendanceInfo)
+    if (res?.state === "success") {
+      message.success(res.message)
+    } else if (res?.state === "error"){
+      message.error(res.message)
+    } else if (res?.state === "info") {
+      message.info(res.message)
+    }
     resetStudentMap();
     onClose();
   }
