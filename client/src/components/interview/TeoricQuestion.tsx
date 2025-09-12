@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Checkbox, Button, Typography, theme, Card } from 'antd';
 import { RightOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import apiClient from '../../api/apiClient';
+import InterviewRunner from './InterviewRunner';
 
 const { Paragraph } = Typography;
 
@@ -18,21 +20,26 @@ export default function TeoricQuestion({ onNext }: TeoricQuestionProps) {
   const { token } = theme.useToken();
   const [selectedValues, setSelectedValues] = useState<string[]>([]);
   const [mulOption, setMulOption] = useState<MultipleSelectionResponse>();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchQuestion();
   }, []);
+
   async function fetchQuestion() {
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_URL}${import.meta.env.VITE_CHATINT_MULTOPTION_URL}`
-      );
-      const obj = await res.json() as MultipleSelectionResponse;
+      const response = await apiClient.get("/chatint/multipleSelection?topico=fisica");
+      const obj = response.data as MultipleSelectionResponse;
       setMulOption(obj);
-    } catch (error) { 
-      console.log(error);
+    } catch (error) {
+      console.error("Failed to fetch clases", error);
+    } finally {
+      setLoading(false);
     }
   }
+
+  if (loading) return <InterviewRunner loading={true} />;
+  if (!mulOption) return null;
 
   return (
     <div
@@ -87,7 +94,7 @@ export default function TeoricQuestion({ onNext }: TeoricQuestionProps) {
               fontSize: token.fontSizeLG,
             }}
           >
-             {mulOption?.question}
+            {mulOption.question}
           </Paragraph>
         </div>
 
@@ -102,7 +109,7 @@ export default function TeoricQuestion({ onNext }: TeoricQuestionProps) {
           value={selectedValues}
           onChange={(checked) => setSelectedValues(checked as string[])}
         >
-          {mulOption?.options.map((option,i) => {
+          {mulOption.options.map((option, i) => {
             const selected = selectedValues.includes(option);
             return (
               <Checkbox
@@ -128,7 +135,7 @@ export default function TeoricQuestion({ onNext }: TeoricQuestionProps) {
                       color: token.colorText,
                     }}
                   >
-                     {option}
+                    {option}
                   </Paragraph>
                 </div>
               </Checkbox>

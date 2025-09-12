@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Input, Button, theme, Typography, Card } from 'antd';
 import { SendOutlined, RightOutlined, MessageOutlined } from '@ant-design/icons';
+import apiClient from '../../api/apiClient';
 
 const TypingIndicator: React.FC<{ token: any }> = ({ token }) => (
   <div
@@ -108,10 +109,14 @@ export default function OpenQuestion({ onNext }: OpenQuestionProps) {
 
   async function fetchQuestion() {
     try {
-      const res = await fetch(`${import.meta.env.VITE_URL}${import.meta.env.VITE_CHATINT_URL}`);
-      const { question } = await res.json();
+      const response = await apiClient.get("/chatint/question?topico=fisica");
+      const {question} = await response.data;
+      console.log(question);
       setMessages((m) => [...m, { sender: 'bot', text: question }]);
-    } catch {}
+    } catch (error) {
+      console.error("Failed to fetch clases", error);
+      throw error;
+    }
   }
 
   async function sendAnswer() {
@@ -123,19 +128,21 @@ export default function OpenQuestion({ onNext }: OpenQuestionProps) {
     setInputDisabled(true);
     setIsBotTyping(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_URL}${import.meta.env.VITE_CHATINT_ADVICE_URL}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          question: lastQuestion,
-          answer,
-          topic: 'fisica',
-        }),
+      const { data } = await apiClient.post("/chatint/advice", {
+        question: lastQuestion,
+        answer,
+        topic: 'fisica',
       });
-      const data = await res.json();
-      setMessages((m) => [...m, { sender: 'bot', text: data.coaching_advice || 'Error.' }]);
+      
+      setMessages((m) => [...m, { 
+        sender: 'bot', 
+        text: data.coaching_advice || 'Error.' 
+      }]);
     } catch {
-      setMessages((m) => [...m, { sender: 'bot', text: 'Hubo un error.' }]);
+      setMessages((m) => [...m, { 
+        sender: 'bot', 
+        text: 'Hubo un error.' 
+      }]);
     } finally {
       setIsBotTyping(false);
       setInputDisabled(false);
