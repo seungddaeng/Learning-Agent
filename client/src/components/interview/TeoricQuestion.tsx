@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Checkbox, Button, Typography, theme, Card } from 'antd';
 import { RightOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import apiClient from '../../api/apiClient';
 
 const { Paragraph } = Typography;
 
@@ -24,13 +25,13 @@ export default function TeoricQuestion({ onNext }: TeoricQuestionProps) {
   }, []);
   async function fetchQuestion() {
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_URL}${import.meta.env.VITE_CHATINT_MULTOPTION_URL}`
-      );
-      const obj = await res.json() as MultipleSelectionResponse;
+      const response = await apiClient.get("/chatint/multipleSelection?topico=fisica");
+      const obj = await response.data as MultipleSelectionResponse;
+      console.log(obj);
       setMulOption(obj);
-    } catch (error) { 
-      console.log(error);
+    } catch (error) {
+      console.error("Failed to fetch clases", error);
+      throw error;
     }
   }
 
