@@ -28,6 +28,7 @@ import { SoftDeleteSingleEnrollmentUseCase } from '../../application/commands/so
 import { AttendenceGroupStudentDTO } from './dtos/attendence-group-student.dto';
 import { SaveAttendanceGroupStudentUseCase } from '../../application/commands/save-attendance-group-student-usecase';
 import { absencesByClassDTO } from './dtos/absences-by-class.dto';
+import { GetAbsencesByClass } from '../../application/queries/get-absences-by-class';
 const academicRoute = 'academic'
 
 @UseGuards(JwtAuthGuard)
@@ -51,6 +52,7 @@ export class AcademicManagementController {
     private readonly softDeleteClass: SoftDeleteClassUseCase,
     private readonly softDeleteStudent: SoftDeleteSingleEnrollmentUseCase,
     private readonly saveAttendanceGroupStudent: SaveAttendanceGroupStudentUseCase,
+    private readonly getAbsencesByClass: GetAbsencesByClass,
   ) { }
 
   //Endpoints GET
@@ -186,17 +188,23 @@ export class AcademicManagementController {
     }
   }
   @Get('/attendances/:classId/absences')
-  async getStudentAbsencesByClass(@Param('classId') id: string,dto:absencesByClassDTO) {
+  async getStudentAbsencesByClass(@Param('classId') id: string,@Body() dto:absencesByClassDTO) {
     const path = academicRoute + `/attendances/${id}/absences`
     const description = "Get all student absences for a class"
     try {
-      // const teacherInfo = await this.getTeacherInfoById.execute(id);
-      // return responseSuccess("Sin implementar", teacherInfo, description, path)
+      const input = {
+        classId: id,
+        teacherId: dto.teacherId,
+      }
+      const absences = await this.getAbsencesByClass.execute(input);
+      return responseSuccess("Sin implementar", absences, description, path)
     } catch (error) {
       if (error instanceof NotFoundError) {
-        return responseNotFound(error.message, "Sin implementar", description, path)
-      } else {
-        return responseInternalServerError(error.message, "Sin implementar", description, path)
+      return responseNotFound(error.message,"Sin implementar",description,path);
+    } else if (error instanceof ForbiddenError) {
+      return responseInternalServerError(error.message,"Sin implementar",description,path);
+    } else {
+      return responseInternalServerError(error.message,"Sin implementar",description,path);
       }
     }
   }  
