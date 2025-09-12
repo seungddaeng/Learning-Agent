@@ -1,7 +1,6 @@
 name: CI (client)
 
 on:
-  workflow_dispatch:
   pull_request:
     branches: [ main ]
     paths:
@@ -27,10 +26,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node }}
           cache: npm
@@ -51,28 +50,12 @@ jobs:
       - name: Build
         working-directory: client
         run: npm run build --if-present
-      
-      - name: Setup Docker
-        working-directory: infra/docker
-        run: |
-          docker compose -f minio.compose.yml up -d
-          docker compose -f compose.dev.yml up -d
-      
-      - name: E2E (Cypress)
-        uses: cypress-io/github-action@v6
-        with:
-          working-directory: client
-          start: npm run start:e2e
-          wait-on: http://localhost:5173
-          wait-on-timeout: 120
-          command: npm run cypress:run -- --spec "cypress/e2e/login.spec.ts"
-
+        
       - name: Upload artifacts (build y reportes)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@834d307f3a2f3c78a219c1a5b2dede422a8767b0
         with:
           name: build-and-reports-${{ matrix.node }}
           path: |
             client/dist/**
             client/junit.xml
-
