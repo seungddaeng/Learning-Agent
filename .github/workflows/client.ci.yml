@@ -50,6 +50,21 @@ jobs:
       - name: Build
         working-directory: client
         run: npm run build --if-present
+      
+      - name: Setup Docker
+        working-directory: infra/docker
+        run: |
+          docker compose -f minio.compose.yml up -d
+          docker compose -f compose.dev.yml up -d
+      
+      - name: E2E (Cypress)
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: client
+          start: npm run start:e2e
+          wait-on: http://localhost:5173
+          wait-on-timeout: 120
+          command: npm run cypress:run -- --spec "cypress/e2e/login.spec.ts"
 
       - name: Upload artifacts (build y reportes)
         if: always()
