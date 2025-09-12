@@ -27,13 +27,18 @@ const useAttendance = () => {
         const attendanceData = {
             teacherId: user.id,
             date: attendanceInfo.date,
-            attendances: attendanceInfo.attendances
+            studentRows: attendanceInfo.studentRows
         };
         const res = await attendanceService.saveAttendanceList(classId, attendanceData);
-        const success = res?.code === 201
+        if (res?.code === 201) {
+            return {
+                state: "success",
+                message: "Asistencia guardada correctamente"
+            }
+        } 
         return {
-            state: success ? "success" : "error",
-            message: success ? "Asistencia guardada correctamente" : res?.error
+            state: res?.code === 409 ? "info" : "error",
+            message: res?.error
         };
     }
 
