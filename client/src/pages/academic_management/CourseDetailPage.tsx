@@ -849,6 +849,7 @@ export function CourseDetailPage() {
           open={attendanceModalOpen}
           onClose={() => setAttendanceModalOpen(false)}
           students={students ? students : []}
+          classId={id || ""}
         />
       </div>
     </PageTemplate>
