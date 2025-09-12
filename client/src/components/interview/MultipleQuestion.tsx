@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Typography, Checkbox, Button, Card, theme } from 'antd';
 import { RightOutlined, CodeOutlined } from '@ant-design/icons';
 import apiClient from '../../api/apiClient';
+import InterviewRunner from './InterviewRunner';
 
 const { Paragraph } = Typography;
 
@@ -22,7 +23,8 @@ interface DoubleOptionResponse {
 export default function MultipleQuestion({ onNext }: MultipleQuestionProps) {
   const { token } = theme.useToken();
   const [selectedValues, setSelectedValues] = useState<string[]>([]);
-  const [doubleOption , setDoubleOption] = useState<DoubleOptionResponse>();
+  const [doubleOption, setDoubleOption] = useState<DoubleOptionResponse>();
+  const [loading, setLoading] = useState(true);
 
   const handleCheckboxChange = (values: string[]) => {
     setSelectedValues(values);
@@ -31,17 +33,21 @@ export default function MultipleQuestion({ onNext }: MultipleQuestionProps) {
   useEffect(() => {
     fetchQuestion();
   }, []);
+
   async function fetchQuestion() {
-     try {
+    try {
       const response = await apiClient.get("/chatint/doubleOption?topico=programacion");
-      const obj = await response.data as DoubleOptionResponse;
-      console.log(obj);
+      const obj = response.data as DoubleOptionResponse;
       setDoubleOption(obj);
     } catch (error) {
       console.error("Failed to fetch clases", error);
-      throw error;
+    } finally {
+      setLoading(false);
     }
   }
+
+  if (loading) return <InterviewRunner loading={true} />;
+  if (!doubleOption) return null;
 
   return (
     <div
@@ -96,7 +102,7 @@ export default function MultipleQuestion({ onNext }: MultipleQuestionProps) {
               fontSize: token.fontSizeLG,
             }}
           >
-            {doubleOption?.question}
+            {doubleOption.question}
           </Paragraph>
         </div>
 
@@ -112,7 +118,7 @@ export default function MultipleQuestion({ onNext }: MultipleQuestionProps) {
             justifyContent: 'center',
           }}
         >
-          {doubleOption?.options.map((opt, i) => {
+          {doubleOption.options.map((opt, i) => {
             const selected = selectedValues.includes(opt.answer);
             return (
               <Checkbox key={i} value={opt.answer} style={{ margin: 0 }}>
