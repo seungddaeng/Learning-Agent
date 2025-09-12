@@ -21,7 +21,7 @@ import { CreateCourseUseCase } from '../../application/commands/create-course.us
 import { CreateCourseDTO } from './dtos/create-course.dto';
 import { GetCoursesByTeacherUseCase } from '../../application/queries/get-courses-by-teacher.usecase';
 import { GetClassesByCourseUseCase } from '../../application/queries/get-classes-by-course.usecase';
-import { GetStudentAbsencesByDate } from '../../application/queries/get-student-absences-by-date.usecase.ts';
+import { getDateAbsencesBystudentUseCase } from '../../application/queries/get-date-absences-by-student.usecase.ts';
 import { responseAlreadyCreated, responseConflict, responseCreated, responseForbidden, responseInternalServerError, responseNotFound, responseSuccess } from 'src/shared/handler/http.handler';
 import { AlreadyCreatedError, ForbiddenError, NotFoundError,ConflictError } from 'src/shared/handler/errors';
 import { GetCourseByIdUseCase } from '../../application/queries/get-course-by-id.usecase';
@@ -54,7 +54,7 @@ export class AcademicManagementController {
     private readonly softDeleteStudent: SoftDeleteSingleEnrollmentUseCase,
     private readonly saveAttendanceGroupStudent: SaveAttendanceGroupStudentUseCase,
     private readonly getAbsencesByClass: GetAbsencesByClass,
-    private readonly getStudentAbsenceDatesUseCase: GetStudentAbsencesByDate,    
+    private readonly getDateAbsencesBystudentUseCase: getDateAbsencesBystudentUseCase,    
   ) { }
 
   //Endpoints GET
@@ -225,7 +225,7 @@ export class AcademicManagementController {
         teacherId: teacherId,
         classId: classId,
       }
-      const absencesDate = await this.getStudentAbsenceDatesUseCase.execute(input);
+      const absencesDate = await this.getDateAbsencesBystudentUseCase.execute(input);
       return responseSuccess("Sin implementar", absencesDate, description, path)
     } catch (error) {
       if (error instanceof NotFoundError) {

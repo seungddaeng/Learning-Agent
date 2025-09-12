@@ -8,8 +8,8 @@ import type { ProfessorRepositoryPort } from "../../domain/ports/teacher.reposit
 import {ForbiddenError, NotFoundError } from "../../../../shared/handler/errors";
 
 @Injectable()
-export class GetStudentAbsencesByDate {
-    private readonly logger = new Logger(GetStudentAbsencesByDate.name)
+export class getDateAbsencesBystudentUseCase {
+    private readonly logger = new Logger(getDateAbsencesBystudentUseCase.name)
     constructor(
         @Inject(CLASSES_REPO) private readonly classesRepo: ClassesRepositoryPort,
         @Inject(COURSE_REPO) private readonly courseRepo: CourseRepositoryPort,

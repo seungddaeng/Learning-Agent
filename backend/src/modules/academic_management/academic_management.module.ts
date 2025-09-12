@@ -26,7 +26,7 @@ import { CreateCourseUseCase } from './application/commands/create-course.usecas
 import { SoftDeleteSingleEnrollmentUseCase } from './application/commands/soft-delete-single-enrollment.useCase';
 import { SaveAttendanceGroupStudentUseCase } from './application/commands/save-attendance-group-student-usecase';
 import { GetCoursesByTeacherUseCase } from './application/queries/get-courses-by-teacher.usecase';
-import { GetStudentAbsencesByDate } from './application/queries/get-student-absences-by-date.usecase.ts';
+import { GetStudentAbsencesByDate } from './application/queries/get-date-absences-by-student.usecase.ts';
 import { GetClassesByCourseUseCase } from './application/queries/get-classes-by-course.usecase';
 import { GetAbsencesByClass } from './application/queries/get-absences-by-class';
 import { GetCourseByIdUseCase } from './application/queries/get-course-by-id.usecase';
