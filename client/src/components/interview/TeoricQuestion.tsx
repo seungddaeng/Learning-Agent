@@ -1,30 +1,32 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Checkbox, Button, Typography, theme, Card } from 'antd';
 import { RightOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import apiClient from '../../api/apiClient';
+import type { MultipleSelectionResponse } from '../../interfaces/interviewInt';
 
 const { Paragraph } = Typography;
 
 interface TeoricQuestionProps {
-  onNext: () => void;
-}
-interface MultipleSelectionResponse {
-  question: string;
-  options: string[];
-  correctAnswer: number;
-  explanation: string;
+   onNext: () => void;
+   selectedValues: MultipleSelectionResponse[];
+   setSelectedValues: React.Dispatch<React.SetStateAction<MultipleSelectionResponse[]>>;
 }
 
-export default function TeoricQuestion({ onNext }: TeoricQuestionProps) {
+export default function TeoricQuestion({ onNext, selectedValues, setSelectedValues }: TeoricQuestionProps) {
   const { token } = theme.useToken();
-  const [selectedValues, setSelectedValues] = useState<string[]>([]);
   const [mulOption, setMulOption] = useState<MultipleSelectionResponse>();
+  const onClick = () => {
+    setSelectedValues( sel => [...sel, mulOption!]);
+    console.log(selectedValues);
+    onNext();
+  }
 
   useEffect(() => {
     fetchQuestion();
-  }, []);
+  }, [selectedValues]);
   async function fetchQuestion() {
     try {
+      setMulOption(undefined);
       const response = await apiClient.get("/chatint/multipleSelection?topico=fisica");
       const obj = await response.data as MultipleSelectionResponse;
       console.log(obj);
@@ -100,11 +102,17 @@ export default function TeoricQuestion({ onNext }: TeoricQuestionProps) {
             alignItems: 'center',
             width: '100%',
           }}
-          value={selectedValues}
-          onChange={(checked) => setSelectedValues(checked as string[])}
+          options={mulOption?.options}
+          onChange={
+            (checked) => {
+              checked.map(val => {
+                const selected = mulOption?.options.findIndex(option => option === val);
+                setMulOption(mul => mul != undefined?{...mul,givenAnswer:selected}:undefined);
+              })
+            }
+          }
         >
           {mulOption?.options.map((option,i) => {
-            const selected = selectedValues.includes(option);
             return (
               <Checkbox
                 key={i}
@@ -115,8 +123,8 @@ export default function TeoricQuestion({ onNext }: TeoricQuestionProps) {
                   style={{
                     padding: `${token.paddingSM}px ${token.paddingLG}px`,
                     borderRadius: token.borderRadiusLG,
-                    border: `2px solid ${selected ? token.colorPrimary : token.colorBorderSecondary}`,
-                    backgroundColor: selected ? token.colorPrimaryBg : token.colorBgContainer,
+                    border: `2px solid ${mulOption?.givenAnswer == i ? token.colorPrimary : token.colorBorderSecondary}`,
+                    backgroundColor: mulOption?.givenAnswer == i ? token.colorPrimaryBg : token.colorBgContainer,
                     textAlign: 'center',
                     cursor: 'pointer',
                     transition: 'all 0.3s',
@@ -137,11 +145,11 @@ export default function TeoricQuestion({ onNext }: TeoricQuestionProps) {
           })}
         </Checkbox.Group>
 
-        {selectedValues.length > 0 && (
+        {mulOption?.givenAnswer !=undefined && (
           <Button
             type="primary"
             size="large"
-            onClick={onNext}
+            onClick={onClick}
             style={{
               marginTop: token.marginLG,
               borderRadius: token.borderRadiusLG,

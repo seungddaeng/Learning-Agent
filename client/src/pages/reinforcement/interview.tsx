@@ -9,11 +9,14 @@ import TeoricQuestion from '../../components/interview/TeoricQuestion';
 import MultipleQuestion from '../../components/interview/MultipleQuestion';
 import { useThemeStore } from '../../store/themeStore';
 import InterviewFeedbackModal from '../../components/interview/InterviewFeedbackModal';
+import type { DoubleOptionResponse, MultipleSelectionResponse } from '../../interfaces/interviewInt';
 
 const InterviewChat: React.FC = () => {
   const navigate = useNavigate();
   const { theme } = useThemeStore();
   const { currentType, isModalOpen, next, finish, confirmFinish, setIsModalOpen } = useInterviewFlow(['open', 'teoric', 'multiple', 'open']);
+   const [selectedValues, setSelectedValues] = useState<DoubleOptionResponse[]>([]);
+   const [mulSelectedValues, setMulSelectedValues] = useState<MultipleSelectionResponse[]>([]);
   const [showFeedback, setShowFeedback] = useState(false);
 
   const handleConfirmFinish = () => {
@@ -32,9 +35,9 @@ const InterviewChat: React.FC = () => {
       case 'open':
         return <OpenQuestion onNext={next} />;
       case 'teoric':
-        return <TeoricQuestion onNext={next} />;
+        return <TeoricQuestion onNext={next} selectedValues={mulSelectedValues} setSelectedValues={setMulSelectedValues}/>;
       case 'multiple':
-        return <MultipleQuestion onNext={next} />;
+        return <MultipleQuestion onNext={next} selectedValues={selectedValues} setSelectedValues={setSelectedValues} />;
       default:
         return null;
     }

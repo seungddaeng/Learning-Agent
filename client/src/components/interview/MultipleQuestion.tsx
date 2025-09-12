@@ -1,38 +1,34 @@
 import { useEffect, useState } from 'react';
-import { Typography, Checkbox, Button, Card, theme } from 'antd';
+import { Typography, Button, Card, theme, Radio } from 'antd';
 import { RightOutlined, CodeOutlined } from '@ant-design/icons';
 import apiClient from '../../api/apiClient';
+import type { DoubleOptionResponse } from '../../interfaces/interviewInt';
 
 const { Paragraph } = Typography;
 
 interface MultipleQuestionProps {
   onNext: () => void;
-}
-interface TitleAndOption {
-  label: string;
-  answer: string;
-}
-interface DoubleOptionResponse {
-  question: string;
-  options: TitleAndOption[];
-  correctAnswer: number;
-  explanation: string;
+  selectedValues: DoubleOptionResponse[];
+  setSelectedValues: React.Dispatch<React.SetStateAction<DoubleOptionResponse[]>>;
 }
 
-export default function MultipleQuestion({ onNext }: MultipleQuestionProps) {
+
+export default function MultipleQuestion({ onNext, selectedValues, setSelectedValues }: MultipleQuestionProps) {
   const { token } = theme.useToken();
-  const [selectedValues, setSelectedValues] = useState<string[]>([]);
   const [doubleOption , setDoubleOption] = useState<DoubleOptionResponse>();
 
-  const handleCheckboxChange = (values: string[]) => {
-    setSelectedValues(values);
-  };
+  const onClick = () => {
+    setSelectedValues( sel => [...sel, doubleOption!]);
+    console.log(selectedValues);
+    onNext();
+  }
 
   useEffect(() => {
     fetchQuestion();
-  }, []);
+  }, [selectedValues]);
   async function fetchQuestion() {
      try {
+      setDoubleOption(undefined);
       const response = await apiClient.get("/chatint/doubleOption?topico=programacion");
       const obj = await response.data as DoubleOptionResponse;
       console.log(obj);
@@ -100,9 +96,7 @@ export default function MultipleQuestion({ onNext }: MultipleQuestionProps) {
           </Paragraph>
         </div>
 
-        <Checkbox.Group
-          onChange={(vals) => handleCheckboxChange(vals as string[])}
-          value={selectedValues}
+        <Radio.Group
           style={{
             width: '100%',
             display: 'flex',
@@ -111,19 +105,21 @@ export default function MultipleQuestion({ onNext }: MultipleQuestionProps) {
             gap: token.marginMD,
             justifyContent: 'center',
           }}
+          onChange={
+            (e) => {setDoubleOption(double => double != undefined?{...double,givenAnswer:e.target.value}:undefined)}
+          }
         >
           {doubleOption?.options.map((opt, i) => {
-            const selected = selectedValues.includes(opt.answer);
             return (
-              <Checkbox key={i} value={opt.answer} style={{ margin: 0 }}>
+              <Radio key={i} value={i} style={{ margin: 0 }}>
                 <div
                   style={{
                     width: 320,
                     padding: token.paddingMD,
                     borderRadius: token.borderRadiusLG,
-                    border: `2px solid ${selected ? token.colorPrimary : token.colorBorderSecondary}`,
-                    backgroundColor: selected ? token.colorPrimaryBg : token.colorBgContainer,
-                    boxShadow: selected
+                    border: `2px solid ${doubleOption?.givenAnswer == i ? token.colorPrimary : token.colorBorderSecondary}`,
+                    backgroundColor: doubleOption?.givenAnswer == i ? token.colorPrimaryBg : token.colorBgContainer,
+                    boxShadow: doubleOption?.givenAnswer == i
                       ? `0 4px 12px ${token.colorPrimary}33`
                       : '0 2px 5px rgba(0,0,0,0.05)',
                     cursor: 'pointer',
@@ -154,16 +150,16 @@ export default function MultipleQuestion({ onNext }: MultipleQuestionProps) {
                     {opt.answer}
                   </pre>
                 </div>
-              </Checkbox>
+              </Radio>
             );
           })}
-        </Checkbox.Group>
+        </Radio.Group>
 
-        {selectedValues.length > 0 && (
+        {doubleOption?.givenAnswer !=undefined && (
           <Button
             type="primary"
             size="large"
-            onClick={onNext}
+            onClick={onClick}
             style={{
               marginTop: token.marginLG,
               borderRadius: token.borderRadiusLG,
