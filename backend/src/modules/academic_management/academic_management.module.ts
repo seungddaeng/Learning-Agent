@@ -27,6 +27,7 @@ import { SoftDeleteSingleEnrollmentUseCase } from './application/commands/soft-d
 import { SaveAttendanceGroupStudentUseCase } from './application/commands/save-attendance-group-student-usecase';
 import { GetCoursesByTeacherUseCase } from './application/queries/get-courses-by-teacher.usecase';
 import { GetClassesByCourseUseCase } from './application/queries/get-classes-by-course.usecase';
+import { GetAbsencesByClass } from './application/queries/get-absences-by-class';
 import { GetCourseByIdUseCase } from './application/queries/get-course-by-id.usecase';
 import { RbacModule } from '../rbac/rbac.module';
 import { AttendancePrismaRepository } from './infrastructure/persistence/attendance.prisma.repository';
@@ -61,6 +62,7 @@ import { AttendancePrismaRepository } from './infrastructure/persistence/attenda
     UpdateClassUseCase,
     SoftDeleteClassUseCase,
     SaveAttendanceGroupStudentUseCase,
+    GetAbsencesByClass,
   ],
 })
 export class AcademicManagementModule {}
