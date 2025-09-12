@@ -119,7 +119,6 @@ describe('PrismaQuestionRepositoryAdapter - in-memory behavior', () => {
     expect(saved1.id).toBeDefined();
     const all1 = await repo.findAll();
     expect(all1.length).toBe(1);
-    // same question object -> save again, should update uses
     const saved2 = await repo.save(q);
     expect(saved2.uses).toBeGreaterThanOrEqual(1);
     const all2 = await repo.findAll();
