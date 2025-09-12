@@ -1,19 +1,26 @@
-import { Modal, Form, Select, Space, Button, DatePicker, message } from "antd";
+import {
+  Modal,
+  Form,
+  Select,
+  Space,
+  Button,
+  DatePicker,
+  message,
+  ConfigProvider,
+} from "antd";
 import { useFormik } from "formik";
 import * as yup from "yup";
 import dayjs, { Dayjs } from "dayjs";
-import type { Course } from "../interfaces/courseInterface";
-import type { CreateClassDTO } from "../interfaces/claseInterface";
-
-import { ConfigProvider } from "antd";
 import esES from "antd/locale/es_ES";
 import "dayjs/locale/es";
-dayjs.locale("es");
-
 import isBetween from "dayjs/plugin/isBetween";
-dayjs.extend(isBetween);
-
 import customParseFormat from "dayjs/plugin/customParseFormat";
+
+import type { Course } from "../interfaces/courseInterface";
+import type { Clase, CreateClassDTO } from "../interfaces/claseInterface";
+
+dayjs.locale("es");
+dayjs.extend(isBetween);
 dayjs.extend(customParseFormat);
 
 const { Option } = Select;
@@ -25,33 +32,29 @@ const periodValidationSchema = yup.object({
     .required("El período es obligatorio")
     .matches(
       /^(PRIMERO|SEGUNDO|INVIERNO|VERANO)\s\d{4}$/,
-      "El formato debe ser: PRIMERO 2025, SEGUNDO 2025, INVIERNO 2025 o VERANO 2025"
+      "Formato válido: PRIMERO 2025, SEGUNDO 2025, INVIERNO 2025 o VERANO 2025"
     ),
   dateBegin: yup.string().required("La fecha de inicio es obligatoria"),
   dateEnd: yup.string().required("La fecha de fin es obligatoria"),
 });
 
-interface PeriodFormValues {
-  semester: string;
-  dateBegin: string;
-  dateEnd: string;
-}
-
-interface CreatePeriodFormProps {
+interface PeriodFormProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (periodData: CreateClassDTO) => Promise<void>;
+  onSubmit: (periodData: CreateClassDTO | Clase) => Promise<void>;
   course: Course;
+  period?: Clase;
   loading?: boolean;
 }
 
-export function CreatePeriodForm({
+function PeriodForm({
   open,
   onClose,
   onSubmit,
   course,
+  period,
   loading = false,
-}: CreatePeriodFormProps) {
+}: PeriodFormProps) {
   const countBusinessDays = (start: Dayjs, end: Dayjs) => {
     let days = 0;
     let current = start.clone();
@@ -63,11 +66,12 @@ export function CreatePeriodForm({
     return days;
   };
 
-  const formik = useFormik<PeriodFormValues>({
+  const formik = useFormik({
+    enableReinitialize: true,
     initialValues: {
-      semester: "",
-      dateBegin: "",
-      dateEnd: "",
+      semester: period?.semester || "",
+      dateBegin: period?.dateBegin || "",
+      dateEnd: period?.dateEnd || "",
     },
     validationSchema: periodValidationSchema,
     onSubmit: async (values, { resetForm }) => {
@@ -75,7 +79,7 @@ export function CreatePeriodForm({
         const start = dayjs(values.dateBegin);
         const end = dayjs(values.dateEnd);
 
-        // Validar que haya al menos MIN_BUSINESS_DAYS días hábiles
+        // Validar mínimo de días hábiles
         const businessDays = countBusinessDays(start, end);
         if (businessDays < MIN_BUSINESS_DAYS) {
           message.error(
@@ -84,13 +88,26 @@ export function CreatePeriodForm({
           return;
         }
 
-        const periodData: CreateClassDTO = {
-          semester: values.semester,
-          teacherId: course.teacherId,
-          courseId: course.id,
-          dateBegin: values.dateBegin,
-          dateEnd: values.dateEnd,
-        };
+        // Crear DTO según modo (crear / editar)
+        let periodData: CreateClassDTO | Clase;
+        if (period) {
+          periodData = {
+            ...period,
+            semester: values.semester,
+            teacherId: course.teacherId,
+            courseId: course.id,
+            dateBegin: values.dateBegin,
+            dateEnd: values.dateEnd,
+          };
+        } else {
+          periodData = {
+            semester: values.semester,
+            teacherId: course.teacherId,
+            courseId: course.id,
+            dateBegin: values.dateBegin,
+            dateEnd: values.dateEnd,
+          };
+        }
 
         await onSubmit(periodData);
         resetForm();
@@ -129,7 +146,7 @@ export function CreatePeriodForm({
       type: "NORMAL",
     },
     {
-      name: `VERANO ${currentYear}`,
+      name: `VERANO ${currentYear + 1}`,
       start: `${currentYear + 1}-01-01`,
       end: `${currentYear + 1}-01-24`,
       type: "SPECIAL",
@@ -153,7 +170,7 @@ export function CreatePeriodForm({
       type: "NORMAL",
     },
     {
-      name: `VERANO ${currentYear + 1}`,
+      name: `VERANO ${currentYear + 2}`,
       start: `${currentYear + 2}-01-01`,
       end: `${currentYear + 2}-01-24`,
       type: "SPECIAL",
@@ -195,7 +212,6 @@ export function CreatePeriodForm({
       );
     }
 
-    // Calcular fecha máxima para elegir inicio:
     let temp = end.clone();
     let days = 0;
     while (days < MIN_BUSINESS_DAYS) {
@@ -240,7 +256,6 @@ export function CreatePeriodForm({
     }
     const minDate = temp;
 
-    // Máxima fecha posible es fin del periodo
     const maxDate = end;
 
     return (
@@ -288,7 +303,7 @@ export function CreatePeriodForm({
   return (
     <ConfigProvider locale={esES}>
       <Modal
-        title={`Crear Período - ${course.name}`}
+        title={`${period ? "Editar" : "Crear"} Período`}
         open={open}
         onCancel={handleCancel}
         footer={null}
@@ -300,25 +315,28 @@ export function CreatePeriodForm({
           onFinish={formik.handleSubmit}
           style={{ marginTop: "20px" }}
         >
-          {/* Selección de período */}
+          {/* Select semestre */}
           <Form.Item
-            label="Período"
+            label="Semestre"
             validateStatus={
               formik.errors.semester && formik.touched.semester ? "error" : ""
             }
-            help={formik.touched.semester && formik.errors.semester}
-            required
+            help={
+              formik.errors.semester && formik.touched.semester
+                ? formik.errors.semester
+                : null
+            }
           >
             <Select
-              placeholder="Seleccionar período"
-              value={formik.values.semester}
+              placeholder="Selecciona un semestre"
+              value={formik.values.semester || undefined}
               onChange={(value) => {
                 formik.setFieldValue("semester", value);
+                formik.setFieldTouched("semester", true);
                 formik.setFieldValue("dateBegin", "");
                 formik.setFieldValue("dateEnd", "");
               }}
-              onBlur={() => formik.setFieldTouched("semester", true)}
-              style={{ width: "100%" }}
+              disabled={!!period} // 👈 opcional: bloquear semestre en edición
             >
               {availableSemesters.map((sem) => (
                 <Option key={sem.name} value={sem.name}>
@@ -328,64 +346,59 @@ export function CreatePeriodForm({
             </Select>
           </Form.Item>
 
-          {/* Fecha inicio */}
+          {/* Fecha de inicio */}
           <Form.Item
-            label="Inicio de Período"
+            label="Fecha de inicio"
             validateStatus={
               formik.errors.dateBegin && formik.touched.dateBegin ? "error" : ""
             }
-            help={formik.touched.dateBegin && formik.errors.dateBegin}
-            required
+            help={
+              formik.errors.dateBegin && formik.touched.dateBegin
+                ? formik.errors.dateBegin
+                : null
+            }
           >
             <DatePicker
               style={{ width: "100%" }}
-              format="DD-MM-YYYY"
-              placeholder="Seleccionar fecha de inicio"
-              value={
-                formik.values.dateBegin
-                  ? dayjs(formik.values.dateBegin, "YYYY-MM-DD")
-                  : undefined
-              }
-              defaultPickerValue={
-                formik.values.semester
-                  ? ranges[formik.values.semester].start
-                  : undefined
-              }
-              disabled={!formik.values.semester}
+              format="YYYY-MM-DD"
               disabledDate={disabledDateBegin}
-              onChange={(value) => handleDateChange("dateBegin", value)}
+              value={
+                formik.values.dateBegin ? dayjs(formik.values.dateBegin) : null
+              }
+              onChange={(date) => {
+                handleDateChange("dateBegin", date);
+                formik.setFieldTouched("dateBegin", true);
+              }}
             />
           </Form.Item>
 
-          {/* Fecha fin */}
+          {/* Fecha de fin */}
           <Form.Item
-            label="Fin de Período"
+            label="Fecha de fin"
             validateStatus={
               formik.errors.dateEnd && formik.touched.dateEnd ? "error" : ""
             }
-            help={formik.touched.dateEnd && formik.errors.dateEnd}
-            required
+            help={
+              formik.errors.dateEnd && formik.touched.dateEnd
+                ? formik.errors.dateEnd
+                : null
+            }
           >
             <DatePicker
               style={{ width: "100%" }}
-              format="DD-MM-YYYY"
-              placeholder="Seleccionar fecha de fin"
-              value={
-                formik.values.dateEnd
-                  ? dayjs(formik.values.dateEnd, "YYYY-MM-DD")
-                  : undefined
-              }
-              defaultPickerValue={
-                formik.values.semester
-                  ? ranges[formik.values.semester].start
-                  : undefined
-              }
-              disabled={!formik.values.dateBegin}
+              format="YYYY-MM-DD"
               disabledDate={disabledDateEnd}
-              onChange={(value) => handleDateChange("dateEnd", value)}
+              value={
+                formik.values.dateEnd ? dayjs(formik.values.dateEnd) : null
+              }
+              onChange={(date) => {
+                handleDateChange("dateEnd", date);
+                formik.setFieldTouched("dateEnd", true);
+              }}
             />
           </Form.Item>
 
+          {/* Botones */}
           <Form.Item style={{ marginTop: "24px", marginBottom: 0 }}>
             <Space style={{ width: "100%", justifyContent: "flex-end" }}>
               <Button onClick={handleCancel} disabled={loading}>
@@ -396,7 +409,7 @@ export function CreatePeriodForm({
                 htmlType="submit"
                 loading={loading || formik.isSubmitting}
               >
-                Crear Período
+                {period ? "Actualizar Período" : "Crear Período"}
               </Button>
             </Space>
           </Form.Item>
@@ -405,3 +418,5 @@ export function CreatePeriodForm({
     </ConfigProvider>
   );
 }
+
+export default PeriodForm;

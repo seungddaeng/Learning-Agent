@@ -1,9 +1,9 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
-import { Button,  Empty, Input, message } from "antd";
+import { Button, Empty, Input, message } from "antd";
 import { PlusOutlined, ReadOutlined } from "@ant-design/icons";
 import PageTemplate from "../../components/PageTemplate";
-import { CreatePeriodForm } from "../../components/CreatePeriodForm";
+import PeriodForm from "../../components/PeriodForm";
 import useClasses from "../../hooks/useClasses";
 import type { Clase, CreateClassDTO } from "../../interfaces/claseInterface";
 import { useUserStore } from "../../store/userStore";
@@ -27,25 +27,25 @@ export function CoursePeriodsPage() {
   const { actualCourse, getCourseByID } = useCourses();
 
   const fetchCoursePeriods = useCallback(async () => {
-    if (!courseId) return
+    if (!courseId) return;
     setLoading(true);
-    
-    const courseRes = await getCourseByID(courseId)
+
+    const courseRes = await getCourseByID(courseId);
     if (courseRes.state == "error") {
-      setLoading(false)
-      message.error(courseRes.message)
-      return
+      setLoading(false);
+      message.error(courseRes.message);
+      return;
     }
 
     const periodsRes = await fetchClassesByCourse(courseId);
     if (periodsRes.state == "error") {
-      setLoading(false)
-      message.error(periodsRes.message)
-      return
+      setLoading(false);
+      message.error(periodsRes.message);
+      return;
     }
 
-    setLoading(false)
-  }, [courseId])
+    setLoading(false);
+  }, [courseId]);
 
   useEffect(() => {
     if (courseId) {
@@ -60,25 +60,40 @@ export function CoursePeriodsPage() {
       return;
     }
 
-    const filtered = classes.filter((period) =>
-      period.semester.toLowerCase().includes(lower) ||
-      period.name.toLowerCase().includes(lower)
+    const filtered = classes.filter(
+      (period) =>
+        period.semester.toLowerCase().includes(lower) ||
+        period.name.toLowerCase().includes(lower)
     );
     setFilteredPeriods(filtered);
   }, [searchTerm, classes]);
 
-  const handleCreatePeriod = async (periodData: CreateClassDTO) => {
-    if (!courseId) return
+  const handleCreatePeriod = async (periodData: Clase | CreateClassDTO) => {
+    if (!courseId) return;
 
     setCreatingPeriod(true);
-    const res = await createClass(periodData)
-    if (res.state == "error") {
-      message.error(res.message)
-      setCreatingPeriod(false);
-      return
+    // If periodData is a Clase, convert it to CreateClassDTO
+    let createData: CreateClassDTO;
+    if ("courseId" in periodData && typeof periodData.courseId === "string") {
+      createData = periodData as CreateClassDTO;
+    } else {
+      // If periodData is Clase, extract CreateClassDTO fields
+      createData = {
+        semester: periodData.semester,
+        dateBegin: periodData.dateBegin,
+        dateEnd: periodData.dateEnd,
+        courseId: courseId,
+        teacherId: periodData.teacherId,
+      };
     }
-    message.success(res.message)
-    await fetchClassesByCourse(courseId)
+    const res = await createClass(createData);
+    if (res.state == "error") {
+      message.error(res.message);
+      setCreatingPeriod(false);
+      return;
+    }
+    message.success(res.message);
+    await fetchClassesByCourse(courseId);
     setCreatingPeriod(false);
   };
 
@@ -98,7 +113,7 @@ export function CoursePeriodsPage() {
         breadcrumbs={[
           { label: "Home", href: "/" },
           { label: "Materias", href: "/courses" },
-          { label: "Cargando..." }
+          { label: "Cargando..." },
         ]}
       >
         <div style={{ textAlign: "center", padding: "50px" }}>
@@ -116,7 +131,7 @@ export function CoursePeriodsPage() {
         breadcrumbs={[
           { label: "Home", href: "/" },
           { label: "Materias", href: "/courses" },
-          { label: "Error" }
+          { label: "Error" },
         ]}
       >
         <div style={{ textAlign: "center", padding: "50px" }}>
@@ -138,7 +153,7 @@ export function CoursePeriodsPage() {
           breadcrumbs={[
             { label: "Home", href: "/" },
             { label: "Materias", href: "/courses" },
-            { label: actualCourse.name }
+            { label: actualCourse.name },
           ]}
         >
           <div
@@ -156,7 +171,7 @@ export function CoursePeriodsPage() {
                 alignItems: "center",
                 marginBottom: 24,
                 flexWrap: "wrap",
-                gap: "12px"
+                gap: "12px",
               }}
             >
               <div>
@@ -167,7 +182,7 @@ export function CoursePeriodsPage() {
                   allowClear
                   style={{
                     width: 240,
-                    borderRadius: 8
+                    borderRadius: 8,
                   }}
                 />
               </div>
@@ -178,7 +193,7 @@ export function CoursePeriodsPage() {
                   onClick={() => setModalOpen(true)}
                   style={{
                     borderRadius: 8,
-                    fontWeight: "500"
+                    fontWeight: "500",
                   }}
                 >
                   Crear Período
@@ -187,30 +202,32 @@ export function CoursePeriodsPage() {
             </div>
 
             {filteredPeriods.length > 0 ? (
-              <>{filteredPeriods.map((period) => (
-                <CustomCard
-                  status="default"
-                  style={{ marginBottom: "16px" }}
-                  onClick={() => goToPeriod(period.id)}
-                  key={period.id}
-                >
-                  <CustomCard.Header
-                    icon={<ReadOutlined />}
-                    title={period.semester}
-                  />
-                  <CustomCard.Description>
-                    {`Consulte la información de ${period.name}`}
-                  </CustomCard.Description>
-                  <CustomCard.Body>
-                    <div style={{ marginBottom: "2px" }}>
-                      Inicio: {dayjs(period.dateBegin).format("DD/MM/YYYY")}
-                    </div>
-                    <div>
-                      Fin: {dayjs(period.dateEnd).format("DD/MM/YYYY")}
-                    </div>
-                  </CustomCard.Body>
-                </CustomCard>
-              ))}</>
+              <>
+                {filteredPeriods.map((period) => (
+                  <CustomCard
+                    status="default"
+                    style={{ marginBottom: "16px" }}
+                    onClick={() => goToPeriod(period.id)}
+                    key={period.id}
+                  >
+                    <CustomCard.Header
+                      icon={<ReadOutlined />}
+                      title={period.semester}
+                    />
+                    <CustomCard.Description>
+                      {`Consulte la información de ${period.name}`}
+                    </CustomCard.Description>
+                    <CustomCard.Body>
+                      <div style={{ marginBottom: "2px" }}>
+                        Inicio: {dayjs(period.dateBegin).format("DD/MM/YYYY")}
+                      </div>
+                      <div>
+                        Fin: {dayjs(period.dateEnd).format("DD/MM/YYYY")}
+                      </div>
+                    </CustomCard.Body>
+                  </CustomCard>
+                ))}
+              </>
             ) : (
               <Empty
                 description="No hay períodos creados para esta materia"
@@ -223,7 +240,7 @@ export function CoursePeriodsPage() {
 
             {/* Modal para crear período */}
             {actualCourse && (
-              <CreatePeriodForm
+              <PeriodForm
                 open={modalOpen}
                 onClose={handleModalCancel}
                 onSubmit={handleCreatePeriod}

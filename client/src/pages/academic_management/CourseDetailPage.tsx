@@ -16,11 +16,11 @@ import {
 import useClasses from "../../hooks/useClasses";
 import useTeacher from "../../hooks/useTeacher";
 import PageTemplate from "../../components/PageTemplate";
-import { CursosForm } from "../../components/cursosForm";
+import PeriodForm from "../../components/PeriodForm";
 import { SafetyModal } from "../../components/safetyModal";
 import { SingleStudentForm } from "../../components/singleStudentForm";
 import StudentPreviewModal from "../../components/StudentPreviewModal";
-import type { Clase } from "../../interfaces/claseInterface";
+import type { Clase, CreateClassDTO } from "../../interfaces/claseInterface";
 import type {
   createEnrollmentInterface,
   EnrollGroupRow,
@@ -149,8 +149,9 @@ export function CourseDetailPage() {
     fetchStudents();
   }, [fetchStudents]);
 
-  const handleEditClass = async (values: Clase) => {
-    const data = await updateClass(values);
+  const handleEditClass = async (values: Clase | CreateClassDTO) => {
+    // If values is CreateClassDTO, you may need to convert it to Clase or handle accordingly
+    const data = await updateClass(values as Clase);
     if (data.state == "success") {
       message.success(data.message);
     } else if (data.state == "info") {
@@ -297,10 +298,6 @@ export function CourseDetailPage() {
     message.success(res.message);
     await fetchStudents();
     setSafetyModalOpen(false);
-  };
-
-  const goToExams = () => {
-    navigate(`/exams`);
   };
 
   const studentsColumns = [
@@ -802,11 +799,11 @@ export function CourseDetailPage() {
         </div>
 
         {/* Modals */}
-        <CursosForm
+        <PeriodForm
           open={editModalOpen}
           onClose={() => setEditModalOpen(false)}
           onSubmit={handleEditClass}
-          clase={actualClass}
+          course={actualCourse!}
         />
 
         <SafetyModal
