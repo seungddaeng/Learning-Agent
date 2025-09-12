@@ -294,9 +294,9 @@ export function CourseDetailPage() {
     setSafetyModalOpen(false);
   };
 
-  const goToExams = () => {
-    navigate(`/exams`);
-  };
+  // const goToExams = () => {
+  //   navigate(`/exams`)
+  // }
 
   const studentsColumns = [
     {
