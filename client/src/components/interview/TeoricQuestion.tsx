@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Checkbox, Button, Typography, theme, Card } from 'antd';
+import { Checkbox, Button, Typography, theme } from 'antd';
 import { RightOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import apiClient from '../../api/apiClient';
 import InterviewRunner from './InterviewRunner';
 
-const { Paragraph } = Typography;
+const { Paragraph, Text } = Typography;
+
+const WIDTH = 900;
+const HEIGHT = '60vh';
+const TOP_OFFSET = '5vh';
 
 interface TeoricQuestionProps {
   onNext: () => void;
@@ -44,124 +48,142 @@ export default function TeoricQuestion({ onNext }: TeoricQuestionProps) {
   return (
     <div
       style={{
-        flex: 1,
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center',
+        width: '100%',
+        height: '100%',
         padding: token.paddingLG,
         backgroundColor: token.colorBgLayout,
       }}
     >
-      <Card
-        title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: token.sizeSM }}>
-            <QuestionCircleOutlined />
-            <Typography.Text style={{ fontSize: '1.25rem', fontWeight: 500 }}>
-              Pregunta Teórica
-            </Typography.Text>
-          </div>
-        }
-        bordered={false}
+      <div
         style={{
-          width: '100%',
-          maxWidth: 600,
-          backgroundColor: token.colorBgContainer,
-          borderRadius: token.borderRadiusLG,
-          boxShadow: token.boxShadow,
-        }}
-        bodyStyle={{
+          marginTop: TOP_OFFSET,
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center',
-          padding: token.paddingLG,
+          width: WIDTH,
+          height: HEIGHT,
+          backgroundColor: token.colorBgLayout,
+          borderRadius: token.borderRadiusLG,
+          boxShadow: token.boxShadow,
+          overflow: 'hidden',
         }}
       >
         <div
           style={{
+            display: 'flex',
+            alignItems: 'center',
             padding: token.paddingMD,
-            borderRadius: token.borderRadiusLG,
+            borderBottom: `1px solid ${token.colorBorderSecondary}`,
             backgroundColor: token.colorBgContainer,
-            maxWidth: '100%',
-            marginBottom: token.marginLG,
-            textAlign: 'center',
+          }}
+        >
+          <QuestionCircleOutlined style={{ marginRight: token.marginSM, color: token.colorPrimary }} />
+          <Text style={{ fontSize: '1.25rem', fontWeight: 500, color: token.colorTextHeading }}>
+            Pregunta Teórica
+          </Text>
+        </div>
+
+        <div
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: token.paddingLG,
+            backgroundColor: token.colorBgLayout,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: token.marginLG,
           }}
         >
           <Paragraph
             style={{
               margin: 0,
-              fontWeight: 'bold',
+              fontWeight: 500,
               color: token.colorText,
               fontSize: token.fontSizeLG,
+              textAlign: 'center',
+              lineHeight: 1.4,
             }}
           >
             {mulOption.question}
           </Paragraph>
-        </div>
 
-        <Checkbox.Group
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: token.marginSM,
-            alignItems: 'center',
-            width: '100%',
-          }}
-          value={selectedValues}
-          onChange={(checked) => setSelectedValues(checked as string[])}
-        >
-          {mulOption.options.map((option, i) => {
-            const selected = selectedValues.includes(option);
-            return (
-              <Checkbox
-                key={i}
-                value={option}
-                style={{ width: '100%', maxWidth: 320 }}
-              >
-                <div
-                  style={{
-                    padding: `${token.paddingSM}px ${token.paddingLG}px`,
-                    borderRadius: token.borderRadiusLG,
-                    border: `2px solid ${selected ? token.colorPrimary : token.colorBorderSecondary}`,
-                    backgroundColor: selected ? token.colorPrimaryBg : token.colorBgContainer,
-                    textAlign: 'center',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s',
-                  }}
-                >
-                  <Paragraph
+          <Checkbox.Group
+            style={{
+              width: '100%',
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: token.marginMD,
+              justifyContent: 'center',
+            }}
+            value={selectedValues}
+            onChange={(checked) => setSelectedValues(checked as string[])}
+          >
+            {mulOption.options.map((option, i) => {
+              const selected = selectedValues.includes(option);
+              return (
+                <Checkbox key={i} value={option} style={{ margin: 0 }}>
+                  <div
                     style={{
-                      margin: 0,
-                      fontWeight: 'bold',
-                      color: token.colorText,
+                      width: 320,
+                      padding: token.paddingMD,
+                      borderRadius: token.borderRadiusLG,
+                      border: `2px solid ${selected ? token.colorPrimary : token.colorBorderSecondary}`,
+                      backgroundColor: selected ? token.colorPrimaryBg : token.colorBgContainer,
+                      boxShadow: selected
+                        ? `0 4px 12px ${token.colorPrimary}33`
+                        : token.boxShadowSecondary,
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      textAlign: 'center',
                     }}
                   >
-                    {option}
-                  </Paragraph>
-                </div>
-              </Checkbox>
-            );
-          })}
-        </Checkbox.Group>
+                    <Paragraph
+                      style={{
+                        margin: 0,
+                        fontWeight: 'bold',
+                        color: token.colorText,
+                        fontSize: token.fontSize,
+                      }}
+                    >
+                      {option}
+                    </Paragraph>
+                  </div>
+                </Checkbox>
+              );
+            })}
+          </Checkbox.Group>
+        </div>
+      </div>
 
-        {selectedValues.length > 0 && (
+      {selectedValues.length > 0 && (
+        <div
+          style={{
+            width: WIDTH,
+            display: 'flex',
+            justifyContent: 'flex-end',
+            marginTop: token.marginMD,
+            paddingRight: 0,
+          }}
+        >
           <Button
             type="primary"
             size="large"
             onClick={onNext}
             style={{
-              marginTop: token.marginLG,
               borderRadius: token.borderRadiusLG,
               height: 48,
               padding: `0 ${token.paddingLG}px`,
               fontWeight: 600,
               boxShadow: token.boxShadow,
-              backgroundColor: token.colorPrimary,
             }}
           >
             Siguiente Pregunta <RightOutlined />
           </Button>
-        )}
-      </Card>
+        </div>
+      )}
     </div>
   );
 }
