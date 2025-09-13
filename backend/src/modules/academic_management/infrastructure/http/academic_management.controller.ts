@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards, Put } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards, Put, Query } from '@nestjs/common';
 import { CreateClassUseCase } from '../../application/commands/create-class.usecase';
 import { CreateClassDto } from './dtos/create-classes.dto';
 import { ListClassesUseCase } from '../../application/queries/list-classes.usecase';
@@ -187,24 +187,27 @@ export class AcademicManagementController {
       }
     }
   }
-  @Get('/attendances/:classId/absences')
-  async getStudentAbsencesByClass(@Param('classId') id: string,@Body() dto:absencesByClassDTO) {
-    const path = academicRoute + `/attendances/${id}/absences`
+  @Get('/absences/classes/:classId')
+  async getStudentAbsencesByClassId(
+    @Param('classId') id: string,
+    @Query('teacherId') teacherId: string
+  ) {
+    const path = academicRoute + `/absences/class/${id}`
     const description = "Get all student absences for a class"
     try {
       const input = {
         classId: id,
-        teacherId: dto.teacherId,
+        teacherId: teacherId,
       }
       const absences = await this.getAbsencesByClass.execute(input);
       return responseSuccess("Sin implementar", absences, description, path)
     } catch (error) {
       if (error instanceof NotFoundError) {
-      return responseNotFound(error.message,"Sin implementar",description,path);
-    } else if (error instanceof ForbiddenError) {
-      return responseInternalServerError(error.message,"Sin implementar",description,path);
-    } else {
-      return responseInternalServerError(error.message,"Sin implementar",description,path);
+        return responseNotFound(error.message,"Sin implementar",description,path);
+      } else if (error instanceof ForbiddenError) {
+        return responseForbidden(error.message,"Sin implementar",description,path);
+      } else {
+        return responseInternalServerError(error.message,"Sin implementar",description,path);
       }
     }
   }  
