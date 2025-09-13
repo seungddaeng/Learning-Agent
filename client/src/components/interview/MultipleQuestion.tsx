@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Typography, Checkbox, Button, theme } from 'antd';
+import { Typography, Radio, Button, theme } from 'antd';
 import { RightOutlined, CodeOutlined } from '@ant-design/icons';
 import apiClient from '../../api/apiClient';
 import InterviewRunner from './InterviewRunner';
@@ -26,12 +26,12 @@ interface DoubleOptionResponse {
 
 export default function MultipleQuestion({ onNext }: MultipleQuestionProps) {
   const { token } = theme.useToken();
-  const [selectedValues, setSelectedValues] = useState<string[]>([]);
+  const [selectedValue, setSelectedValue] = useState<string>('');
   const [doubleOption, setDoubleOption] = useState<DoubleOptionResponse>();
   const [loading, setLoading] = useState(true);
 
-  const handleCheckboxChange = (values: string[]) => {
-    setSelectedValues(values);
+  const handleRadioChange = (e: any) => {
+    setSelectedValue(e.target.value);
   };
 
   useEffect(() => {
@@ -108,19 +108,19 @@ export default function MultipleQuestion({ onNext }: MultipleQuestionProps) {
           <Paragraph
             style={{
               margin: 0,
-              fontWeight: 500,
+              fontWeight: 600,
               color: token.colorText,
-              fontSize: token.fontSizeLG,
+              fontSize: token.fontSizeXL,
               textAlign: 'center',
-              lineHeight: 1.4,
+              lineHeight: 1.6,
             }}
           >
             {doubleOption.question}
           </Paragraph>
 
-          <Checkbox.Group
-            onChange={(vals) => handleCheckboxChange(vals as string[])}
-            value={selectedValues}
+          <Radio.Group
+            onChange={handleRadioChange}
+            value={selectedValue}
             style={{
               width: '100%',
               display: 'flex',
@@ -131,9 +131,9 @@ export default function MultipleQuestion({ onNext }: MultipleQuestionProps) {
             }}
           >
             {doubleOption.options.map((opt, i) => {
-              const selected = selectedValues.includes(opt.answer);
+              const selected = selectedValue === opt.answer;
               return (
-                <Checkbox key={i} value={opt.answer} style={{ margin: 0 }}>
+                <Radio key={i} value={opt.answer} style={{ margin: 0 }}>
                   <div
                     style={{
                       width: 320,
@@ -164,26 +164,29 @@ export default function MultipleQuestion({ onNext }: MultipleQuestionProps) {
                     <pre
                       style={{
                         backgroundColor: token.colorFillTertiary,
-                        padding: token.paddingSM,
+                        padding: `${token.paddingSM}px ${token.paddingMD}px`,
                         borderRadius: token.borderRadiusSM,
                         fontSize: token.fontSizeSM,
                         overflowX: 'auto',
                         margin: 0,
                         color: token.colorText,
                         lineHeight: 1.5,
+                        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word',
                       }}
                     >
                       {opt.answer}
                     </pre>
                   </div>
-                </Checkbox>
+                </Radio>
               );
             })}
-          </Checkbox.Group>
+          </Radio.Group>
         </div>
       </div>
 
-      {selectedValues.length > 0 && (
+      {selectedValue && (
         <div
           style={{
             width: WIDTH,
