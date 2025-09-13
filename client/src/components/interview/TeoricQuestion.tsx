@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Radio, Button, Typography, theme } from 'antd';
 import { RightOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import apiClient from '../../api/apiClient';
@@ -25,8 +25,11 @@ export default function TeoricQuestion({ onNext }: TeoricQuestionProps) {
   const [selectedValue, setSelectedValue] = useState<string>('');
   const [mulOption, setMulOption] = useState<MultipleSelectionResponse>();
   const [loading, setLoading] = useState(true);
+  const hasFetched = useRef(false);
 
   useEffect(() => {
+    if (hasFetched.current) return;
+    hasFetched.current = true;
     fetchQuestion();
   }, []);
 
