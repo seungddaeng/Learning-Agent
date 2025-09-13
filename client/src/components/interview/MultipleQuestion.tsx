@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Typography, Radio, Button, theme } from 'antd';
 import { RightOutlined, CodeOutlined } from '@ant-design/icons';
 import apiClient from '../../api/apiClient';
@@ -29,12 +29,15 @@ export default function MultipleQuestion({ onNext }: MultipleQuestionProps) {
   const [selectedValue, setSelectedValue] = useState<string>('');
   const [doubleOption, setDoubleOption] = useState<DoubleOptionResponse>();
   const [loading, setLoading] = useState(true);
+  const hasFetched = useRef(false);
 
   const handleRadioChange = (e: any) => {
     setSelectedValue(e.target.value);
   };
 
   useEffect(() => {
+    if (hasFetched.current) return;
+    hasFetched.current = true;
     fetchQuestion();
   }, []);
 
