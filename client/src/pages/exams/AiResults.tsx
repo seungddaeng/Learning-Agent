@@ -196,20 +196,29 @@ export default function AiResults({
               Añadir manual
             </Button>
           </div>
-          <div className="flex gap-1 justify-end">
-            <Button
-              icon={<QuestionCircleOutlined />}
-              onClick={() => setShowPromptViewer(true)}
-              aria-label="Ver Prompt"
-            />
-            <Button
+            <div className="flex gap-1 justify-end">
+              <Button
+                icon={<QuestionCircleOutlined />}
+                onClick={() => setShowPromptViewer(true)}
+                aria-label="Ver Prompt"
+              />
+              <Button
               type="primary"
               icon={<SaveOutlined />}
               loading={saveLoading}
+              disabled={loading || !!error || questions.length === 0 || selected === 0}
               onClick={handleSave}
+              aria-label="Guardar y Finalizar"
+              title={
+                loading ? 'Espera mientras se genera el examen' :
+                error ? 'Hay errores que necesitan ser corregidos' :
+                questions.length === 0 ? 'No hay preguntas generadas' :
+                selected === 0 ? 'Selecciona al menos una pregunta' :
+                'Guardar y finalizar el examen'
+              }
             >
-              Guardar y Finalizar
-            </Button>
+            Guardar y Finalizar
+          </Button>
           </div>
         </div>
 
