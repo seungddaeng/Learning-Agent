@@ -10,6 +10,8 @@ import {
   FolderOutlined,
   BookOutlined,
   BarChartOutlined,
+  UserAddOutlined,
+  CheckSquareOutlined,
 } from "@ant-design/icons";
 import useClasses from "../../hooks/useClasses";
 import useTeacher from "../../hooks/useTeacher";
@@ -32,6 +34,7 @@ import UploadButton from "../../components/shared/UploadButton";
 import { processFile } from "../../utils/enrollGroupByFile";
 import type { StudentInfo } from "../../interfaces/studentInterface";
 import CourseExamsPanel from "../courses/CourseExamsPanel";
+import AttendanceModal from "../../components/AttendanceModal";
 
 const { Text } = Typography;
 const { TabPane } = Tabs;
@@ -76,6 +79,8 @@ export function CourseDetailPage() {
   const [fileName, setFileName] = useState<string>("archivo.xlsx");
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  const [attendanceModalOpen, setAttendanceModalOpen] = useState(false);
 
   const fetchPeriod = async () => {
     if (!id) return;
@@ -294,11 +299,16 @@ export function CourseDetailPage() {
     setSafetyModalOpen(false);
   };
 
-  // const goToExams = () => {
-  //   navigate(`/exams`)
-  // }
+  const goToExams = () => {
+    navigate(`/exams`);
+  };
 
   const studentsColumns = [
+    {
+      title: "Código",
+      dataIndex: "code",
+      key: "code",
+    },
     {
       title: "Nombres",
       dataIndex: "name",
@@ -309,11 +319,7 @@ export function CourseDetailPage() {
       dataIndex: "lastname",
       key: "lastname",
     },
-    {
-      title: "Código",
-      dataIndex: "code",
-      key: "code",
-    },
+
     {
       title: "Asistencia",
       dataIndex: "asistencia",
@@ -421,7 +427,7 @@ export function CourseDetailPage() {
             icon={<DeleteOutlined />}
             onClick={handleDeletePeriod}
           >
-            Eliminar Curso
+            Eliminar Período
           </Button>
         </>
       }
@@ -466,13 +472,7 @@ export function CourseDetailPage() {
               key="general"
             >
               <div style={{ padding: "32px" }}>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "24px",
-                  }}
-                >
+                <div className="grid grid-cols-1 min-[1000px]:grid-cols-2 gap-6">
                   <div>
                     <Text strong style={{ fontSize: "14px" }}>
                       Nombre del curso:
@@ -575,13 +575,77 @@ export function CourseDetailPage() {
                       size="middle"
                     />
                     <div style={{ marginTop: 24 }}>
-                      <Button
-                        type="primary"
-                        size="large"
-                        onClick={() => setSingleStudentFormOpen(true)}
-                      >
-                        Añadir Estudiante
-                      </Button>
+                      <div className="flex gap-3">
+                        <Button
+                          type="primary"
+                          size="large"
+                          onClick={() => setSingleStudentFormOpen(true)}
+                          icon={<UserAddOutlined />}
+                        >
+                          Añadir Estudiante
+                        </Button>
+                        <UploadButton
+                          buttonConfig={{
+                            size: "large",
+                          }}
+                          onUpload={async (file, onProgress) => {
+                            const students = await processFile(
+                              file,
+                              onProgress
+                            );
+                            return students;
+                          }}
+                          fileConfig={{
+                            accept: ".csv,.xlsx,.xls",
+                            maxSize: 1 * 1024 * 1024,
+                            validationMessage:
+                              "Solo se permiten archivos .xlsx o .csv de hasta 1MB",
+                          }}
+                          processingConfig={{
+                            steps: [
+                              {
+                                key: "upload",
+                                title: "Subir archivo",
+                                description: "Subiendo archivo",
+                              },
+                              {
+                                key: "parse",
+                                title: "Parsear datos",
+                                description: "Procesando información",
+                              },
+                            ],
+                            processingText: "Procesando tabla...",
+                            successText: "Tabla procesada correctamente",
+                          }}
+                          onUploadSuccess={(students) => {
+                            if (Array.isArray(students)) {
+                              setParsedStudents(students);
+                              setFileName("archivo.xlsx");
+                              const seen = new Set<string>();
+                              const dupSet = new Set<string>();
+                              for (const s of students) {
+                                const k = String(s.codigo || "")
+                                  .trim()
+                                  .toLowerCase();
+                                if (!k) continue;
+                                if (seen.has(k)) dupSet.add(String(s.codigo));
+                                else seen.add(k);
+                              }
+                              setDuplicates(Array.from(dupSet));
+                              setPreviewModalOpen(true);
+                            }
+                          }}
+                        />
+
+                        <Button
+                          type="primary"
+                          size="large"
+                          onClick={() => setAttendanceModalOpen(true)}
+                          icon={<CheckSquareOutlined />}
+                        >
+                          Tomar asistencia
+                        </Button>
+                      </div>
                     </div>
                   </>
                 ) : (
@@ -695,7 +759,7 @@ export function CourseDetailPage() {
               }
               key="exams"
             >
-              <div style={{ padding: '32px' }}>
+              <div style={{ padding: "32px" }}>
                 {courseId && <CourseExamsPanel courseId={courseId} />}
               </div>
             </TabPane>
@@ -773,6 +837,12 @@ export function CourseDetailPage() {
           loading={sending}
           onCancel={() => setPreviewModalOpen(false)}
           onConfirm={handleGroupEnrollment}
+        />
+
+        <AttendanceModal
+          open={attendanceModalOpen}
+          onClose={() => setAttendanceModalOpen(false)}
+          students={students ? students : []}
         />
       </div>
     </PageTemplate>
