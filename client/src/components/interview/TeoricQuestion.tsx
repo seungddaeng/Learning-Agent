@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Checkbox, Button, Typography, theme } from 'antd';
+import { Radio, Button, Typography, theme } from 'antd';
 import { RightOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import apiClient from '../../api/apiClient';
 import InterviewRunner from './InterviewRunner';
@@ -22,7 +22,7 @@ interface MultipleSelectionResponse {
 
 export default function TeoricQuestion({ onNext }: TeoricQuestionProps) {
   const { token } = theme.useToken();
-  const [selectedValues, setSelectedValues] = useState<string[]>([]);
+  const [selectedValue, setSelectedValue] = useState<string>('');
   const [mulOption, setMulOption] = useState<MultipleSelectionResponse>();
   const [loading, setLoading] = useState(true);
 
@@ -100,17 +100,17 @@ export default function TeoricQuestion({ onNext }: TeoricQuestionProps) {
           <Paragraph
             style={{
               margin: 0,
-              fontWeight: 500,
+              fontWeight: 600,
               color: token.colorText,
-              fontSize: token.fontSizeLG,
+              fontSize: token.fontSizeXL,
               textAlign: 'center',
-              lineHeight: 1.4,
+              lineHeight: 1.6,
             }}
           >
             {mulOption.question}
           </Paragraph>
 
-          <Checkbox.Group
+          <Radio.Group
             style={{
               width: '100%',
               display: 'flex',
@@ -118,20 +118,20 @@ export default function TeoricQuestion({ onNext }: TeoricQuestionProps) {
               gap: token.marginMD,
               justifyContent: 'center',
             }}
-            value={selectedValues}
-            onChange={(checked) => setSelectedValues(checked as string[])}
+            value={selectedValue}
+            onChange={(e) => setSelectedValue(e.target.value)}
           >
             {mulOption.options.map((option, i) => {
-              const selected = selectedValues.includes(option);
+              const selected = selectedValue === option;
               return (
-                <Checkbox key={i} value={option} style={{ margin: 0 }}>
+                <Radio key={i} value={option} style={{ margin: 0 }}>
                   <div
                     style={{
                       width: 320,
                       padding: token.paddingMD,
                       borderRadius: token.borderRadiusLG,
                       border: `2px solid ${selected ? token.colorPrimary : token.colorBorderSecondary}`,
-                      backgroundColor: selected ? token.colorPrimaryBg : token.colorBgContainer,
+                      backgroundColor: token.colorBgContainer,
                       boxShadow: selected
                         ? `0 4px 12px ${token.colorPrimary}33`
                         : token.boxShadowSecondary,
@@ -151,14 +151,14 @@ export default function TeoricQuestion({ onNext }: TeoricQuestionProps) {
                       {option}
                     </Paragraph>
                   </div>
-                </Checkbox>
+                </Radio>
               );
             })}
-          </Checkbox.Group>
+          </Radio.Group>
         </div>
       </div>
 
-      {selectedValues.length > 0 && (
+      {selectedValue && (
         <div
           style={{
             width: WIDTH,
