@@ -1,4 +1,5 @@
 import { Card, Typography, theme, Alert, Button } from "antd";
+import { useRef } from "react";
 
 const { Title } = Typography;
 
@@ -9,13 +10,16 @@ interface TrueOrFalseQuestionProps {
 
 export default function TrueOrFalseQuestion({ onNext, question = "" }: TrueOrFalseQuestionProps) {
   const { token } = theme.useToken();
+  const hasSelected = useRef(false);
 
   const handleSelect = (_value: boolean) => {
-    if (onNext) {
-      setTimeout(() => onNext(), 300);
-    } else {
-      setTimeout(() => window.location.reload(), 300);
-    }
+    if (hasSelected.current) return;
+    hasSelected.current = true;
+    setTimeout(() => {
+      if (onNext) {
+        onNext();
+      }
+    }, 300);
   };
 
   if (!question) {
@@ -45,7 +49,6 @@ export default function TrueOrFalseQuestion({ onNext, question = "" }: TrueOrFal
             Pregunta no disponible
           </Title>
         </Card>
-
         <Alert
           message="No se encontró la pregunta"
           description={
@@ -56,9 +59,8 @@ export default function TrueOrFalseQuestion({ onNext, question = "" }: TrueOrFal
           type="info"
           showIcon
         />
-
         <div style={{ marginTop: 8 }}>
-          <Button onClick={() => (onNext ? onNext() : window.location.reload())}>Recargar</Button>
+          <Button onClick={() => onNext && onNext()}>Recargar</Button>
         </div>
       </div>
     );
@@ -90,7 +92,6 @@ export default function TrueOrFalseQuestion({ onNext, question = "" }: TrueOrFal
           {question}
         </Title>
       </Card>
-
       <div
         style={{
           display: "grid",
@@ -126,7 +127,6 @@ export default function TrueOrFalseQuestion({ onNext, question = "" }: TrueOrFal
         >
           Verdadero
         </div>
-
         <div
           onClick={() => handleSelect(false)}
           style={{
