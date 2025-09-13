@@ -1,10 +1,15 @@
-import { useEffect, useState } from 'react';
-import { Typography, Button, Card, theme, Radio } from 'antd';
+import { useEffect, useState, useRef } from 'react';
+import { Typography, Radio, Button, theme } from 'antd';
 import { RightOutlined, CodeOutlined } from '@ant-design/icons';
 import apiClient from '../../api/apiClient';
+import InterviewRunner from './InterviewRunner';
 import type { DoubleOptionResponse } from '../../interfaces/interviewInt';
 
-const { Paragraph } = Typography;
+const { Paragraph, Text } = Typography;
+
+const WIDTH = 900;
+const HEIGHT = '60vh';
+const TOP_OFFSET = '5vh';
 
 interface MultipleQuestionProps {
   onNext: () => void;
@@ -22,157 +27,190 @@ export default function MultipleQuestion({ onNext, selectedValues, setSelectedVa
     console.log(selectedValues);
     onNext();
   }
+  const [loading, setLoading] = useState(true);
+  const hasFetched = useRef(false);
+
 
   useEffect(() => {
+    if (hasFetched.current) return;
+    hasFetched.current = true;
     fetchQuestion();
   }, [selectedValues]);
   async function fetchQuestion() {
      try {
       setDoubleOption(undefined);
       const response = await apiClient.get("/chatint/doubleOption?topico=programacion");
-      const obj = await response.data as DoubleOptionResponse;
-      console.log(obj);
+      const obj = response.data as DoubleOptionResponse;
       setDoubleOption(obj);
     } catch (error) {
       console.error("Failed to fetch clases", error);
-      throw error;
+    } finally {
+      setLoading(false);
     }
   }
+
+  if (loading) return <InterviewRunner loading={true} />;
+  if (!doubleOption) return null;
 
   return (
     <div
       style={{
-        flex: 1,
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center',
+        width: '100%',
+        height: '100%',
         padding: token.paddingLG,
         backgroundColor: token.colorBgLayout,
       }}
     >
-      <Card
-        title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: token.sizeSM }}>
-            <CodeOutlined />
-            <Typography.Text style={{ fontSize: '1.25rem', fontWeight: 500 }}>
-              Pregunta de Complejidad
-            </Typography.Text>
-          </div>
-        }
-        bordered={false}
+      <div
         style={{
-          width: '100%',
-          maxWidth: 800,
-          backgroundColor: token.colorBgContainer,
-          borderRadius: token.borderRadiusLG,
-          boxShadow: token.boxShadow,
-        }}
-        bodyStyle={{
+          marginTop: TOP_OFFSET,
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center',
-          padding: token.paddingLG,
+          width: WIDTH,
+          height: HEIGHT,
+          backgroundColor: token.colorBgLayout,
+          borderRadius: token.borderRadiusLG,
+          boxShadow: token.boxShadow,
+          overflow: 'hidden',
         }}
       >
         <div
           style={{
+            display: 'flex',
+            alignItems: 'center',
             padding: token.paddingMD,
-            borderRadius: token.borderRadiusLG,
+            borderBottom: `1px solid ${token.colorBorderSecondary}`,
             backgroundColor: token.colorBgContainer,
-            maxWidth: '100%',
-            marginBottom: token.marginLG,
-            textAlign: 'center',
+          }}
+        >
+          <CodeOutlined style={{ marginRight: token.marginSM, color: token.colorPrimary }} />
+          <Text style={{ fontSize: '1.25rem', fontWeight: 500, color: token.colorTextHeading }}>
+            Pregunta de Complejidad
+          </Text>
+        </div>
+
+        <div
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: token.paddingLG,
+            backgroundColor: token.colorBgLayout,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: token.marginLG,
           }}
         >
           <Paragraph
             style={{
               margin: 0,
-              fontWeight: 'bold',
+              fontWeight: 600,
               color: token.colorText,
-              fontSize: token.fontSizeLG,
+              fontSize: token.fontSizeXL,
+              textAlign: 'center',
+              lineHeight: 1.6,
             }}
           >
-            {doubleOption?.question}
+            {doubleOption.question}
           </Paragraph>
+
+          <Radio.Group
+            onChange={(e) => setDoubleOption(old => old !=undefined? {...old,givenAnswer:e.target.value}:undefined)}
+            style={{
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              gap: token.marginMD,
+              justifyContent: 'center',
+            }}
+          >
+            {doubleOption.options.map((opt, i) => {
+              const selected = doubleOption.givenAnswer === i;
+              return (
+                <Radio key={i} value={opt.answer} style={{ margin: 0 }}>
+                  <div
+                    style={{
+                      width: 320,
+                      padding: token.paddingMD,
+                      borderRadius: token.borderRadiusLG,
+                      border: `2px solid ${selected ? token.colorPrimary : token.colorBorderSecondary}`,
+                      backgroundColor: token.colorBgContainer,
+                      boxShadow: selected
+                        ? `0 4px 12px ${token.colorPrimary}33`
+                        : token.boxShadowSecondary,
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: token.marginSM,
+                    }}
+                  >
+                    <Paragraph
+                      style={{
+                        margin: 0,
+                        fontWeight: 'bold',
+                        color: token.colorText,
+                        fontSize: token.fontSize,
+                      }}
+                    >
+                      {opt.label}
+                    </Paragraph>
+                    <pre
+                      style={{
+                        backgroundColor: token.colorFillTertiary,
+                        padding: `${token.paddingSM}px ${token.paddingMD}px`,
+                        borderRadius: token.borderRadiusSM,
+                        fontSize: token.fontSizeSM,
+                        overflowX: 'auto',
+                        margin: 0,
+                        color: token.colorText,
+                        lineHeight: 1.5,
+                        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word',
+                      }}
+                    >
+                      {opt.answer}
+                    </pre>
+                  </div>
+                </Radio>
+              );
+            })}
+          </Radio.Group>
         </div>
+      </div>
 
-        <Radio.Group
+      {doubleOption.givenAnswer != undefined && (
+        <div
           style={{
-            width: '100%',
+            width: WIDTH,
             display: 'flex',
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            gap: token.marginMD,
-            justifyContent: 'center',
+            justifyContent: 'flex-end',
+            marginTop: token.marginMD,
+            paddingRight: 0,
           }}
-          onChange={
-            (e) => {setDoubleOption(double => double != undefined?{...double,givenAnswer:e.target.value}:undefined)}
-          }
         >
-          {doubleOption?.options.map((opt, i) => {
-            return (
-              <Radio key={i} value={i} style={{ margin: 0 }}>
-                <div
-                  style={{
-                    width: 320,
-                    padding: token.paddingMD,
-                    borderRadius: token.borderRadiusLG,
-                    border: `2px solid ${doubleOption?.givenAnswer == i ? token.colorPrimary : token.colorBorderSecondary}`,
-                    backgroundColor: doubleOption?.givenAnswer == i ? token.colorPrimaryBg : token.colorBgContainer,
-                    boxShadow: doubleOption?.givenAnswer == i
-                      ? `0 4px 12px ${token.colorPrimary}33`
-                      : '0 2px 5px rgba(0,0,0,0.05)',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s',
-                  }}
-                >
-                  <Paragraph
-                    style={{
-                      margin: 0,
-                      fontWeight: 'bold',
-                      color: token.colorText,
-                      marginBottom: token.marginSM,
-                    }}
-                  >
-                    {opt.label}
-                  </Paragraph>
-                  <pre
-                    style={{
-                      backgroundColor: token.colorFillTertiary,
-                      padding: token.paddingSM,
-                      borderRadius: token.borderRadiusSM,
-                      fontSize: token.fontSizeSM,
-                      overflowX: 'auto',
-                      margin: 0,
-                      color: token.colorText,
-                    }}
-                  >
-                    {opt.answer}
-                  </pre>
-                </div>
-              </Radio>
-            );
-          })}
-        </Radio.Group>
-
-        {doubleOption?.givenAnswer !=undefined && (
           <Button
             type="primary"
             size="large"
             onClick={onClick}
             style={{
-              marginTop: token.marginLG,
               borderRadius: token.borderRadiusLG,
               height: 48,
               padding: `0 ${token.paddingLG}px`,
               fontWeight: 600,
               boxShadow: token.boxShadow,
+              marginRight: 0,
             }}
           >
             Siguiente Pregunta <RightOutlined />
           </Button>
-        )}
-      </Card>
+        </div>
+      )}
     </div>
   );
 }
