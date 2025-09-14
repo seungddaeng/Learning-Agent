@@ -12,9 +12,11 @@ export default function TrueOrFalseQuestion({ onNext, question = "" }: TrueOrFal
 
   const handleSelect = (_value: boolean) => {
     if (onNext) {
-      setTimeout(() => onNext(), 300);
+
+      onNext();
     } else {
-      setTimeout(() => window.location.reload(), 300);
+      window.location.reload();
+
     }
   };
 
@@ -115,14 +117,6 @@ export default function TrueOrFalseQuestion({ onNext, question = "" }: TrueOrFal
             boxShadow: token.boxShadow,
             userSelect: "none",
           }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLDivElement).style.transform = "scale(1.03)";
-            (e.currentTarget as HTMLDivElement).style.boxShadow = token.boxShadowSecondary;
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLDivElement).style.transform = "scale(1)";
-            (e.currentTarget as HTMLDivElement).style.boxShadow = token.boxShadow;
-          }}
         >
           Verdadero
         </div>
@@ -141,14 +135,6 @@ export default function TrueOrFalseQuestion({ onNext, question = "" }: TrueOrFal
             transition: "transform 0.15s ease, box-shadow 0.15s ease",
             boxShadow: token.boxShadow,
             userSelect: "none",
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLDivElement).style.transform = "scale(1.03)";
-            (e.currentTarget as HTMLDivElement).style.boxShadow = token.boxShadowSecondary;
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLDivElement).style.transform = "scale(1)";
-            (e.currentTarget as HTMLDivElement).style.boxShadow = token.boxShadow;
           }}
         >
           Falso
