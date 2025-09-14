@@ -305,70 +305,111 @@ enum ChunkType {
  * ===========================
  */
 
-model Exam {
-  id             String   @id @default(uuid())
-  subject        String
-  difficulty     String
-  attempts       Int
-  totalQuestions Int
-  timeMinutes    Int
-  reference      String?  @db.Text
-
-  // distribución por tipo
-  mcqCount          Int   @default(0) // opción múltiple
-  trueFalseCount    Int   @default(0) // verdadero/falso
-  openAnalysisCount Int   @default(0) // abiertas: análisis
-  openExerciseCount Int   @default(0) // abiertas: ejercicio
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  questions       ExamQuestion[]
-
-  title           String      @default("Examen")
-  status          ExamStorageStatus @default(Guardado)
-
-  // relacion 1:N 
-  classId         String
-  class           Classes @relation("ClassExams", fields: [classId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-
-  @@index([subject])
-  @@index([classId, createdAt])
-}
-
-// === Preguntas de Examen ===
+// ---------- Enums ----------
 enum QuestionKind {
   MULTIPLE_CHOICE
   TRUE_FALSE
   OPEN_ANALYSIS
   OPEN_EXERCISE
 }
-// Estado de publicación del examen guardado
+
 enum ExamStorageStatus {
   Guardado
   Publicado
 }
 
+model Exam {
+  id             String            @id @default(uuid())
+  title          String            @default("Examen")
+  difficulty     String
+  attempts       Int
+  timeMinutes    Int
+  reference      String?           @db.Text
+  status         ExamStorageStatus @default(Guardado)
+
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  // relation 1:N (Classes → Exams)
+  classId        String
+  class          Classes           @relation("ClassExams", fields: [classId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  // questions
+  questions      ExamQuestion[]
+
+  @@index([classId, createdAt])
+  @@index([title])
+  @@index([difficulty])
+}
+
 model ExamQuestion {
-  id                 String       @id @default(cuid())
-  examId             String
-  exam               Exam         @relation(fields: [examId], references: [id], onDelete: Cascade)
+  id        String       @id @default(cuid())
+  examId    String
+  exam      Exam         @relation(fields: [examId], references: [id], onDelete: Cascade)
 
-  kind               QuestionKind
-  text               String
+  kind      QuestionKind
+  text      String
+  order     Int
 
-  // Campos específicos por tipo
-  options            Json?        // MCQ
-  correctOptionIndex Int?         // MCQ
-  correctBoolean     Boolean?     // TRUE_FALSE
-  expectedAnswer     String?      // OPEN_*
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 
-  order              Int
+  mcq        MCQ?
+  trueFalse  TrueFalse?
+  openAnalysis  OpenAnalysis?
+  openExercise  OpenExercise?
 
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
-
-  @@unique([examId, order])       // no dos preguntas con el mismo orden en un examen
+  @@unique([examId, order])
   @@index([examId, order])
 }
+
+// ---------- Subtypes (1:1 with ExamQuestion) ----------
+model MCQ {
+  questionId         String     @id
+  question           ExamQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  correctOptionIndex Int
+
+  // options (1:N)
+  options            MCQOption[]
+
+  @@index([correctOptionIndex])
+}
+
+model MCQOption {
+  id     String @id @default(cuid())
+  mcqId  String
+  mcq    MCQ    @relation(fields: [mcqId], references: [questionId], onDelete: Cascade)
+
+  // display order and text
+  idx    Int
+  text   String
+
+  @@unique([mcqId, idx])
+  @@index([mcqId])
+}
+
+model TrueFalse {
+  questionId String       @id
+  question   ExamQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  answer     Boolean
+}
+
+model OpenAnalysis {
+  questionId     String       @id
+  question       ExamQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  expectedAnswer String
+}
+
+model OpenExercise {
+  questionId     String       @id
+  question       ExamQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  expectedAnswer String
+}
+
 
 /* ===========================
    Academic Management (classes and enrollment)
