@@ -46,7 +46,7 @@ pipeline {
                         echo "Running new container..."
                         docker run -d \
                             --name learning-agent-backend \
-                            --env-file backend/.env \
+                            --env-file .env \
                             -p 3000:3000 \
                             --restart unless-stopped \
                             $DOCKER_IMAGE:$DOCKER_TAG
