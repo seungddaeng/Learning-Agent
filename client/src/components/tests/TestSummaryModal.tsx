@@ -25,10 +25,15 @@ export default function TestSummaryModal({
     () => (questionCount > 0 ? Math.round((correctAnswers / questionCount) * 100) : 0),
     [correctAnswers, questionCount]
   );
-  const formattedTime = useMemo(
-    () => (timeTaken ? new Date(timeTaken).toISOString().substring(14, 19) : "00:00"),
-    [timeTaken]
-  );
+
+  const formattedTime = useMemo(() => {
+    if (!timeTaken || timeTaken <= 0) return "00:00";
+    const totalSeconds = Math.floor(timeTaken / 1000);
+    const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+    const seconds = String(totalSeconds % 60).padStart(2, "0");
+    return `${minutes}:${seconds}`;
+  }, [timeTaken]);
+
   const results = useMemo(
     () =>
       answers.map((correct, index) => ({
@@ -65,9 +70,9 @@ export default function TestSummaryModal({
           <Col xs={24} md={16}>
             <div
               style={{
-                maxHeight: 250, 
+                maxHeight: 250,
                 overflowY: "auto",
-                paddingRight: 4, 
+                paddingRight: 4,
               }}
             >
               <List
@@ -109,3 +114,4 @@ export default function TestSummaryModal({
     </CustomModal>
   );
 }
+
