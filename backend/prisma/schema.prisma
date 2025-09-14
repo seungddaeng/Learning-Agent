@@ -445,7 +445,6 @@ model Enrollment {
    model QuizQuestion {
     id         String   @id @default(uuid())
     classId    String
-    signature  String   @unique
     text       String   @db.Text
     type       String
     options    Json?
@@ -463,7 +462,6 @@ model Enrollment {
   model InterviewQuestion {
     id         String   @id @default(uuid())
     classId    String
-    signature  String   @unique
     text       String   @db.Text
     createdAt  DateTime @default(now())
     lastUsedAt DateTime?
