@@ -10,6 +10,7 @@ import MultipleQuestion from '../../components/interview/MultipleQuestion';
 import { useThemeStore } from '../../store/themeStore';
 import InterviewFeedbackModal from '../../components/interview/InterviewFeedbackModal';
 import type { DoubleOptionResponse, MultipleSelectionResponse } from '../../interfaces/interviewInt';
+import { usePdfGenerator } from '../../hooks/usePdfGenerator';
 
 const InterviewChat: React.FC = () => {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ const InterviewChat: React.FC = () => {
    const [selectedValues, setSelectedValues] = useState<DoubleOptionResponse[]>([]);
    const [mulSelectedValues, setMulSelectedValues] = useState<MultipleSelectionResponse[]>([]);
   const [showFeedback, setShowFeedback] = useState(false);
+  const { generatePDF } = usePdfGenerator();
 
   const handleConfirmFinish = () => {
     if (confirmFinish()) {
@@ -26,8 +28,15 @@ const InterviewChat: React.FC = () => {
     }
   };
 
-  const handleDownloadFeedback = () => {
-    console.log("Descargando feedback...");
+  const handleDownloadFeedback = async () => {
+    try {
+      console.log("Descargando feedback...");
+      // Combinar ambos tipos de datos
+      const allData = [...mulSelectedValues, ...selectedValues];
+      await generatePDF(allData);
+    } catch (error) {
+      console.error('Error al descargar el PDF:', error);
+    }
   };
 
   const renderQuestion = () => {
@@ -81,6 +90,8 @@ const InterviewChat: React.FC = () => {
         open={showFeedback}
         onClose={() => setShowFeedback(false)}
         onDownload={handleDownloadFeedback}
+        multipleSelectionData={mulSelectedValues} // Tus preguntas teóricas
+        doubleOptionData={selectedValues}
       />
     </>
   );

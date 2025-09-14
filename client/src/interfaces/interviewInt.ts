@@ -8,6 +8,7 @@ export interface DoubleOptionResponse {
   correctAnswer: number;
   givenAnswer?: number;
   explanation: string;
+  type: 'doubleOption';
 }
 export interface MultipleSelectionResponse {
   question: string;
@@ -15,4 +16,7 @@ export interface MultipleSelectionResponse {
   correctAnswer: number;
   explanation: string;
   givenAnswer?: number;
+  type: 'multipleSelection';
 }
+
+export type InterviewQuestion = MultipleSelectionResponse | DoubleOptionResponse;

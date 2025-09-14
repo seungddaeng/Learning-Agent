@@ -119,6 +119,7 @@ export default function MultipleQuestion({ onNext, selectedValues, setSelectedVa
 
           <Radio.Group
             onChange={(e) => setDoubleOption(old => old !=undefined? {...old,givenAnswer:e.target.value}:undefined)}
+            value={doubleOption?.givenAnswer}
             style={{
               width: '100%',
               display: 'flex',
@@ -131,7 +132,7 @@ export default function MultipleQuestion({ onNext, selectedValues, setSelectedVa
             {doubleOption.options.map((opt, i) => {
               const selected = doubleOption.givenAnswer === i;
               return (
-                <Radio key={i} value={opt.answer} style={{ margin: 0 }}>
+                <Radio key={i} value={i} style={{ margin: 0 }}>
                   <div
                     style={{
                       width: 320,
