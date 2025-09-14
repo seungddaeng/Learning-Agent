@@ -12,9 +12,11 @@ export default function TrueOrFalseQuestion({ onNext, question = "" }: TrueOrFal
 
   const handleSelect = (_value: boolean) => {
     if (onNext) {
+
       onNext();
     } else {
       window.location.reload();
+
     }
   };
 

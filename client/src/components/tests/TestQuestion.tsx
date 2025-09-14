@@ -2,14 +2,18 @@ import { Card, Typography, theme, Alert, Button } from "antd";
 
 const { Title } = Typography;
 
+
+
+
 interface TestQuestionProps {
   onNext?: () => void;
   question?: string;
-  options?: string[];
+  options?: string[]; 
 }
 
 export default function TestQuestion({ onNext, question = "", options }: TestQuestionProps) {
   const { token } = theme.useToken();
+
   const safeOptions = Array.isArray(options) ? options : [];
 
   const handleSelect = (_value: string) => {
@@ -52,8 +56,10 @@ export default function TestQuestion({ onNext, question = "", options }: TestQue
           message="No hay opciones disponibles"
           description={
             <div>
+
               Esta vista espera recibir <code>options</code> desde el backend. Usa{" "}
               <strong>TestRunner</strong> para obtener preguntas generadas.
+
             </div>
           }
           type="info"
@@ -98,8 +104,12 @@ export default function TestQuestion({ onNext, question = "", options }: TestQue
           boxShadow: token.boxShadow,
         }}
       >
+
+
         <Title level={3} style={{ margin: 0, color: token.colorTextHeading }}>
           {question}
+
+
         </Title>
       </Card>
 
@@ -112,6 +122,8 @@ export default function TestQuestion({ onNext, question = "", options }: TestQue
           maxWidth: 800,
         }}
       >
+
+
         {safeOptions.map((label, index) => (
           <div
             key={index}
@@ -129,8 +141,13 @@ export default function TestQuestion({ onNext, question = "", options }: TestQue
               boxShadow: token.boxShadow,
               userSelect: "none",
             }}
+
           >
+
+
             {label}
+
+
           </div>
         ))}
       </div>
