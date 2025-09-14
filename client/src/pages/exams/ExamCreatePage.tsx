@@ -72,10 +72,12 @@ export default function ExamsCreatePage() {
   const updateExam = useExamsStore(state => state.updateExam);
   const addFromQuestions = useExamsStore(state => state.addFromQuestions);
 
-  const [aiOpen, setAiOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(!!editData);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
-  const [aiQuestions, setAiQuestions] = useState<GeneratedQuestion[]>([]);
+  const [aiQuestions, setAiQuestions] = useState<GeneratedQuestion[]>(
+    (editData?.questions || []).map((q: GeneratedQuestion) => ({...q, include: true}))
+  );
   const [aiMeta, setAiMeta] = useState<{ subject: string; difficulty: string; reference?: string }>({
     subject: editData?.subject || 'Tema general',
     difficulty: editData?.difficulty || 'medio',
@@ -212,6 +214,7 @@ export default function ExamsCreatePage() {
   };
 
   const onSave = async () => {
+    // Validación inicial
     if (!classId) {
       pushToast('Abre el creador desde la materia (Crear examen) para asociarlo.', 'error');
       return;
@@ -223,9 +226,10 @@ export default function ExamsCreatePage() {
       return;
     }
 
+    // Preparar las preguntas
     const ts = Date.now();
     const used = new Set<string>();
-    const questions = selected.map((q, i) => {
+    const questions: GeneratedQuestion[] = selected.map((q, i) => {
       const baseId = q.id || `q_${ts}_${q.type}_${i}`;
       let id = baseId;
       while (used.has(id)) id = `${id}_${Math.random().toString(36).slice(2,6)}`;
@@ -241,6 +245,7 @@ export default function ExamsCreatePage() {
 
     const data = {
       title: aiMeta.subject || 'Examen',
+      className: classId,
       questions,
       publish: false,
       id: editData?.id 
@@ -325,6 +330,7 @@ export default function ExamsCreatePage() {
               ref={formRef}
               onToast={pushToast}
               onGenerateAI={handleAIPropose}
+              initialData={editData}
             />
           </div>
         </section>

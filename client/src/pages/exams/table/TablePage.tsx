@@ -39,7 +39,6 @@ export default function TablePage() {
 
         <ExamTable
           data={exams}
-          onEdit={() => navigate('/exam-table')}
         />
       </div>
     </div>
