@@ -5,9 +5,13 @@ import TestModal from "../../components/tests/TestModal";
 import TestRunner from "../../components/tests/TestRunner";
 import TestSummaryModal from "../../components/tests/TestSummaryModal";
 import { useStudentTest } from "../../hooks/useStudentTest";
+import TimerDisplay from "../../components/tests/Timer";
 
 export default function Test() {
   const navigate = useNavigate();
+  const [isExamStarted, setIsExamStarted] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
+
   const {
     isTestModalOpen,
     closeTestModal,
@@ -18,11 +22,11 @@ export default function Test() {
     startTime,
     endTime,
     nextQuestion,
-    recordAnswer
-  } = useStudentTest();
-
-  const [isExamStarted, setIsExamStarted] = useState(false);
-  const [showSummary, setShowSummary] = useState(false);
+    recordAnswer,
+    timeLeft,
+    totalTime,
+    finishExam
+  } = useStudentTest(() => setShowSummary(true));
 
   const handleStartExam = (count: number) => {
     startExam(count);
@@ -34,7 +38,7 @@ export default function Test() {
     if (currentQuestion < questionCount) {
       nextQuestion();
     } else {
-      setShowSummary(true);
+      finishExam();
     }
   };
 
@@ -65,13 +69,14 @@ export default function Test() {
           onSelectDifficulty={handleStartExam}
         />
       )}
-
       {isExamStarted && (
-        <div style={{ width: "100%", minHeight: 300 }}>
-          <TestRunner onAnswered={handleNextQuestion} />
-        </div>
+        <>
+          <TimerDisplay timeLeft={timeLeft} totalTime={totalTime} />
+          <div style={{ width: "100%", minHeight: 300 }}>
+            <TestRunner onAnswered={handleNextQuestion} />
+          </div>
+        </>
       )}
-
       {showSummary && (
         <TestSummaryModal
           open={showSummary}
