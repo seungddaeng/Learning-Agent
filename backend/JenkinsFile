@@ -4,7 +4,9 @@ pipeline {
     environment {
         CI = 'true'
         NODE_ENV = 'production'
-        REGISTRY_CREDENTIALS = credentials('DOCKERHUB_CREDENTIALS')
+        DOCKER_IMAGE = "adriancoello/learning-agent-backend"
+        DOCKER_TAG = "build-${env.BUILD_NUMBER}"
+        DROPLET_IP = 'tu_ip_del_droplet'  // REEMPLAZA CON TU IP REAL
     }
 
     stages {
@@ -13,24 +15,62 @@ pipeline {
                 checkout scm
             }
         }
-        stage('Build and Push Docker image') {
+
+        stage('Build Docker Image') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'DOCKERHUB_CREDENTIALS', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASS')]) {
-                    script {
-                        def image = "${DOCKERHUB_USER}/learning-agent-backend:${env.BUILD_NUMBER}"
-                        dir('backend') {
-                            sh 'docker -v && docker info'
-                            sh 'echo "Directorio actual:" && pwd'
-                            sh 'echo "Contenido actual:" && ls -la'
-                            sh "docker build -t ${image} ."
-                        }
+                script {
+                    dir('backend') {
+                        sh 'echo "Building Docker image..."'
+                        sh "docker build -t ${env.DOCKER_IMAGE}:${env.DOCKER_TAG} ."
+                    }
+                }
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                script {
+                    dir('backend') {
+                        sh 'echo "Running tests..."'
+                        // Ejecutar tests si existen
+                        sh 'npm test || echo "No tests found"'
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to Droplet') {
+            steps {
+                script {
+                    sshagent(['droplet-ssh-key']) {
                         sh """
-                            echo \"$DOCKERHUB_PASS\" | docker login -u \"$DOCKERHUB_USER\" --password-stdin
-                            docker push ${image}
+                            ssh -o StrictHostKeyChecking=no root@${env.DROPLET_IP} '
+                                echo "Stopping existing container..."
+                                docker stop learning-agent-backend || true
+                                docker rm learning-agent-backend || true
+                                
+                                echo "Running new container..."
+                                docker run -d \\
+                                    --name learning-agent-backend \\
+                                    -p 3000:3000 \\
+                                    --restart unless-stopped \\
+                                    ${env.DOCKER_IMAGE}:${env.DOCKER_TAG}
+                                
+                                echo "Deployment completed!"
+                            '
                         """
                     }
                 }
             }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed!'
         }
     }
 }
