@@ -5,8 +5,7 @@ pipeline {
         CI = 'true'
         NODE_ENV = 'production'
         DOCKER_IMAGE = "adriancoello/learning-agent-backend"
-        DOCKER_TAG = "build-${env.BUILD_NUMBER}"
-        DROPLET_IP = 'tu_ip_del_droplet'  // REEMPLAZA CON TU IP REAL
+        DOCKER_TAG = "build-${BUILD_NUMBER}"
     }
 
     stages {
@@ -21,7 +20,7 @@ pipeline {
                 script {
                     dir('backend') {
                         sh 'echo "Building Docker image..."'
-                        sh "docker build -t ${env.DOCKER_IMAGE}:${env.DOCKER_TAG} ."
+                        sh "docker build -t $DOCKER_IMAGE:$DOCKER_TAG ."
                     }
                 }
             }
@@ -30,36 +29,30 @@ pipeline {
         stage('Run Tests') {
             steps {
                 script {
-                    dir('backend') {
-                        sh 'echo "Running tests..."'
-                        // Ejecutar tests si existen
-                        sh 'npm test || echo "No tests found"'
-                    }
+                    sh 'echo "Running tests inside Docker..."'
+                    sh "docker run --rm $DOCKER_IMAGE:$DOCKER_TAG npm test || echo 'No tests found'"
                 }
             }
         }
 
-        stage('Deploy to Droplet') {
+        stage('Deploy Locally') {
             steps {
                 script {
-                    sshagent(['droplet-ssh-key']) {
-                        sh """
-                            ssh -o StrictHostKeyChecking=no root@${env.DROPLET_IP} '
-                                echo "Stopping existing container..."
-                                docker stop learning-agent-backend || true
-                                docker rm learning-agent-backend || true
-                                
-                                echo "Running new container..."
-                                docker run -d \\
-                                    --name learning-agent-backend \\
-                                    -p 3000:3000 \\
-                                    --restart unless-stopped \\
-                                    ${env.DOCKER_IMAGE}:${env.DOCKER_TAG}
-                                
-                                echo "Deployment completed!"
-                            '
-                        """
-                    }
+                    sh '''
+                        echo "Stopping existing container..."
+                        docker stop learning-agent-backend || true
+                        docker rm learning-agent-backend || true
+
+                        echo "Running new container..."
+                        docker run -d \
+                            --name learning-agent-backend \
+                            --env-file backend/.env \
+                            -p 3000:3000 \
+                            --restart unless-stopped \
+                            $DOCKER_IMAGE:$DOCKER_TAG
+
+                        echo "Deployment completed!"
+                    '''
                 }
             }
         }
