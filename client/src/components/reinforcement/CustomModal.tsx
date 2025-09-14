@@ -1,23 +1,14 @@
 import React from "react";
-import { Modal, Card, Row, Col, Space, Typography, Button } from "antd";
+import { Modal, Row, Col, Space, Typography, theme } from "antd";
 import type { ReactNode, CSSProperties } from "react";
 
 const { Title, Text } = Typography;
-
-const PALETTE = {
-  primary: "#1A2A80",
-  secondary: "#3B38A0",
-  lightBlue: "#7A85C1",
-  veryLightBlue: "#B2B0E8",
-  success: "#52c41a",
-  error: "#d32f2f",
-  warning: "#faad14",
-} as const;
+const { useToken } = theme;
 
 interface CustomModalProps {
   status?: "default" | "success" | "warning" | "error";
   width?: number;
-  height?: number; 
+  height?: number;
   padding?: number;
   className?: string;
   style?: CSSProperties;
@@ -59,75 +50,83 @@ function isComponentType(child: React.ReactNode, id: symbol): boolean {
   return (child.type as unknown as ComponentWithId)?.$id === id;
 }
 
-const Header: React.FC<HeaderProps> & { $id?: symbol } = ({ icon, title }) => (
-  <Space align="center" size={16} style={{ width: "100%", minWidth: 0 }}>
-    <div
-      style={{
-        width: 48,
-        height: 48,
-        display: "grid",
-        placeItems: "center",
-        borderRadius: 12,
-        background: PALETTE.veryLightBlue,
-        color: PALETTE.secondary,
-        fontSize: 20,
-      }}
-    >
-      {icon}
-    </div>
-    <Title
-      level={4}
-      style={{
-        margin: 0,
-        color: PALETTE.primary,
-        fontWeight: 600,
-        whiteSpace: "normal",
-        wordBreak: "break-word",
-      }}
-    >
-      {title}
-    </Title>
-  </Space>
-);
+const Header: React.FC<HeaderProps> & { $id?: symbol } = ({ icon, title }) => {
+  const { token } = useToken();
+  return (
+    <Space align="center" size={16} style={{ width: "100%", minWidth: 0 }}>
+      <div
+        style={{
+          width: 48,
+          height: 48,
+          display: "grid",
+          placeItems: "center",
+          borderRadius: token.borderRadiusLG,
+          background: token.colorFillSecondary,
+          color: token.colorPrimary,
+          fontSize: token.fontSizeLG,
+        }}
+      >
+        {icon}
+      </div>
+      <Title
+        level={4}
+        style={{
+          margin: 0,
+          color: token.colorTextHeading,
+          fontWeight: token.fontWeightStrong,
+          whiteSpace: "normal",
+          wordBreak: "break-word",
+        }}
+      >
+        {title}
+      </Title>
+    </Space>
+  );
+};
 Header.$id = componentIds.header;
 
 const Description: React.FC<DescriptionProps> & { $id?: symbol } = ({
   children,
-}) => (
-  <Text
-    style={{
-      display: "block",
-      marginTop: 8,
-      marginBottom: 8,
-      color: PALETTE.lightBlue,
-      fontSize: 15,
-      lineHeight: 1.4,
-    }}
-  >
-    {children}
-  </Text>
-);
+}) => {
+  const { token } = useToken();
+  return (
+    <Text
+      style={{
+        display: "block",
+        marginTop: token.marginXS,
+        marginBottom: token.marginXS,
+        color: token.colorTextSecondary,
+        fontSize: token.fontSizeSM,
+        lineHeight: 1.4,
+      }}
+    >
+      {children}
+    </Text>
+  );
+};
 Description.$id = componentIds.description;
 
-const Body: React.FC<BodyProps> & { $id?: symbol } = ({ children }) => (
-  <div
-    style={{
-      marginTop: 4,
-      marginBottom: 8,
-      fontSize: 14,
-      lineHeight: 1.5,
-      color: "#666",
-    }}
-  >
-    {children}
-  </div>
-);
+const Body: React.FC<BodyProps> & { $id?: symbol } = ({ children }) => {
+  const { token } = useToken();
+  return (
+    <div
+      style={{
+        marginTop: token.marginXXS,
+        marginBottom: token.marginXS,
+        fontSize: token.fontSizeSM,
+        lineHeight: 1.5,
+        color: token.colorText,
+      }}
+    >
+      {children}
+    </div>
+  );
+};
 Body.$id = componentIds.body;
 
 const Actions: React.FC<ActionsProps> & { $id?: symbol } = ({ children }) => {
   const childArray = React.Children.toArray(children);
   const limitedChildren = childArray.slice(0, 3);
-
   return (
     <Space direction="vertical" style={{ width: "100%" }} size={8}>
       {limitedChildren.map((child, index) => (
@@ -160,6 +159,7 @@ const Root: React.FC<CustomModalProps> & {
   visible,
   onClose,
 }) => {
+  const { token } = useToken();
   const allChildren = React.Children.toArray(children);
   const header = allChildren.find((child) =>
     isComponentType(child, componentIds.header)
@@ -173,23 +173,19 @@ const Root: React.FC<CustomModalProps> & {
   const actions = allChildren.find((child) =>
     isComponentType(child, componentIds.actions)
   );
-
   if (!header) {
     throw new Error(
       "CustomModal: Header es obligatorio. Asegúrate de incluir <CustomModal.Header> como hijo directo."
     );
   }
-
   const hasActions = Boolean(actions);
   const modalWidth = hasActions ? Math.max(width, 580) : width;
-
   const accentColor = {
-    success: PALETTE.success,
-    warning: PALETTE.warning,
-    error: PALETTE.error,
-    default: PALETTE.secondary,
+    success: token.colorSuccess,
+    warning: token.colorWarning,
+    error: token.colorError,
+    default: token.colorPrimary,
   }[status];
-
   return (
     <Modal
       open={visible}
@@ -197,15 +193,13 @@ const Root: React.FC<CustomModalProps> & {
       footer={null}
       width={modalWidth}
       className={className}
-    
       style={{
         ...style,
-        borderRadius: 14,
+        borderRadius: token.borderRadiusLG,
         overflow: "hidden",
-        paddingBottom: 0, 
+        paddingBottom: 0,
+        background: token.colorBgContainer,
       }}
-      
-      
       centered
     >
       <div
@@ -218,22 +212,39 @@ const Root: React.FC<CustomModalProps> & {
           background: accentColor,
         }}
       />
-      <Row align="top" wrap={false} style={{ width: "100%", height: "100%" }}>
-        <Col flex="auto" style={{ padding, minWidth: 0, display: "flex", flexDirection: "column" }}>
+      <Row
+        align="top"
+        wrap={false}
+        style={{ width: "100%", height: "100%", background: token.colorBgContainer }}
+      >
+        <Col
+          flex="auto"
+          style={{
+            padding,
+            minWidth: 0,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
           <div style={{ flex: "0 0 auto" }}>
             {header}
             {description}
           </div>
           {body && (
-            <div style={{ flex: "1 1 auto", marginTop: 4 }}>{body}</div>
+            <div style={{ flex: "1 1 auto", marginTop: token.marginXXS }}>
+              {body}
+            </div>
           )}
         </Col>
-
         {hasActions && (
           <>
             <Col flex="0 0 1px">
               <div
-                style={{ width: 1, height: "100%", background: "#E6E8EF" }}
+                style={{
+                  width: 1,
+                  height: "100%",
+                  background: token.colorSplit,
+                }}
               />
             </Col>
             <Col flex="260px" style={{ padding }}>
