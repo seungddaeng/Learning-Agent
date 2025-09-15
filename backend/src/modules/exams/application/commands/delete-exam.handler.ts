@@ -1,17 +1,15 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { DeleteExamCommand } from './delete-exam.command';
 import { EXAM_REPO } from '../../tokens';
 import type { ExamRepositoryPort } from '../../domain/ports/exam.repository.port';
 
-export type ListClassExamsQuery = { classId: string; teacherId: string };
-
 @Injectable()
-export class ListClassExamsUseCase {
+export class DeleteExamCommandHandler {
     constructor(
         @Inject(EXAM_REPO) private readonly examRepo: ExamRepositoryPort,
     ) {}
 
-    async execute(q: ListClassExamsQuery) {
-        const exams = await this.examRepo.listByClassOwned(q.classId, q.teacherId);
-        return exams.map(e => e.toJSON());
+    async execute(cmd: DeleteExamCommand): Promise<void> {
+        await this.examRepo.deleteOwned(cmd.examId, cmd.teacherId);
     }
 }

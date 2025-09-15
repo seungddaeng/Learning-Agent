@@ -1,67 +1,40 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { PrismaModule } from '../../core/prisma/prisma.module';
+import { IdentityModule } from '../identity/identity.module'
 
 import { EXAM_REPO, EXAM_QUESTION_REPO, EXAM_AI_GENERATOR } from './tokens';
 
-import { ExamPrismaRepository } from './infrastructure/persistence/exam.prisma.repository';
-import { ExamQuestionPrismaRepository } from './infrastructure/persistence/exam-question.prisma.repository';
+import { PrismaExamRepository } from './infrastructure/persistence/exam.prisma.repository';
+import { PrismaExamQuestionRepository } from './infrastructure/persistence/exam-question.prisma.repository';
 
 import { ExamsController } from './infrastructure/http/exams.controller';
 
-import { CreateExamCommandHandler } from './application/commands/create-exam.command';
-import { GenerateQuestionsCommandHandler } from './application/commands/generate-questions.command';
-import { GenerateExamUseCase } from './application/commands/generate-exam.usecase';
+import { CreateExamCommandHandler } from './application/commands/create-exam.handler';
 import { AddExamQuestionCommandHandler } from './application/commands/add-exam-question.handler';
 import { UpdateExamQuestionCommandHandler } from './application/commands/update-exam-question.handler';
+import { GenerateExamUseCase } from './application/commands/generate-exam.usecase';
+import { DeleteExamCommandHandler } from './application/commands/delete-exam.handler';
+
+import { GenerateQuestionsUseCase } from './application/commands/generate-questions.usecase';
+import { ListClassExamsUseCase } from './application/queries/list-class-exams.usecase';
+import { GetExamByIdUseCase } from './application/queries/get-exam-by-id.usecase';
 
 import { LlmAiQuestionGenerator } from './infrastructure/ai/llm-ai-question.generator';
 import { LLM_PORT } from '../llm/tokens';
 import { GeminiAdapter } from '../llm/infrastructure/adapters/gemini.adapter';
 import { PromptTemplateModule } from '../prompt-template/prompt-template.module';
 
-import { ListClassExamsUseCase } from './application/queries/list-class-exams.usecase';
-import { GetExamByIdUseCase } from './application/queries/get-exam-by-id.usecase';
-
-import { TOKEN_SERVICE } from '../identity/tokens';
 import { ExamsStartupCheck } from './infrastructure/startup/exams-startup.check';
-
-function decodeJwtPayload(token: string): any {
-  const raw = token.startsWith('Bearer ') ? token.slice(7) : token;
-  const parts = raw.split('.');
-  if (parts.length < 2) throw new Error('Invalid JWT');
-
-  let b64url = parts[1].trim();
-  b64url = b64url.replace(/[^A-Za-z0-9\-_]/g, '');
-  let b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
-  const pad = b64.length % 4;
-  if (pad) b64 += '='.repeat(4 - pad);
-  const json = Buffer.from(b64, 'base64').toString('utf8');
-  return JSON.parse(json);
-}
-
-const DevTokenService = {
-  verifyAccess: (token: string) => decodeJwtPayload(token),
-};
-
-const devTokenAllowed = process.env.USE_DEV_TOKEN === '1';
-const isProd = process.env.NODE_ENV === 'production';
-
-if (isProd && devTokenAllowed) {
-  throw new Error('USE_DEV_TOKEN no está permitido en producción');
-}
-
-const DEV_ONLY_PROVIDERS = devTokenAllowed && !isProd
-  ? [{ provide: TOKEN_SERVICE, useValue: DevTokenService }]
-  : [];
 
 @Module({
   imports: [
     PrismaModule,
+    forwardRef(() => IdentityModule),
     PromptTemplateModule,
   ],
   providers: [
-    { provide: EXAM_REPO, useClass: ExamPrismaRepository },
-    { provide: EXAM_QUESTION_REPO, useClass: ExamQuestionPrismaRepository },
+    { provide: EXAM_REPO, useClass: PrismaExamRepository },
+    { provide: EXAM_QUESTION_REPO, useClass: PrismaExamQuestionRepository },
 
     GeminiAdapter,
     { provide: LLM_PORT, useExisting: GeminiAdapter },
@@ -69,16 +42,16 @@ const DEV_ONLY_PROVIDERS = devTokenAllowed && !isProd
 
     GenerateExamUseCase,
     CreateExamCommandHandler,
-    GenerateQuestionsCommandHandler,
     AddExamQuestionCommandHandler,
     UpdateExamQuestionCommandHandler,
-
+    GenerateQuestionsUseCase,
+    DeleteExamCommandHandler, 
     ListClassExamsUseCase,
     GetExamByIdUseCase,
 
     ExamsStartupCheck,
 
-    ...DEV_ONLY_PROVIDERS,
+    
   ],
   controllers: [ExamsController],
 })
