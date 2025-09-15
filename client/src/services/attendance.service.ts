@@ -19,7 +19,7 @@ export const attendanceService = {
     async getStudentAbsencesInfo(classId: string, teacherId: string, studentId: string){
         try {
             const response = await apiClient.get(
-                `/students/${studentId}/absences/dates`,
+                `academic/students/${studentId}/absences/dates`,
                 {params: {teacherId, classId}}
             );
             return response.data
