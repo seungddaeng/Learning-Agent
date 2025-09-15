@@ -35,25 +35,47 @@ pipeline {
             }
         }
 
-        stage('Deploy Locally') {
+        stage('Deploy to Droplet') {
             steps {
-                withCredentials([file(credentialsId: 'env_backend_deploy', variable: 'ENV_FILE')]) {
-                    script {
-                        sh '''
-                            echo "Stopping existing container..."
-                            docker stop learning-agent-backend || true
-                            docker rm learning-agent-backend || true
+                script {
+                    sshagent(['droplet-ssh-key']) {
+                        sh """
+                            ssh -o StrictHostKeyChecking=no root@${env.DROPLET_IP} '
+                                echo "Stopping existing containers..."
+                                docker stop learning-agent-backend learning-agent-db || true
+                                docker rm learning-agent-backend learning-agent-db || true
+                                
+                                echo "Pulling Docker image..." 
+                                docker pull ${env.DOCKER_IMAGE}:${env.DOCKER_TAG}
+        
+                                echo "Starting PostgreSQL container..."
+                                docker run -d \\
+                                    --name learning-agent-db \\
+                                    -e POSTGRES_USER=postgres \\
+                                    -e POSTGRES_PASSWORD=password \\
+                                    -e POSTGRES_DB=learning_agent \\
+                                    -p 5432:5432 \\
+                                    --restart unless-stopped \\
+                                    pgvector/pgvector:pg16
 
-                            echo "Running new container..."
-                            docker run -d \
-                                --name learning-agent-backend \
-                                --env-file $ENV_FILE \
-                                -p 3000:3000 \
-                                --restart unless-stopped \
-                                $DOCKER_IMAGE:$DOCKER_TAG
+                                echo "Waiting for PostgreSQL to be ready..."
+                                sleep 15
 
-                            echo "Deployment completed!"
-                        '''
+                                echo "Creating pgvector extension..."
+                                docker exec learning-agent-db psql -U postgres -d learning_agent -c "CREATE EXTENSION IF NOT EXISTS vector;"
+        
+                                echo "Running backend container..."
+                                docker run -d \\
+                                    --name learning-agent-backend \\
+                                    -p 3000:3000 \\
+                                    -e DATABASE_URL="postgresql://postgres:password@learning-agent-db:5432/learning_agent" \\
+                                    --link learning-agent-db \\
+                                    --restart unless-stopped \\
+                                    ${env.DOCKER_IMAGE}:${env.DOCKER_TAG}
+                                
+                                echo "Deployment completed!"
+                            '
+                        """
                     }
                 }
             }
