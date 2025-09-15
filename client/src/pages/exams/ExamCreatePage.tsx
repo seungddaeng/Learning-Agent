@@ -86,7 +86,6 @@ export default function ExamsCreatePage() {
     : [
         { label: 'Home', href: '/' },
         { label: 'Materias', href: '/professor/courses' },
-        { label: 'Gestión de Exámenes', href: '/professor/exams' },
         { label: 'Crear examen' },
       ];
 

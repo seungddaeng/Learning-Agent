@@ -75,6 +75,28 @@ const UploadDocumentPage: React.FC = () => {
         { label: "Documents" }
       ];
     }
+    
+    // Professor context: /professor/courses/:courseId/periods/:id/documents
+    if (courseId && id && actualCourse && actualClass) {
+      return [
+        { label: "Home", href: "/" },
+        { label: "Materias", href: "/professor/courses" },
+        { label: actualCourse.name, href: `/professor/courses/${courseId}/periods` },
+        { label: actualClass.name, href: `/professor/courses/${courseId}/periods/${id}` },
+        { label: "Documents" }
+      ];
+    }
+    
+    // Professor context: /professor/courses/:courseId/documents (from course card)
+    if (courseId && !id && actualCourse) {
+      return [
+        { label: "Home", href: "/" },
+        { label: "Materias", href: "/professor/courses" },
+        { label: actualCourse.name, href: `/professor/courses/${courseId}/periods` },
+        { label: "Documents" }
+      ];
+    }
+    
     return [{ label: "Home", href: "/" }, { label: "Documents" }];
   };
 
