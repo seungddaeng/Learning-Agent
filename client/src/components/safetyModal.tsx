@@ -1,7 +1,11 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback } from "react";
 import { Modal, Button, Typography } from "antd";
-import { DeleteOutlined, ExclamationCircleOutlined, FileTextOutlined } from '@ant-design/icons';
-import type { ButtonProps } from 'antd';
+import {
+  DeleteOutlined,
+  ExclamationCircleOutlined,
+  FileTextOutlined,
+} from "@ant-design/icons";
+import type { ButtonProps } from "antd";
 
 const { Text } = Typography;
 
@@ -41,11 +45,11 @@ interface ButtonConfig {
   /** Alto del botón en píxeles */
   height?: number;
   /** Estilo del botón */
-  variant?: 'fill' | 'ghost' | 'text' | 'link';
+  variant?: "fill" | "ghost" | "text" | "link";
   /** Tamaño del botón */
-  size?: 'small' | 'middle' | 'large';
+  size?: "small" | "middle" | "large";
   /** Forma del botón */
-  shape?: 'default' | 'circle' | 'round';
+  shape?: "default" | "circle" | "round";
   /** Si el botón está deshabilitado */
   disabled?: boolean;
   /** Clases CSS adicionales */
@@ -107,13 +111,7 @@ export const SafetyModal = ({
         <Button key="cancel" onClick={onCancel}>
           {cancelText}
         </Button>,
-        <Button
-          key="confirm"
-          type={danger ? "primary" : "default"}
-          danger={danger}
-          onClick={onConfirm}
-          style={{ backgroundColor: "#bb1717ff" }}
-        >
+        <Button key="confirm" danger type="primary" onClick={onConfirm}>
           {confirmText}
         </Button>,
       ]}
@@ -126,17 +124,17 @@ export const SafetyModal = ({
 
 /**
  * DeleteButton - Componente reutilizable para eliminación con confirmación
- * 
+ *
  * Este componente encapsula un botón de eliminación junto con un modal de confirmación.
  * Maneja internamente todos los estados necesarios (loading, modal abierto, etc.)
  * y proporciona callbacks para diferentes eventos del flujo de eliminación.
- * 
+ *
  * Características:
  * - Color fijo: #bb1717ff
  * - Ícono fijo: DeleteOutlined
  * - Modal de confirmación con estilos predefinidos
  * - Manejo automático de estados de carga y errores
- * 
+ *
  * @example
  * ```tsx
  * // Botón simple con texto
@@ -150,7 +148,7 @@ export const SafetyModal = ({
  *   buttonConfig={{ showText: true }}
  *   onDeleteSuccess={() => message.success("Eliminado")}
  * />
- * 
+ *
  * // Botón solo con ícono
  * <DeleteButton
  *   onDelete={() => deleteUser(user.id)}
@@ -158,10 +156,10 @@ export const SafetyModal = ({
  *     name: user.name,
  *     type: "Usuario"
  *   }}
- *   buttonConfig={{ 
- *     showText: false, 
+ *   buttonConfig={{
+ *     showText: false,
  *     variant: "ghost",
- *     shape: "circle" 
+ *     shape: "circle"
  *   }}
  * />
  * ```
@@ -175,7 +173,7 @@ const DeleteButton: React.FC<DeleteButtonProps> = ({
   onDeleteSuccess,
   onDeleteError,
   onCancel,
-  disabled = false
+  disabled = false,
 }) => {
   // Estados internos
   const [modalOpen, setModalOpen] = useState<boolean>(false);
@@ -186,22 +184,23 @@ const DeleteButton: React.FC<DeleteButtonProps> = ({
     showText = true,
     width,
     height,
-    variant = 'fill',
-    size = 'middle',
-    shape = 'default',
+    variant = "fill",
+    size = "middle",
+    shape = "default",
     disabled: buttonDisabled = false,
-    className = ''
+    className = "",
   } = buttonConfig;
 
   // Configuración por defecto del modal
   const {
-    message: modalMessage = '¿Estás seguro de que deseas eliminar este elemento?',
-    confirmText = 'Eliminar',
-    cancelText = 'Cancelar'
+    message:
+      modalMessage = "¿Estás seguro de que deseas eliminar este elemento?",
+    confirmText = "Eliminar",
+    cancelText = "Cancelar",
   } = modalConfig;
 
   // Color fijo del componente
-  const FIXED_COLOR = '#bb1717ff';
+  const FIXED_COLOR = "#bb1717ff";
 
   // Mapeo de variantes a props de Ant Design
   const getButtonProps = (): ButtonProps => {
@@ -214,26 +213,26 @@ const DeleteButton: React.FC<DeleteButtonProps> = ({
       style: {
         width,
         height,
-        color: variant === 'fill' ? '#ffffff' : FIXED_COLOR,
-        backgroundColor: variant === 'fill' ? FIXED_COLOR : 'transparent',
+        color: variant === "fill" ? "#ffffff" : FIXED_COLOR,
+        backgroundColor: variant === "fill" ? FIXED_COLOR : "transparent",
         borderColor: FIXED_COLOR,
-        ...(['ghost', 'text', 'link'].includes(variant) && {
-          backgroundColor: 'transparent'
-        })
-      }
+        ...(["ghost", "text", "link"].includes(variant) && {
+          backgroundColor: "transparent",
+        }),
+      },
     };
 
     switch (variant) {
-      case 'fill':
-        return { ...baseProps, type: 'primary' };
-      case 'ghost':
+      case "fill":
+        return { ...baseProps, type: "primary" };
+      case "ghost":
         return { ...baseProps, ghost: true };
-      case 'text':
-        return { ...baseProps, type: 'text' };
-      case 'link':
-        return { ...baseProps, type: 'link' };
+      case "text":
+        return { ...baseProps, type: "text" };
+      case "link":
+        return { ...baseProps, type: "link" };
       default:
-        return { ...baseProps, type: 'default' };
+        return { ...baseProps, type: "default" };
     }
   };
 
@@ -251,7 +250,8 @@ const DeleteButton: React.FC<DeleteButtonProps> = ({
       setModalOpen(false);
       onDeleteSuccess?.();
     } catch (error) {
-      const errorInstance = error instanceof Error ? error : new Error('Error desconocido');
+      const errorInstance =
+        error instanceof Error ? error : new Error("Error desconocido");
       onDeleteError?.(errorInstance);
     } finally {
       setDeleting(false);
@@ -267,19 +267,20 @@ const DeleteButton: React.FC<DeleteButtonProps> = ({
   return (
     <>
       {/* Botón de eliminación */}
-      <Button
-        {...getButtonProps()}
-        onClick={handleButtonClick}
-      >
-        {showText && 'Eliminar'}
+      <Button {...getButtonProps()} onClick={handleButtonClick}>
+        {showText && "Eliminar"}
       </Button>
 
       {/* Modal de confirmación */}
       <Modal
         title={
-          <div style={{ display: 'flex', alignItems: 'center', color: '#d32f2f' }}>
-            <ExclamationCircleOutlined style={{ marginRight: '8px', fontSize: '20px' }} />
-            <span style={{ fontWeight: '600' }}>Confirmar eliminación</span>
+          <div
+            style={{ display: "flex", alignItems: "center", color: "#d32f2f" }}
+          >
+            <ExclamationCircleOutlined
+              style={{ marginRight: "8px", fontSize: "20px" }}
+            />
+            <span style={{ fontWeight: "600" }}>Confirmar eliminación</span>
           </div>
         }
         open={modalOpen}
@@ -292,71 +293,88 @@ const DeleteButton: React.FC<DeleteButtonProps> = ({
         width={480}
         okButtonProps={{
           danger: true,
-          size: 'large',
+          size: "large",
           style: {
-            backgroundColor: '#d32f2f',
-            borderColor: '#d32f2f',
-            fontWeight: '500'
-          }
+            backgroundColor: "#d32f2f",
+            borderColor: "#d32f2f",
+            fontWeight: "500",
+          },
         }}
         cancelButtonProps={{
-          size: 'large',
+          size: "large",
           style: {
-            borderColor: '#7A85C1',
-            color: '#3B38A0',
-            fontWeight: '500'
-          }
+            borderColor: "#7A85C1",
+            color: "#3B38A0",
+            fontWeight: "500",
+          },
         }}
       >
-        <div style={{ textAlign: 'center' }}>
+        <div style={{ textAlign: "center" }}>
           {/* Ícono principal de eliminación */}
-          <div style={{
-            fontSize: '48px',
-            color: '#ff7875',
-            marginBottom: '16px',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center'
-          }}>
-            <DeleteOutlined style={{ fontSize: '48px' }} />
+          <div
+            style={{
+              fontSize: "48px",
+              color: "#ff7875",
+              marginBottom: "16px",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <DeleteOutlined style={{ fontSize: "48px" }} />
           </div>
 
           {/* Mensaje de confirmación */}
-          <p style={{
-            marginBottom: '16px',
-            fontSize: '16px',
-            color: '#262626',
-            lineHeight: '1.5'
-          }}>
+          <p
+            style={{
+              marginBottom: "16px",
+              fontSize: "16px",
+              color: "#262626",
+              lineHeight: "1.5",
+            }}
+          >
             {modalMessage}
           </p>
 
           {/* Información del recurso */}
-          <div style={{
-            backgroundColor: '#fff2e8',
-            border: '1px solid #ffcc7a',
-            borderRadius: '8px',
-            padding: '16px',
-            marginTop: '16px',
-            textAlign: 'left'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-              <div style={{ color: '#d46b08', fontSize: '16px' }}>
+          <div
+            style={{
+              backgroundColor: "#fff2e8",
+              border: "1px solid #ffcc7a",
+              borderRadius: "8px",
+              padding: "16px",
+              marginTop: "16px",
+              textAlign: "left",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                marginBottom: "4px",
+              }}
+            >
+              <div style={{ color: "#d46b08", fontSize: "16px" }}>
                 {resourceInfo.icon || <FileTextOutlined />}
               </div>
-              <Text strong style={{ 
-                color: '#d46b08', 
-                fontSize: '14px',
-                marginLeft: '8px'
-              }}>
+              <Text
+                strong
+                style={{
+                  color: "#d46b08",
+                  fontSize: "14px",
+                  marginLeft: "8px",
+                }}
+              >
                 {resourceInfo.name}
               </Text>
               {resourceInfo.type && (
-                <Text style={{ 
-                  fontSize: '12px',
-                  marginLeft: '8px',
-                  color: '#fa8c16'
-                }}>
+                <Text
+                  style={{
+                    fontSize: "12px",
+                    marginLeft: "8px",
+                    color: "#fa8c16",
+                  }}
+                >
                   ({resourceInfo.type})
                 </Text>
               )}
@@ -364,23 +382,35 @@ const DeleteButton: React.FC<DeleteButtonProps> = ({
 
             {/* Información adicional */}
             {resourceInfo.additionalInfo && (
-              <div style={{ marginTop: '8px', fontSize: '12px', color: '#d48806' }}>
+              <div
+                style={{ marginTop: "8px", fontSize: "12px", color: "#d48806" }}
+              >
                 {resourceInfo.additionalInfo}
               </div>
             )}
 
             {/* Mensaje de advertencia */}
-            <div style={{ display: 'flex', alignItems: 'center', marginTop: '8px' }}>
-              <ExclamationCircleOutlined style={{ 
-                color: '#fa8c16', 
-                marginRight: '6px', 
-                fontSize: '12px' 
-              }} />
-              <Text style={{ 
-                fontSize: '12px', 
-                fontStyle: 'italic',
-                color: '#d48806'
-              }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                marginTop: "8px",
+              }}
+            >
+              <ExclamationCircleOutlined
+                style={{
+                  color: "#fa8c16",
+                  marginRight: "6px",
+                  fontSize: "12px",
+                }}
+              />
+              <Text
+                style={{
+                  fontSize: "12px",
+                  fontStyle: "italic",
+                  color: "#d48806",
+                }}
+              >
                 Esta acción no se puede deshacer
               </Text>
             </div>
