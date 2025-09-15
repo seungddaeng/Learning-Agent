@@ -61,6 +61,7 @@ export default function ExamsCreatePage() {
   const formRef = useRef<ExamFormHandle>(null!);
   const [params] = useSearchParams();
   const classId = params.get('classId') || '';
+  const courseId = params.get('courseId') || '';
   const navigate = useNavigate();
 
   const [aiOpen, setAiOpen] = useState(false);
@@ -236,7 +237,7 @@ export default function ExamsCreatePage() {
     });
 
     pushToast('Examen guardado en la base de datos.', 'success');
-    navigate(`/courses/${classId}`);
+    navigate(courseId ? `/courses/${courseId}/periods/${classId}` : `/courses/${classId}`);
   };
 
   return (
