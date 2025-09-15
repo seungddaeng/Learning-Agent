@@ -14,6 +14,7 @@ export default function TrueOrFalseQuestion({
   const { token } = theme.useToken();
 
 
+
   const handleSelect = (_value: boolean) => {
     const action = onNext ?? (() => window.location.reload());
     setTimeout(action, parseInt(token.motionDurationMid) || 300);
@@ -59,6 +60,7 @@ export default function TrueOrFalseQuestion({
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
+
 
   };
 
@@ -122,6 +124,7 @@ export default function TrueOrFalseQuestion({
           maxWidth: token.screenLG,
         }}
       >
+
         {[{ label: "Verdadero", value: true }, { label: "Falso", value: false }].map(
           (opt) => (
             <div
@@ -141,6 +144,7 @@ export default function TrueOrFalseQuestion({
             </div>
           )
         )}
+
       </div>
     </div>
   );
