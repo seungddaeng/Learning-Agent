@@ -416,6 +416,7 @@ model Classes {
 
   // relation 1:N
   enrollment    Enrollment[]
+  attendance Attendance[]
 
   quizQuestions    QuizQuestion[]
   interviewQuestions InterviewQuestion[]
