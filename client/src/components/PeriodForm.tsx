@@ -85,7 +85,7 @@ function PeriodForm({
           return;
         }
 
-        let periodData:  Clase;
+        let periodData: Clase;
         if (period) {
           periodData = {
             ...period,
@@ -97,6 +97,8 @@ function PeriodForm({
           };
         } else {
           periodData = {
+            id: "",
+            name: "",
             semester: values.semester,
             teacherId: course.teacherId,
             courseId: course.id,
@@ -122,66 +124,45 @@ function PeriodForm({
   const today = dayjs();
   const currentYear = today.year();
 
-  const allPeriods = [
-    {
-      name: `PRIMERO ${currentYear}`,
-      start: `${currentYear}-01-25`,
-      end: `${currentYear}-06-30`,
-      type: "NORMAL",
-    },
-    {
-      name: `INVIERNO ${currentYear}`,
-      start: `${currentYear}-07-01`,
-      end: `${currentYear}-07-24`,
-      type: "SPECIAL",
-    },
-    {
-      name: `SEGUNDO ${currentYear}`,
-      start: `${currentYear}-07-25`,
-      end: `${currentYear}-12-31`,
-      type: "NORMAL",
-    },
-    {
-      name: `VERANO ${currentYear + 1}`,
-      start: `${currentYear + 1}-01-01`,
-      end: `${currentYear + 1}-01-24`,
-      type: "SPECIAL",
-    },
-    {
-      name: `PRIMERO ${currentYear + 1}`,
-      start: `${currentYear + 1}-01-25`,
-      end: `${currentYear + 1}-06-30`,
-      type: "NORMAL",
-    },
-    {
-      name: `INVIERNO ${currentYear + 1}`,
-      start: `${currentYear + 1}-07-01`,
-      end: `${currentYear + 1}-07-24`,
-      type: "SPECIAL",
-    },
-    {
-      name: `SEGUNDO ${currentYear + 1}`,
-      start: `${currentYear + 1}-07-25`,
-      end: `${currentYear + 1}-12-31`,
-      type: "NORMAL",
-    },
-    {
-      name: `VERANO ${currentYear + 2}`,
-      start: `${currentYear + 2}-01-01`,
-      end: `${currentYear + 2}-01-24`,
-      type: "SPECIAL",
-    },
-  ];
+  const allPeriods: {
+    name: string;
+    start: string;
+    end: string;
+    type: "NORMAL" | "SPECIAL";
+  }[] = [];
 
-  let availableSemesters = allPeriods.filter((p) =>
-    dayjs(p.end).isAfter(today)
-  );
+  for (let year = currentYear - 5; year <= currentYear + 1; year++) {
+    allPeriods.push(
+      {
+        name: `PRIMERO ${year}`,
+        start: `${year}-01-25`,
+        end: `${year}-06-30`,
+        type: "NORMAL",
+      },
+      {
+        name: `INVIERNO ${year}`,
+        start: `${year}-07-01`,
+        end: `${year}-07-24`,
+        type: "SPECIAL",
+      },
+      {
+        name: `SEGUNDO ${year}`,
+        start: `${year}-07-25`,
+        end: `${year}-12-31`,
+        type: "NORMAL",
+      },
+      {
+        name: `VERANO ${year + 1}`,
+        start: `${year + 1}-01-01`,
+        end: `${year + 1}-01-24`,
+        type: "SPECIAL",
+      }
+    );
+  }
 
-  availableSemesters = availableSemesters.sort((a, b) =>
+  let availableSemesters = allPeriods.sort((a, b) =>
     dayjs(a.start).diff(dayjs(b.start))
   );
-
-  availableSemesters = availableSemesters.slice(0, 4);
 
   const ranges = availableSemesters.reduce((acc, sem) => {
     acc[sem.name] = {
