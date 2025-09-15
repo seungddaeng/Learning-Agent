@@ -17,7 +17,7 @@ import isBetween from "dayjs/plugin/isBetween";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 
 import type { Course } from "../interfaces/courseInterface";
-import type { Clase } from "../interfaces/claseInterface";
+import type { Clase, CreateClassDTO } from "../interfaces/claseInterface";
 
 dayjs.locale("es");
 dayjs.extend(isBetween);
@@ -38,7 +38,7 @@ const periodValidationSchema = yup.object({
 interface PeriodFormProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (periodData: Clase) => void;
+  onSubmit: (periodData: Clase | CreateClassDTO) => void;
   course: Course;
   period?: Clase;
   loading?: boolean;
@@ -90,9 +90,8 @@ function PeriodForm({
           return;
         }
 
-        let periodData: Clase;
         if (period) {
-          periodData = {
+          const periodData: Clase = {
             ...period,
             semester: values.semester,
             teacherId: course.teacherId,
@@ -100,19 +99,18 @@ function PeriodForm({
             dateBegin: values.dateBegin,
             dateEnd: values.dateEnd,
           };
+          await onSubmit(periodData as Clase);
         } else {
-          periodData = {
-            id: "",
-            name: "",
-            semester: values.semester,
+          const newPeriod: CreateClassDTO = {
             teacherId: course.teacherId,
             courseId: course.id,
+            semester: values.semester,
             dateBegin: values.dateBegin,
             dateEnd: values.dateEnd,
           };
+          await onSubmit(newPeriod as CreateClassDTO);
         }
 
-        await onSubmit(periodData);
         resetForm();
         onClose();
       } catch (error) {
