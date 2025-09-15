@@ -1,7 +1,10 @@
+import { Injectable } from '@nestjs/common';
 import { AuditRepository } from '../../domain/ports/audit-repository.port';
+import { PrismaService } from '../../../../core/prisma/prisma.service';
 
+@Injectable()
 export class PrismaAuditRepositoryAdapter implements AuditRepository {
-  constructor(private readonly prisma: any) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async record(entry: {
     questionId?: string;
@@ -12,7 +15,7 @@ export class PrismaAuditRepositoryAdapter implements AuditRepository {
     source: 'cached' | 'generated';
     tokensUsed: number;
   }): Promise<void> {
-    await this.prisma.auditLog.create({
+    await (this.prisma as any)['questionAudit']?.create({
       data: {
         questionId: entry.questionId ?? null,
         timestamp: entry.timestamp,

@@ -1,3 +1,4 @@
+// domain/entities/question.entity.ts
 import { v4 as uuidv4 } from 'uuid';
 
 export type QuestionStatus = 'generated' | 'invalid' | 'published';
@@ -14,6 +15,8 @@ export class Question {
   public tokensGenerated: number;
   public lastUsedAt?: Date | null;
   public uses: number;
+  public rawText?: string | null;
+  public metadata?: Record<string, any> | null;
 
   constructor(
     public readonly text: string,
@@ -28,7 +31,9 @@ export class Question {
     tokensGenerated = 0,
     lastUsedAt?: Date | null,
     uses = 0,
-    difficulty?: number | null
+    difficulty?: number | null,
+    rawText?: string | null,
+    metadata?: Record<string, any> | null,
   ) {
     if (!text?.trim()) throw new Error('Question.text es obligatorio');
     if (text.length > 2000) throw new Error('Question.text excede el máximo de 2000 caracteres');
@@ -46,6 +51,8 @@ export class Question {
     this.tokensGenerated = tokensGenerated ?? 0;
     this.lastUsedAt = lastUsedAt ?? null;
     this.uses = uses ?? 0;
+    this.rawText = rawText ?? null;
+    this.metadata = metadata ?? null;
   }
 
   static create(
@@ -68,7 +75,9 @@ export class Question {
       0,
       undefined,
       0,
-      difficulty ?? null
+      difficulty ?? null,
+      undefined,
+      undefined
     );
   }
 
@@ -86,6 +95,8 @@ export class Question {
     lastUsedAt?: Date | string | null;
     uses?: number;
     difficulty?: number | null;
+    rawText?: string | null;
+    metadata?: Record<string, any> | null;
   }): Question {
     return new Question(
       payload.text,
@@ -100,7 +111,9 @@ export class Question {
       payload.tokensGenerated ?? 0,
       payload.lastUsedAt ? new Date(payload.lastUsedAt) : null,
       payload.uses ?? 0,
-      payload.difficulty ?? null
+      payload.difficulty ?? null,
+      payload.rawText ?? null,
+      payload.metadata ?? null
     );
   }
 
@@ -119,6 +132,8 @@ export class Question {
       createdAt: this.createdAt.toISOString(),
       lastUsedAt: this.lastUsedAt ? this.lastUsedAt.toISOString() : null,
       uses: this.uses,
+      rawText: this.rawText ?? null,
+      metadata: this.metadata ?? null,
     };
   }
 }

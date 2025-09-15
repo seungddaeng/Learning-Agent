@@ -3,14 +3,22 @@ import { Question } from '../../domain/entities/question.entity';
 import type { QuestionRepositoryPort } from '../../domain/ports/question-repository.port';
 import { createSignature } from '../../utils/createSignature';
 import type { Prisma } from '@prisma/client';
+import { PrismaService } from '../../../../core/prisma/prisma.service';
 
 @Injectable()
 export class PrismaQuestionRepositoryAdapter implements QuestionRepositoryPort {
   private memory: Question[] = [];
-  private prisma: any | null;
 
-  constructor(prisma?: any) {
-    this.prisma = prisma ?? null;
+  constructor(private readonly prisma: PrismaService) {}
+
+  private get table(): any | null {
+    if (!this.prisma) return null;
+    return (this.prisma as any).generatedQuestion ?? (this.prisma as any).quizQuestion ?? null;
+  }
+
+  private get fkField(): string {
+    if (!this.prisma) return 'examId';
+    return (this.prisma as any).generatedQuestion ? 'examId' : (this.prisma as any).quizQuestion ? 'classId' : 'examId';
   }
 
   private mapToEntity(record: any): Question {
@@ -35,8 +43,10 @@ export class PrismaQuestionRepositoryAdapter implements QuestionRepositoryPort {
     if (!question.signature) {
       question.signature = createSignature({ text: question.text, options: question.options, type: question.type });
     }
-    if (this.prisma) {
-      const record = await this.prisma.quizQuestion.upsert({
+    const tbl = this.table;
+    const fk = this.fkField;
+    if (this.prisma && tbl) {
+      const record = await tbl.upsert({
         where: { signature: question.signature },
         update: {
           text: question.text,
@@ -44,20 +54,24 @@ export class PrismaQuestionRepositoryAdapter implements QuestionRepositoryPort {
           options: question.options as Prisma.JsonValue,
           lastUsedAt: question.lastUsedAt ?? undefined,
           difficulty: question.difficulty ?? undefined,
-          classId: question.examId ?? undefined,
+          [fk]: question.examId ?? undefined,
           topic: question.topic ?? undefined,
+          tokensGenerated: question.tokensGenerated ?? undefined,
+          uses: question.uses ?? undefined,
         },
         create: {
           id: question.id,
-          classId: question.examId ?? undefined,
+          [fk]: question.examId ?? undefined,
           topic: question.topic ?? undefined,
           signature: question.signature,
           text: question.text,
           type: question.type,
           options: question.options as Prisma.JsonValue,
+          tokensGenerated: question.tokensGenerated ?? undefined,
           difficulty: question.difficulty ?? undefined,
           createdAt: question.createdAt ?? new Date(),
           lastUsedAt: question.lastUsedAt ?? undefined,
+          uses: question.uses ?? 0,
         },
       });
       return this.mapToEntity(record);
@@ -88,8 +102,9 @@ export class PrismaQuestionRepositoryAdapter implements QuestionRepositoryPort {
   }
 
   async findById(id: string): Promise<Question | null> {
-    if (this.prisma) {
-      const record = await this.prisma.quizQuestion.findUnique({ where: { id } });
+    const tbl = this.table;
+    if (this.prisma && tbl) {
+      const record = await tbl.findUnique({ where: { id } });
       return record ? this.mapToEntity(record) : null;
     } else {
       const found = this.memory.find((q) => q.id === id);
@@ -98,8 +113,9 @@ export class PrismaQuestionRepositoryAdapter implements QuestionRepositoryPort {
   }
 
   async findBySignature(signature: string): Promise<Question | null> {
-    if (this.prisma) {
-      const record = await this.prisma.quizQuestion.findUnique({ where: { signature } });
+    const tbl = this.table;
+    if (this.prisma && tbl) {
+      const record = await tbl.findUnique({ where: { signature } });
       return record ? this.mapToEntity(record) : null;
     } else {
       const found = this.memory.find((q) => q.signature === signature);
@@ -108,8 +124,9 @@ export class PrismaQuestionRepositoryAdapter implements QuestionRepositoryPort {
   }
 
   async findAll(): Promise<Question[]> {
-    if (this.prisma) {
-      const records = await this.prisma.quizQuestion.findMany();
+    const tbl = this.table;
+    if (this.prisma && tbl) {
+      const records = await tbl.findMany();
       return records.map((r: any) => this.mapToEntity(r));
     } else {
       return this.memory.map((q) => Question.rehydrate(q));
@@ -117,8 +134,9 @@ export class PrismaQuestionRepositoryAdapter implements QuestionRepositoryPort {
   }
 
   async findByStatus(_status: string, limit = 10, offset = 0): Promise<Question[]> {
-    if (this.prisma) {
-      const records = await this.prisma.quizQuestion.findMany({
+    const tbl = this.table;
+    if (this.prisma && tbl) {
+      const records = await tbl.findMany({
         take: limit,
         skip: offset,
         orderBy: { createdAt: 'desc' },
@@ -133,12 +151,15 @@ export class PrismaQuestionRepositoryAdapter implements QuestionRepositoryPort {
   }
 
   async incrementUsage(id: string, _tokensUsed = 0): Promise<void> {
-    if (this.prisma) {
-      await this.prisma.quizQuestion.update({
+    const tbl = this.table;
+    const fk = this.fkField;
+    if (this.prisma && tbl) {
+      const data: any = { lastUsedAt: new Date() };
+      if (_tokensUsed) data.tokensGenerated = { increment: _tokensUsed };
+      if (_tokensUsed) data.uses = { increment: 1 };
+      await tbl.update({
         where: { id },
-        data: {
-          lastUsedAt: new Date(),
-        },
+        data,
       });
     } else {
       const idx = this.memory.findIndex((q) => q.id === id);
@@ -155,8 +176,9 @@ export class PrismaQuestionRepositoryAdapter implements QuestionRepositoryPort {
   }
 
   async deleteOlderThan(date: Date): Promise<number> {
-    if (this.prisma) {
-      const res = await this.prisma.quizQuestion.deleteMany({
+    const tbl = this.table;
+    if (this.prisma && tbl) {
+      const res = await tbl.deleteMany({
         where: { createdAt: { lt: date } },
       });
       return res.count;
@@ -168,28 +190,38 @@ export class PrismaQuestionRepositoryAdapter implements QuestionRepositoryPort {
   }
 
   async countByExam(examId: string): Promise<number> {
-    if (this.prisma) {
-      return this.prisma.quizQuestion.count({ where: { classId: examId } });
+    const tbl = this.table;
+    const fk = this.fkField;
+    if (this.prisma && tbl) {
+      const where: any = {};
+      where[fk] = examId;
+      return tbl.count({ where });
     } else {
       return this.memory.filter((q) => q.examId === examId).length;
     }
   }
 
   async pruneToLimitByExam(examId: string, limit: number): Promise<void> {
-    if (this.prisma) {
+    const tbl = this.table;
+    const fk = this.fkField;
+    if (this.prisma && tbl) {
       if (limit <= 0) {
-        await this.prisma.quizQuestion.deleteMany({ where: { classId: examId } });
+        const where: any = {};
+        where[fk] = examId;
+        await tbl.deleteMany({ where });
         return;
       }
-      const toDelete = await this.prisma.quizQuestion.findMany({
-        where: { classId: examId },
+      const where: any = {};
+      where[fk] = examId;
+      const toDelete = await tbl.findMany({
+        where,
         orderBy: { createdAt: 'desc' },
         skip: limit,
         select: { id: true },
       });
       const ids = toDelete.map((d: any) => d.id);
       if (ids.length > 0) {
-        await this.prisma.quizQuestion.deleteMany({ where: { id: { in: ids } } });
+        await tbl.deleteMany({ where: { id: { in: ids } } });
       }
     } else {
       const items = this.memory.filter((q) => q.examId === examId).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
