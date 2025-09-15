@@ -1,9 +1,8 @@
 
-import React from "react";
-
-import { Card, Typography, theme, Alert, Button } from "antd";
+import { Card, Typography, theme } from "antd";
 
 const { Title } = Typography;
+
 
 interface TestQuestionProps {
   onNext: (isCorrect: boolean) => void;
@@ -19,91 +18,68 @@ export default function TestQuestion({
   const { token } = theme.useToken();
   const safeOptions = Array.isArray(options) ? options : [];
 
-  // Simulación: la primera opción es la correcta
-  const correctIndex = 0;
 
-  const handleSelect = (selectedIndex: number) => {
-    const isCorrect = selectedIndex === correctIndex;
-    setTimeout(() => onNext(isCorrect), 300);
+  const handleSelect = (_value: string) => {
+    const action = onNext ?? (() => window.location.reload());
+    setTimeout(action, parseInt(token.motionDurationMid) || 300);
   };
 
-  if (safeOptions.length === 0) {
-    return (
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: token.marginLG,
-          padding: token.paddingLG,
-          backgroundColor: token.colorBgLayout,
-          minHeight: "100%",
-        }}
-      >
-        <Card
-          style={{
-            width: "100%",
-            maxWidth: 800,
-            textAlign: "center",
-            borderRadius: token.borderRadiusLG,
-            backgroundColor: token.colorBgContainer,
-            boxShadow: token.boxShadow,
-          }}
-        >
-          <Title level={3} style={{ margin: 0, color: token.colorTextHeading }}>
-            {question || "Pregunta no disponible"}
-          </Title>
-        </Card>
+  const containerStyle: React.CSSProperties = {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: token.marginLG,
+    padding: token.paddingXL,
+    backgroundColor: token.colorBgLayout,
+    minHeight: "100%",
+  };
 
-        <Alert
-          message="No hay opciones disponibles"
-          description={
-            <div>
-              Esta vista espera recibir <code>options</code> desde el backend. Asegúrate de usar
-              <strong> TestRunner </strong> para obtener preguntas generadas (POST a <code>/exams-chat/generate-options</code>).
-            </div>
-          }
-          type="info"
-          showIcon
-        />
+  const questionCardStyle: React.CSSProperties = {
+    borderRadius: token.borderRadiusLG,
+    backgroundColor: token.colorBgContainer,
+    borderLeft: `${token.lineWidth * 4}px solid ${token.colorPrimary}`,
+    padding: token.paddingLG,
+    textAlign: "center",
+    maxWidth: token.screenLG,
+    width: "100%",
+    minHeight: 120,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  };
 
-        <div style={{ marginTop: 8 }}>
-          <Button onClick={() => onNext(false)}>Intentar cargar / recargar</Button>
-        </div>
-      </div>
-    );
-  }
 
-  const optionColors = [
-    token.colorPrimary,
-    token.colorPrimaryHover,
-    token.colorInfo,
-    token.colorInfoHover,
-  ];
+  const optionStyleBase: React.CSSProperties = {
+    borderRadius: token.borderRadiusLG,
+    backgroundColor: token.colorPrimary,
+    color: token.colorTextLightSolid,
+    fontWeight: token.fontWeightStrong,
+    fontSize: token.fontSizeLG,
+    textAlign: "center",
+    cursor: "pointer",
+    transition: `transform ${token.motionDurationMid} ${token.motionEaseOut}, box-shadow ${token.motionDurationMid} ${token.motionEaseOut}`,
+    boxShadow: token.boxShadow,
+    userSelect: "none",
+    padding: token.paddingMD,
+    minHeight: 72,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: token.marginLG,
-        padding: token.paddingLG,
-        backgroundColor: token.colorBgLayout,
-        minHeight: "100%",
-      }}
-    >
-      <Card
-        style={{
-          width: "100%",
-          maxWidth: 800,
-          textAlign: "center",
-          borderRadius: token.borderRadiusLG,
-          backgroundColor: token.colorBgContainer,
-          boxShadow: token.boxShadow,
-        }}
-      >
-        <Title level={3} style={{ margin: 0, color: token.colorTextHeading }}>
+
+    <div style={containerStyle}>
+      <Card style={questionCardStyle}>
+        <Title
+          level={4}
+          style={{
+            margin: 0,
+            color: token.colorPrimary,
+            fontWeight: token.fontWeightStrong,
+          }}
+        >
+
           {question}
         </Title>
       </Card>
@@ -112,14 +88,15 @@ export default function TestQuestion({
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
-          gap: token.marginLG,
+          gap: token.marginMD,
           width: "100%",
-          maxWidth: 800,
+          maxWidth: token.screenLG,
         }}
       >
         {safeOptions.map((label, index) => (
           <div
             key={index}
+
             onClick={() => handleSelect(index)}
             style={{
               backgroundColor: optionColors[index % optionColors.length],
@@ -134,13 +111,14 @@ export default function TestQuestion({
               boxShadow: token.boxShadow,
               userSelect: "none",
             }}
+
             onMouseEnter={(e) => {
-              (e.currentTarget as HTMLDivElement).style.transform = "scale(1.03)";
-              (e.currentTarget as HTMLDivElement).style.boxShadow = token.boxShadowSecondary;
+              e.currentTarget.style.transform = "scale(1.02)";
+              e.currentTarget.style.boxShadow = token.boxShadowSecondary;
             }}
             onMouseLeave={(e) => {
-              (e.currentTarget as HTMLDivElement).style.transform = "scale(1)";
-              (e.currentTarget as HTMLDivElement).style.boxShadow = token.boxShadow;
+              e.currentTarget.style.transform = "scale(1)";
+              e.currentTarget.style.boxShadow = token.boxShadow;
             }}
           >
             {label}

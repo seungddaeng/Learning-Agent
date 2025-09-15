@@ -13,38 +13,66 @@ export default function TrueOrFalseQuestion({
 }: TrueOrFalseQuestionProps) {
   const { token } = theme.useToken();
 
-  // Simulación: "Verdadero" es la respuesta correcta
-  const correctAnswer = true;
 
-  const handleSelect = (selected: boolean) => {
-    const isCorrect = selected === correctAnswer;
-    setTimeout(() => onNext(isCorrect), 300);
+  const handleSelect = (_value: boolean) => {
+    const action = onNext ?? (() => window.location.reload());
+    setTimeout(action, parseInt(token.motionDurationMid) || 300);
+  };
+
+  const containerStyle: React.CSSProperties = {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: token.marginLG,
+    padding: token.paddingXL,
+    backgroundColor: token.colorBgLayout,
+    minHeight: "100%",
+  };
+
+  const questionCardStyle: React.CSSProperties = {
+    borderRadius: token.borderRadiusLG,
+    backgroundColor: token.colorBgContainer,
+    borderLeft: `${token.lineWidth * 4}px solid ${token.colorPrimary}`,
+    padding: token.paddingLG,
+    textAlign: "center",
+    maxWidth: token.screenLG,
+    width: "100%",
+    minHeight: 120,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  };
+
+  const optionStyleBase: React.CSSProperties = {
+    borderRadius: token.borderRadiusLG,
+    backgroundColor: token.colorPrimary,
+    color: token.colorTextLightSolid,
+    fontWeight: token.fontWeightStrong,
+    fontSize: token.fontSizeLG * 1.3,
+    textAlign: "center",
+    cursor: "pointer",
+    transition: `transform ${token.motionDurationMid} ${token.motionEaseOut}, box-shadow ${token.motionDurationMid} ${token.motionEaseOut}`,
+    boxShadow: token.boxShadow,
+    userSelect: "none",
+    padding: token.paddingMD,
+    minHeight: 94,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+
   };
 
   if (!question) {
     return (
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: token.marginLG,
-          padding: token.paddingLG,
-          backgroundColor: token.colorBgLayout,
-          minHeight: "100%",
-        }}
-      >
+      <div style={containerStyle}>
         <Card
           style={{
-            width: "100%",
-            maxWidth: 800,
-            textAlign: "center",
-            borderRadius: token.borderRadiusLG,
-            backgroundColor: token.colorBgContainer,
+            ...questionCardStyle,
+            borderLeft: "none",
             boxShadow: token.boxShadow,
           }}
         >
-          <Title level={3} style={{ margin: 0, color: token.colorTextHeading }}>
+          <Title level={4} style={{ margin: 0, color: token.colorTextHeading }}>
             Pregunta no disponible
           </Title>
         </Card>
@@ -53,43 +81,34 @@ export default function TrueOrFalseQuestion({
           message="No se encontró la pregunta"
           description={
             <div>
-              Esta vista espera recibir la pregunta desde el backend. Usa <strong>TestRunner</strong> para obtener preguntas generadas.
+              Esta vista espera recibir la pregunta desde el backend. Usa{" "}
+              <strong>TestRunner</strong> para obtener preguntas generadas.
             </div>
           }
           type="info"
           showIcon
         />
 
-        <div style={{ marginTop: 8 }}>
-          <Button onClick={() => onNext(false)}>Recargar</Button>
-        </div>
+
+        <Button onClick={() => (onNext ? onNext() : window.location.reload())}>
+          Recargar
+        </Button>
+
       </div>
     );
   }
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: token.marginLG,
-        padding: token.paddingLG,
-        backgroundColor: token.colorBgLayout,
-        minHeight: "100%",
-      }}
-    >
-      <Card
-        style={{
-          width: "100%",
-          maxWidth: 800,
-          textAlign: "center",
-          borderRadius: token.borderRadiusLG,
-          backgroundColor: token.colorBgContainer,
-          boxShadow: token.boxShadow,
-        }}
-      >
-        <Title level={3} style={{ margin: 0, color: token.colorTextHeading }}>
+    <div style={containerStyle}>
+      <Card style={questionCardStyle}>
+        <Title
+          level={4}
+          style={{
+            margin: 0,
+            color: token.colorPrimary,
+            fontWeight: token.fontWeightStrong,
+          }}
+        >
           {question}
         </Title>
       </Card>
@@ -98,64 +117,30 @@ export default function TrueOrFalseQuestion({
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
-          gap: token.marginLG,
+          gap: token.marginMD,
           width: "100%",
-          maxWidth: 800,
+          maxWidth: token.screenLG,
         }}
       >
-        <div
-          onClick={() => handleSelect(true)}
-          style={{
-            backgroundColor: token.colorPrimary,
-            color: token.colorTextLightSolid,
-            padding: token.paddingLG,
-            borderRadius: token.borderRadiusLG,
-            fontWeight: 600,
-            fontSize: token.fontSizeLG,
-            textAlign: "center",
-            cursor: "pointer",
-            transition: "transform 0.15s ease, box-shadow 0.15s ease",
-            boxShadow: token.boxShadow,
-            userSelect: "none",
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLDivElement).style.transform = "scale(1.03)";
-            (e.currentTarget as HTMLDivElement).style.boxShadow = token.boxShadowSecondary;
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLDivElement).style.transform = "scale(1)";
-            (e.currentTarget as HTMLDivElement).style.boxShadow = token.boxShadow;
-          }}
-        >
-          Verdadero
-        </div>
-
-        <div
-          onClick={() => handleSelect(false)}
-          style={{
-            backgroundColor: token.colorPrimaryHover,
-            color: token.colorTextLightSolid,
-            padding: token.paddingLG,
-            borderRadius: token.borderRadiusLG,
-            fontWeight: 600,
-            fontSize: token.fontSizeLG,
-            textAlign: "center",
-            cursor: "pointer",
-            transition: "transform 0.15s ease, box-shadow 0.15s ease",
-            boxShadow: token.boxShadow,
-            userSelect: "none",
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLDivElement).style.transform = "scale(1.03)";
-            (e.currentTarget as HTMLDivElement).style.boxShadow = token.boxShadowSecondary;
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLDivElement).style.transform = "scale(1)";
-            (e.currentTarget as HTMLDivElement).style.boxShadow = token.boxShadow;
-          }}
-        >
-          Falso
-        </div>
+        {[{ label: "Verdadero", value: true }, { label: "Falso", value: false }].map(
+          (opt) => (
+            <div
+              key={opt.label}
+              style={optionStyleBase}
+              onClick={() => handleSelect(opt.value)}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "scale(1.02)";
+                e.currentTarget.style.boxShadow = token.boxShadowSecondary;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "scale(1)";
+                e.currentTarget.style.boxShadow = token.boxShadow;
+              }}
+            >
+              {opt.label}
+            </div>
+          )
+        )}
       </div>
     </div>
   );
