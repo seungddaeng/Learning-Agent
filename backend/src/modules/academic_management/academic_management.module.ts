@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../core/prisma/prisma.module';
-import { CLASSES_REPO, COURSE_REPO, ENROLLMENT_REPO, TEACHER_REPO, STUDENT_REPO } from './tokens';
+import { CLASSES_REPO, COURSE_REPO, ENROLLMENT_REPO, TEACHER_REPO, STUDENT_REPO, ATTENDANCE_REPO } from './tokens';
 import { CreateClassUseCase } from './application/commands/create-class.usecase';
 import { CreateStudentUseCase } from './application/commands/create-student.usecase';
 import { CreateStudentProfileUseCase } from './application/commands/create-student-profile.usecase';
@@ -24,10 +24,12 @@ import { IdentityModule } from '../identity/identity.module';
 import { CoursePrismaRepository } from './infrastructure/persistence/course.prisma.repository';
 import { CreateCourseUseCase } from './application/commands/create-course.usecase';
 import { SoftDeleteSingleEnrollmentUseCase } from './application/commands/soft-delete-single-enrollment.useCase';
+import { SaveAttendanceGroupStudentUseCase } from './application/commands/save-attendance-group-student-usecase';
 import { GetCoursesByTeacherUseCase } from './application/queries/get-courses-by-teacher.usecase';
 import { GetClassesByCourseUseCase } from './application/queries/get-classes-by-course.usecase';
 import { GetCourseByIdUseCase } from './application/queries/get-course-by-id.usecase';
 import { RbacModule } from '../rbac/rbac.module';
+import { AttendancePrismaRepository } from './infrastructure/persistence/attendance.prisma.repository';
 
 @Module({
   imports: [PrismaModule, IdentityModule, RbacModule],
@@ -38,6 +40,7 @@ import { RbacModule } from '../rbac/rbac.module';
     {provide: STUDENT_REPO,  useClass: StudentPrismaRepository}  ,
     {provide: TEACHER_REPO, useClass: TeacherPrismaRepository},
     {provide: ENROLLMENT_REPO, useClass: EnrollmentPrismaRepository},
+    {provide: ATTENDANCE_REPO, useClass: AttendancePrismaRepository},
     ListClassesUseCase,
     ListStudentsUseCase,
     GetCourseByIdUseCase,
@@ -57,6 +60,7 @@ import { RbacModule } from '../rbac/rbac.module';
     EnrollGroupStudentUseCase,
     UpdateClassUseCase,
     SoftDeleteClassUseCase,
+    SaveAttendanceGroupStudentUseCase,
   ],
 })
 export class AcademicManagementModule {}

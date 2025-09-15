@@ -1,37 +1,52 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import PageTemplate from "../../components/PageTemplate";
-import TestModal from "../../components/tests/TestModal"; 
+import TestModal from "../../components/tests/TestModal";
+import TestRunner from "../../components/tests/TestRunner";
+import TestSummaryModal from "../../components/tests/TestSummaryModal";
 import { useStudentTest } from "../../hooks/useStudentTest";
-
-import TestRunner from "../../components/tests/TestRunner"; 
-
+import TimerDisplay from "../../components/tests/Timer";
 
 export default function Test() {
   const navigate = useNavigate();
-  const { isTestModalOpen, closeTestModal, startExam, questionCount } = useStudentTest();
   const [isExamStarted, setIsExamStarted] = useState(false);
-  const [currentQuestion, setCurrentQuestion] = useState(1);
+  const [showSummary, setShowSummary] = useState(false);
 
+  const {
+    isTestModalOpen,
+    closeTestModal,
+    startExam,
+    questionCount,
+    currentQuestion,
+    answers,
+    startTime,
+    endTime,
+    nextQuestion,
+    recordAnswer,
+    timeLeft,
+    totalTime,
+    finishExam
+  } = useStudentTest(() => setShowSummary(true));
 
   const handleStartExam = (count: number) => {
     startExam(count);
     setIsExamStarted(true);
-    setCurrentQuestion(1);
   };
 
-  const handleNextQuestion = () => {
-    const total = questionCount || 0;
-    if (currentQuestion < total) {
-      setCurrentQuestion((prev) => prev + 1);
+  const handleNextQuestion = (isCorrect: boolean) => {
+    recordAnswer(isCorrect);
+    if (currentQuestion < questionCount) {
+      nextQuestion();
     } else {
-      navigate("/reinforcement");
+      finishExam();
     }
   };
 
-  // const handleTimeUp = () => {
-  //   navigate("/reinforcement");
-  // };
+  const handleCloseSummary = () => {
+    setShowSummary(false);
+    setIsExamStarted(false);
+    navigate("/reinforcement");
+  };
 
   return (
     <PageTemplate
@@ -54,13 +69,22 @@ export default function Test() {
           onSelectDifficulty={handleStartExam}
         />
       )}
-
-
       {isExamStarted && (
-        <div style={{ width: "100%", minHeight: 300 }}>
-          <TestRunner onAnswered={handleNextQuestion} />
-        </div>
-
+        <>
+          <TimerDisplay timeLeft={timeLeft} totalTime={totalTime} />
+          <div style={{ width: "100%", minHeight: 300 }}>
+            <TestRunner onAnswered={handleNextQuestion} />
+          </div>
+        </>
+      )}
+      {showSummary && (
+        <TestSummaryModal
+          open={showSummary}
+          onClose={handleCloseSummary}
+          answers={answers}
+          questionCount={questionCount}
+          timeTaken={startTime && endTime ? endTime - startTime : null}
+        />
       )}
     </PageTemplate>
   );
