@@ -34,6 +34,7 @@ import { processFile } from "../../utils/enrollGroupByFile";
 import type { StudentInfo } from "../../interfaces/studentInterface";
 import CourseExamsPanel from "../courses/CourseExamsPanel";
 import AttendanceModal from "../../components/AttendanceModal";
+import GlobalScrollbar from "../../components/GlobalScrollbar";
 
 const { Text } = Typography;
 const { TabPane } = Tabs;
@@ -149,7 +150,6 @@ export function CourseDetailPage() {
   }, [fetchStudents]);
 
   const handleEditClass = async (values: Clase | CreateClassDTO) => {
-    // If values is CreateClassDTO, you may need to convert it to Clase or handle accordingly
     const data = await updateClass(values as Clase);
     if (data.state == "success") {
       message.success(data.message);
@@ -415,7 +415,7 @@ export function CourseDetailPage() {
             icon={<EditOutlined />}
             onClick={() => setEditModalOpen(true)}
           >
-            Editar Curso
+            Editar Periodo
           </Button>
           <Button
             danger

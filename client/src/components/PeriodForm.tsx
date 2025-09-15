@@ -29,11 +29,8 @@ const MIN_BUSINESS_DAYS = 25;
 const periodValidationSchema = yup.object({
   semester: yup
     .string()
-    .required("El período es obligatorio")
-    .matches(
-      /^(PRIMERO|SEGUNDO|INVIERNO|VERANO)\s\d{4}$/,
-      "Formato válido: PRIMERO 2025, SEGUNDO 2025, INVIERNO 2025 o VERANO 2025"
-    ),
+    .required("El semestre es obligatorio")
+    .matches(/^(PRIMERO|SEGUNDO|INVIERNO|VERANO) \d{4}$/, "Semestre inválido"),
   dateBegin: yup.string().required("La fecha de inicio es obligatoria"),
   dateEnd: yup.string().required("La fecha de fin es obligatoria"),
 });
@@ -336,7 +333,7 @@ function PeriodForm({
                 formik.setFieldValue("dateBegin", "");
                 formik.setFieldValue("dateEnd", "");
               }}
-              disabled={!!period} // 👈 opcional: bloquear semestre en edición
+              disabled={!!period}
             >
               {availableSemesters.map((sem) => (
                 <Option key={sem.name} value={sem.name}>
@@ -369,6 +366,7 @@ function PeriodForm({
                 handleDateChange("dateBegin", date);
                 formik.setFieldTouched("dateBegin", true);
               }}
+              disabled={!formik.values.semester}
             />
           </Form.Item>
 
@@ -395,13 +393,19 @@ function PeriodForm({
                 handleDateChange("dateEnd", date);
                 formik.setFieldTouched("dateEnd", true);
               }}
+              disabled={!formik.values.dateBegin}
             />
           </Form.Item>
 
           {/* Botones */}
           <Form.Item style={{ marginTop: "24px", marginBottom: 0 }}>
             <Space style={{ width: "100%", justifyContent: "flex-end" }}>
-              <Button onClick={handleCancel} disabled={loading}>
+              <Button
+                onClick={handleCancel}
+                danger
+                type="primary"
+                disabled={loading}
+              >
                 Cancelar
               </Button>
               <Button
