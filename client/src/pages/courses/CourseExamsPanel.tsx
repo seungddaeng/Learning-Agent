@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Button, Typography, Empty } from 'antd';
-import { listCourseExams, type CourseExamRow } from '../../services/exams.service';
+import { listClassExams, deleteExamAny, type CourseExamRow } from '../../services/exams.service';
 import ExamTable from '../../components/exams/ExamTable';
 import { useNavigate } from 'react-router-dom';
 import type { ExamSummary } from '../../store/examsStore';
 
-
 const { Title, Text } = Typography;
 
 type Props = {
-  courseId: string;
+  courseId: string; // subject
+  classId: string;  // period
 };
 
 function extractIdCandidates(r: any, courseId: string): string[] {
@@ -44,15 +44,15 @@ function extractIdCandidates(r: any, courseId: string): string[] {
   return Array.from(vals);
 }
 
-export default function CourseExamsPanel({ courseId }: Props) {
+export default function CourseExamsPanel({ courseId, classId }: Props) {
   const [tableData, setTableData] = useState<ExamSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!courseId) return;
+    if (!classId) return;
     setLoading(true);
-    listCourseExams(courseId)
+    listClassExams(classId)
       .then((rows: CourseExamRow[]) => {
         const mapped: ExamSummary[] = (rows || []).map((r) => {
           const candidates = extractIdCandidates(r as any, courseId);
@@ -71,17 +71,20 @@ export default function CourseExamsPanel({ courseId }: Props) {
             totalQuestions: Number((r as any)?.questionsCount ?? 0),
             counts: { multiple_choice: 0, true_false: 0, open_analysis: 0, open_exercise: 0 },
             __candidates: candidates,
-          } as any; 
+          } as any;
         });
         setTableData(mapped);
       })
       .finally(() => setLoading(false));
-  }, [courseId]);
+  }, [classId, courseId]);
 
   const Header = (
     <div className="flex items-center justify-between mb-2">
       <Title level={4} style={{ margin: 0 }}>Exámenes de esta materia</Title>
-      <Button type="primary" onClick={() => navigate(`/exams/create?courseId=${courseId}`)}>
+      <Button
+        type="primary"
+        onClick={() => navigate(`/exams/create?classId=${classId}&courseId=${courseId}`)}
+      >
         Crear examen
       </Button>
     </div>
@@ -97,7 +100,31 @@ export default function CourseExamsPanel({ courseId }: Props) {
           <div id="tabla-examenes-curso">
             <ExamTable
               data={tableData}
-              onEdit={() => navigate(`/exams/create?courseId=${courseId}`)}
+              disableStatusControls
+              onEdit={() => navigate(`/exams/create?classId=${classId}&courseId=${courseId}`)}
+              onDelete={async (id) => {
+                await deleteExamAny(id);               
+                const rows = await listClassExams(classId);
+                const mapped: ExamSummary[] = (rows || []).map((r: any) => {
+                  const candidates = extractIdCandidates(r, courseId);
+                  const primary = candidates[0] ?? String(r.id);
+                  return {
+                    id: primary,
+                    title: r.title || 'Examen',
+                    status: r.status === 'Publicado' ? 'published' : 'draft',
+                    visibility: 'visible',
+                    createdAt: r.createdAt ?? new Date().toISOString(),
+                    publishedAt:
+                      r.status === 'Publicado'
+                        ? (r.updatedAt ?? r.createdAt ?? new Date().toISOString())
+                        : undefined,
+                    totalQuestions: Number(r?.questionsCount ?? 0),
+                    counts: { multiple_choice: 0, true_false: 0, open_analysis: 0, open_exercise: 0 },
+                    __candidates: candidates,
+                  } as any;
+                });
+                setTableData(mapped);
+              }}
             />
           </div>
         </>
@@ -106,7 +133,11 @@ export default function CourseExamsPanel({ courseId }: Props) {
           <Empty description="Aún no hay exámenes para este curso">
             <Text style={{ fontSize: 14 }}>Los exámenes creados aparecerán aquí para su gestión.</Text>
           </Empty>
-          <Button type="primary" style={{ marginTop: 16 }} onClick={() => navigate(`/exams/create?courseId=${courseId}`)}>
+          <Button
+            type="primary"
+            style={{ marginTop: 16 }}
+            onClick={() => navigate(`/exams/create?classId=${classId}&courseId=${courseId}`)}
+          >
             Crear examen
           </Button>
         </div>

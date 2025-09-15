@@ -87,32 +87,22 @@ function buildQuestionsDto(input: Record<string, unknown> = {}) {
   const reference =
     input.reference != null ? String(input.reference) : undefined;
 
-  const instruction = [
-    'RESPONDE EXCLUSIVAMENTE EN ESPAÑOL NEUTRO (es).',
-    'Genera preguntas claras, concisas y SIN texto en inglés.',
-    'Respeta EXACTAMENTE la distribución por tipo indicada.',
-    `Tema/Materia: ${subject}`,
-    reference ? `Contexto: ${reference}` : '',
-  ]
-    .filter(Boolean)
-    .join('\n');
-
   const examId = (input as any).examId ? String((input as any).examId) : undefined;
   const classId = (input as any).classId ? String((input as any).classId) : undefined;
 
-  return {
+  const dto: any = {
     subject,
-    difficulty,
-    totalQuestions,
-    reference,
-    distribution,
-    language: 'es',
-    strict: true,
-    instruction,
-    ...(examId ? { examId } : {}),
-    ...(classId ? { classId } : {}),
+    difficulty,        
+    totalQuestions,   
+    reference,         
+    distribution,      
   };
+  if (examId) dto.examId = examId;
+  if (classId) dto.classId = classId;
+
+  return dto;
 }
+
 
 function looksSpanish(text: string): boolean {
   const t = (text || '').toLowerCase();
@@ -484,100 +474,27 @@ export async function listClassExams(classId: string): Promise<CourseExamRow[]> 
 }
 
 export async function listCourseExams(courseId_as_classId: string): Promise<CourseExamRow[]> {
-  if (process?.env?.NODE_ENV !== 'production') {
-    console.warn('[DEPRECATION] listCourseExams ahora debe llamarse con classId. Ajusta el caller pronto.');
+  if (import.meta.env.MODE !== 'production') {
+    console.warn('[DEPRECATION] listCourseExams now expects a classId (period). Forwarding to listClassExams.');
   }
   return listClassExams(courseId_as_classId);
 }
 
-async function exists(path: string) {
-  try {
-    const h = await api.head(path);
-    return h.status >= 200 && h.status < 300;
-  } catch (e: any) {
-    const st = e?.response?.status;
-    if (st === 405) {
-      try {
-        const g = await api.get(path);
-        return g.status >= 200 && g.status < 300;
-      } catch (ee: any) {
-        if (ee?.response?.status === 404) return false;
-        throw ee;
-      }
-    }
-    if (st === 404) return false;
-    throw e;
-  }
+export async function deleteExamAny(examId: string | number): Promise<void> {
+  const id = String(examId);
+  await api.delete(`/api/exams/${id}`);
 }
 
-async function tryDelete(path: string) {
-  try {
-    const res = await api.delete(path);
-    return !res || (res.status >= 200 && res.status < 300);
-  } catch (err: any) {
-    if (err?.response?.status !== 404) throw err;
-    return false;
-  }
-}
-
-async function tryAllDeleteCombos(classOrCourseId: string, id: string) {
-  const bases = [
-    `/classes/${classOrCourseId}/exams/${id}`,
-    `/courses/${classOrCourseId}/exams/${id}`,
-    `/courses/${classOrCourseId}/approved-exams/${id}`,
-    `/exams/${id}`,
-    `/exams/approved/${id}`,
-    `/approved-exams/${id}`,
-  ];
-
-  for (const base of bases) {
-    const ok = await exists(base);
-    if (!ok) continue;
-
-    if (await tryDelete(base)) return true;
-    if (await tryDelete(`${base}/delete`)) return true;
-    if (await tryDelete(`${base}/soft-delete`)) return true;
-  }
-
-  return false;
+export async function deleteCourseExam(classId: string, examId: string | number): Promise<void> {
+  await deleteExamAny(examId);
 }
 
 export async function deleteExamByCandidates(classId: string, candidates: Array<string | number>) {
   const ids = Array.from(new Set((candidates || []).map((x) => String(x)).filter(Boolean)));
-
   for (const id of ids) {
-    const ok = await tryAllDeleteCombos(classId, id);
-    if (ok) return;
+    await deleteExamAny(id);
   }
-
-  const err = new Error(`No se encontró endpoint de borrado para ids: ${ids.join(', ')}`);
-  (err as any).response = { status: 404, data: { message: (err as any).message } };
-  throw err;
-}
-
-export async function deleteCourseExam(classId: string, examId: string | number): Promise<void> {
-  await deleteExamByCandidates(classId, [examId]);
-}
-
-export async function deleteExamAny(examId: string | number): Promise<void> {
-  const id = String(examId);
-  const bases = [
-    `/exams/${id}`,
-    `/exams/approved/${id}`,
-    `/approved-exams/${id}`,
-  ];
-
-  for (const b of bases) {
-    if (await exists(b)) {
-      if (await tryDelete(b)) return;
-      if (await tryDelete(`${b}/delete`)) return;
-      if (await tryDelete(`${b}/soft-delete`)) return;
-    }
-  }
-
-  const err = new Error(`No se encontró endpoint de borrado para id: ${id}`);
-  (err as any).response = { status: 404, data: { message: (err as any).message } };
-  throw err;
 }
 
 export default { generateQuestions, createExam, createExamApproved };
+

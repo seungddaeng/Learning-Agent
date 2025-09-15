@@ -760,7 +760,7 @@ export function CourseDetailPage() {
               key="exams"
             >
               <div style={{ padding: "32px" }}>
-                {courseId && <CourseExamsPanel courseId={courseId} />}
+                {courseId && id && <CourseExamsPanel courseId={courseId} classId={id} />}
               </div>
             </TabPane>
 
