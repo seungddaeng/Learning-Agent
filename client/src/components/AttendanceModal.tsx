@@ -1,29 +1,31 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Modal, Table, Checkbox, Button } from "antd";
+import { Modal, Table, Checkbox, Button, message } from "antd";
 import { CalendarOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 
 import type { StudentInfo } from "../interfaces/studentInterface";
+import type { AttendanceRow, CreateAttendanceInterface } from "../interfaces/attendanceInterface";
+import useAttendance from "../hooks/useAttendance";
 
 interface AttendanceModalProps {
   open: boolean;
   onClose: () => void;
   students: StudentInfo[];
+  classId: string;
 }
 
 const AttendanceModal: React.FC<AttendanceModalProps> = ({
   open,
   onClose,
   students = [],
+  classId,
 }) => {
   const [studentMap, setStudentMap] = useState<Map<string, boolean>>(new Map())
-
-  //TODO - reemplazar any con la interfaz que se está creando en la US003
-  const [attendanceData, setAttendanceData] = useState<any[]>();
-  const [absentData, setAbsentData] = useState<any[]>();
-
+  const [attendanceData, setAttendanceData] = useState<AttendanceRow[]>([]);
+  const [absentData, setAbsentData] = useState<AttendanceRow[]>([]);
   const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const { saveAttendanceList } = useAttendance();
 
   const prepareData = useCallback(() => {
     const dataMap: Map<string, boolean> = new Map();
@@ -59,20 +61,28 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
       title: "Código",
       dataIndex: "code",
       key: "code",
+      width: 100,
+      ellipsis: true,
     },
     {
       title: "Nombres",
       dataIndex: "name",
       key: "name",
+      width: 160,
+      ellipsis: true,
     },
     {
       title: "Apellidos",
       dataIndex: "lastname",
       key: "lastname",
+      width: 180,
+      ellipsis: true,
     },
     {
       title: "Asistencia",
       key: "attendance",
+      width: 120,
+      align: 'center',
       render: (_, record) => (
         <Checkbox
           checked={studentMap.get(record.userId) || false}
@@ -106,14 +116,32 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
     onClose();
   }
 
-  const handleConfirmation = () => {
-    //TODO enviar los datos al backend - US003
-    console.log(attendanceData)
+  const handleConfirmation = async () => {
+    setShowConfirmModal(false)
+
+    const attendanceInfo: Omit<CreateAttendanceInterface, "teacherId"> = {
+      classId,
+      date: dayjs().startOf('day').toDate(),
+      studentRows: attendanceData
+    }
+
+    const res = await saveAttendanceList(attendanceInfo)
+    if (res?.state === "success") {
+      message.success(res.message)
+    } else if (res?.state === "error"){
+      message.error(res.message)
+    } else if (res?.state === "info") {
+      message.info(res.message)
+    }
+    resetStudentMap();
+    onClose();
   }
 
   const handleConfirmationCancel = () => {
     setShowConfirmModal(false)
   }
+
+  const tableScrollY = Math.max(260, Math.floor(window.innerHeight * 0.45));
 
   return (
     <Modal
@@ -128,6 +156,7 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
       open={open}
       onCancel={handleCancel}
       maskClosable={false}
+      centered
       footer={[
         <Button key="cancel" danger onClick={handleCancel}>
           Cancelar
@@ -138,13 +167,19 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
       ]}
       width={window.innerWidth < 600 ? '90%' : '70%'}
       style={{ maxWidth: '90vw' }}
+      styles={{
+        body: {
+          maxHeight: 'calc(100vh - 220px)',
+          overflowY: 'auto',
+        },
+      }}
     >
       <Table
         columns={columns}
         dataSource={students}
         rowKey={(record) => record.code}
         pagination={false}
-        scroll={{ x: 'max-content' }}
+        scroll={{ x: 'max-content', y: tableScrollY }}
       />
 
       {/* Modal de confirmación - Inspirado en el Componente safetyModal */}
