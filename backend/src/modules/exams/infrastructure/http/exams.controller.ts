@@ -1,4 +1,4 @@
-import {Body, Controller, Get, HttpCode, Logger, Param, Post, Put, Req, UseGuards, UseFilters, UsePipes, ValidationPipe, } from '@nestjs/common';
+import {Body, Controller, Get, Delete, HttpCode, Logger, Param, Post, Put, Req, UseGuards, UseFilters, UsePipes, ValidationPipe, } from '@nestjs/common';
 import type { Request } from 'express';
 import { randomUUID } from 'crypto';
 
@@ -20,6 +20,9 @@ import { AddExamQuestionCommandHandler } from '../../application/commands/add-ex
 
 import { UpdateExamQuestionCommand } from '../../application/commands/update-exam-question.command';
 import { UpdateExamQuestionCommandHandler } from '../../application/commands/update-exam-question.handler';
+
+import { DeleteExamCommand } from '../../application/commands/delete-exam.command';
+import { DeleteExamCommandHandler } from '../../application/commands/delete-exam.handler';
 
 import { GenerateQuestionsUseCase } from '../../application/commands/generate-questions.usecase';
 import { ListClassExamsUseCase } from '../../application/queries/list-class-exams.usecase';
@@ -122,6 +125,7 @@ export class ExamsController {
     private readonly createExamHandler: CreateExamCommandHandler,
     private readonly addExamQuestionHandler: AddExamQuestionCommandHandler,
     private readonly updateExamQuestionHandler: UpdateExamQuestionCommandHandler,
+    private readonly deleteExamHandler: DeleteExamCommandHandler,
     private readonly listClassExams: ListClassExamsUseCase,
     private readonly getByIdUseCase: GetExamByIdUseCase,
     private readonly generateQuestionsUseCase: GenerateQuestionsUseCase,
@@ -273,4 +277,18 @@ export class ExamsController {
     const data = await this.listClassExams.execute({ classId, teacherId: user.sub });
     return responseSuccess(cid(req), data, 'Exámenes de la clase', pathOf(req));
   }
+
+@Delete('exams/:examId')
+@HttpCode(204)
+async deleteExam(@Param('examId') examId: string, @Req() req: Request) {
+  const user = (req as any).user as { sub: string } | undefined;
+  if (!user?.sub) throw new UnauthorizedError('Acceso no autorizado');
+  if (!examId?.trim()) throw new BadRequestError('examId es obligatorio.');
+
+  const cmd = new DeleteExamCommand(examId, user.sub);
+  await this.deleteExamHandler.execute(cmd);
+
+  return;
+}
+
 }

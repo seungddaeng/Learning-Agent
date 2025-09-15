@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../../core/prisma/prisma.service';
 import { ExamRepositoryPort } from '../../domain/ports/exam.repository.port';
 import { Exam } from '../../domain/entities/exam.entity';
@@ -140,5 +140,20 @@ export class PrismaExamRepository implements ExamRepositoryPort {
       where: { id: classId, course: { teacherId } },
     });
     return owns > 0;
+  }
+
+    async deleteOwned(id: string, teacherId: string): Promise<void> {
+    const found = await this.prisma.exam.findFirst({
+      where: {
+        id,
+        class: { course: { teacherId } },
+      },
+      select: { id: true },
+    });
+
+    if (!found) {
+      throw new NotFoundException('Examen no encontrado');
+    }
+    await this.prisma.exam.delete({ where: { id } });
   }
 }

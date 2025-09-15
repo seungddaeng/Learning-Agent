@@ -13,6 +13,7 @@ import { CreateExamCommandHandler } from './application/commands/create-exam.han
 import { AddExamQuestionCommandHandler } from './application/commands/add-exam-question.handler';
 import { UpdateExamQuestionCommandHandler } from './application/commands/update-exam-question.handler';
 import { GenerateExamUseCase } from './application/commands/generate-exam.usecase';
+import { DeleteExamCommandHandler } from './application/commands/delete-exam.handler';
 
 import { GenerateQuestionsUseCase } from './application/commands/generate-questions.usecase';
 import { ListClassExamsUseCase } from './application/queries/list-class-exams.usecase';
@@ -44,6 +45,7 @@ import { ExamsStartupCheck } from './infrastructure/startup/exams-startup.check'
     AddExamQuestionCommandHandler,
     UpdateExamQuestionCommandHandler,
     GenerateQuestionsUseCase,
+    DeleteExamCommandHandler, 
     ListClassExamsUseCase,
     GetExamByIdUseCase,
 
