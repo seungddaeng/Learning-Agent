@@ -1,14 +1,15 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import PageTemplate from "../../components/PageTemplate";
 import TestModal from "../../components/tests/TestModal";
 import TestRunner from "../../components/tests/TestRunner";
 import TestSummaryModal from "../../components/tests/TestSummaryModal";
-import { useStudentTest } from "../../hooks/useStudentTest";
 import TimerDisplay from "../../components/tests/Timer";
+import { useStudentTest } from "../../hooks/useStudentTest";
 
 export default function Test() {
   const navigate = useNavigate();
+  const { id } = useParams();
   const [isExamStarted, setIsExamStarted] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
 
@@ -45,21 +46,22 @@ export default function Test() {
   const handleCloseSummary = () => {
     setShowSummary(false);
     setIsExamStarted(false);
-    navigate("/reinforcement");
+    navigate(`/student/classes/${id}/reinforcement`);
   };
 
   return (
     <PageTemplate
-      title="Exámenes"
+      title="Exams"
       subtitle={
         isExamStarted && questionCount
-          ? `Pregunta ${currentQuestion} de ${questionCount}`
-          : "Próximamente encontrarás cuestionarios y recursos para practicar"
+          ? `Question ${currentQuestion} of ${questionCount}`
+          : "Soon you will find quizzes and resources to practice"
       }
       breadcrumbs={[
-        { label: "Inicio", href: "/" },
-        { label: "Refuerzo", href: "/reinforcement" },
-        { label: "Exámenes" },
+        { label: "Home", href: "/" },
+        { label: "Classes", href: "/student/classes" },
+        { label: "Reinforcement", href: `/student/classes/${id}/reinforcement` },
+        { label: "Exams" },
       ]}
     >
       {!isExamStarted && (
@@ -69,6 +71,7 @@ export default function Test() {
           onSelectDifficulty={handleStartExam}
         />
       )}
+
       {isExamStarted && (
         <>
           <TimerDisplay timeLeft={timeLeft} totalTime={totalTime} />
@@ -77,6 +80,7 @@ export default function Test() {
           </div>
         </>
       )}
+
       {showSummary && (
         <TestSummaryModal
           open={showSummary}
