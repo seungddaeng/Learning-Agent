@@ -7,6 +7,7 @@ import {
   DatePicker,
   message,
   ConfigProvider,
+  Tooltip,
 } from "antd";
 import { useFormik } from "formik";
 import * as yup from "yup";
@@ -17,7 +18,7 @@ import isBetween from "dayjs/plugin/isBetween";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 
 import type { Course } from "../interfaces/courseInterface";
-import type { Clase } from "../interfaces/claseInterface";
+import type { Clase, CreateClassDTO } from "../interfaces/claseInterface";
 
 dayjs.locale("es");
 dayjs.extend(isBetween);
@@ -38,7 +39,7 @@ const periodValidationSchema = yup.object({
 interface PeriodFormProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (periodData: Clase) => void;
+  onSubmit: (periodData: Clase | CreateClassDTO) => void;
   course: Course;
   period?: Clase;
   loading?: boolean;
@@ -65,6 +66,8 @@ function PeriodForm({
 
   const formik = useFormik({
     enableReinitialize: true,
+    validateOnBlur: false,
+    validateOnChange: false,
     initialValues: {
       semester: period?.semester || "",
       dateBegin: period?.dateBegin || "",
@@ -77,17 +80,21 @@ function PeriodForm({
         const end = dayjs(values.dateEnd);
 
         // Validar mínimo de días hábiles
-        const businessDays = countBusinessDays(start, end);
-        if (businessDays < MIN_BUSINESS_DAYS) {
-          message.error(
-            `El período debe tener mínimo ${MIN_BUSINESS_DAYS} días hábiles`
-          );
+        const isSpecial =
+          values.semester.startsWith("VERANO") ||
+          values.semester.startsWith("INVIERNO");
+
+        const minDays = isSpecial ? MIN_BUSINESS_DAYS - 5 : MIN_BUSINESS_DAYS;
+
+        let businessDays = countBusinessDays(start, end);
+
+        if (businessDays < minDays) {
+          message.error(`El período debe tener mínimo ${minDays} días hábiles`);
           return;
         }
 
-        let periodData: Clase;
         if (period) {
-          periodData = {
+          const periodData: Clase = {
             ...period,
             semester: values.semester,
             teacherId: course.teacherId,
@@ -95,19 +102,18 @@ function PeriodForm({
             dateBegin: values.dateBegin,
             dateEnd: values.dateEnd,
           };
+          await onSubmit(periodData as Clase);
         } else {
-          periodData = {
-            id: "",
-            name: "",
-            semester: values.semester,
+          const newPeriod: CreateClassDTO = {
             teacherId: course.teacherId,
             courseId: course.id,
+            semester: values.semester,
             dateBegin: values.dateBegin,
             dateEnd: values.dateEnd,
           };
+          await onSubmit(newPeriod as CreateClassDTO);
         }
 
-        await onSubmit(periodData);
         resetForm();
         onClose();
       } catch (error) {
@@ -161,7 +167,7 @@ function PeriodForm({
   }
 
   let availableSemesters = allPeriods.sort((a, b) =>
-    dayjs(a.start).diff(dayjs(b.start))
+    dayjs(b.start).diff(dayjs(a.start))
   );
 
   const ranges = availableSemesters.reduce((acc, sem) => {
@@ -206,26 +212,24 @@ function PeriodForm({
     const { semester } = formik.values;
     if (!semester || !ranges[semester]) return;
 
-    const { start, end, type } = ranges[semester];
+    const { end, type } = ranges[semester];
 
     if (value) {
       const isoDate = value.format("YYYY-MM-DD");
       formik.setFieldValue(field, isoDate);
 
       if (field === "dateBegin") {
-        if (type === "SPECIAL") {
-          formik.setFieldValue("dateBegin", start.format("YYYY-MM-DD"));
-          formik.setFieldValue("dateEnd", end.format("YYYY-MM-DD"));
-        } else {
-          let temp = value.clone();
-          let days = 0;
-          while (days < MIN_BUSINESS_DAYS && temp.isBefore(end)) {
-            temp = temp.add(1, "day");
-            if (temp.day() !== 0 && temp.day() !== 6) days++;
-          }
-          if (temp.isAfter(end)) temp = end;
-          formik.setFieldValue("dateEnd", temp.format("YYYY-MM-DD"));
+        const minDays =
+          type === "SPECIAL" ? MIN_BUSINESS_DAYS - 5 : MIN_BUSINESS_DAYS;
+
+        let temp = value.clone();
+        let days = 0;
+        while (days < minDays && temp.isBefore(end)) {
+          temp = temp.add(1, "day");
+          if (temp.day() !== 0 && temp.day() !== 6) days++;
         }
+        if (temp.isAfter(end)) temp = end;
+        formik.setFieldValue("dateEnd", temp.format("YYYY-MM-DD"));
       }
     } else {
       formik.setFieldValue(field, "");
@@ -251,14 +255,8 @@ function PeriodForm({
           {/* Select semestre */}
           <Form.Item
             label="Semestre"
-            validateStatus={
-              formik.errors.semester && formik.touched.semester ? "error" : ""
-            }
-            help={
-              formik.errors.semester && formik.touched.semester
-                ? formik.errors.semester
-                : null
-            }
+            validateStatus={formik.errors.semester ? "error" : ""}
+            help={formik.errors.semester || null}
           >
             <Select
               placeholder="Selecciona un semestre"
@@ -282,65 +280,73 @@ function PeriodForm({
           {/* Fecha de inicio */}
           <Form.Item
             label="Fecha de inicio"
-            validateStatus={
-              formik.errors.dateBegin && formik.touched.dateBegin ? "error" : ""
-            }
-            help={
-              formik.errors.dateBegin && formik.touched.dateBegin
-                ? formik.errors.dateBegin
-                : null
-            }
+            validateStatus={formik.errors.dateBegin ? "error" : ""}
+            help={formik.errors.dateBegin || null}
           >
-            <DatePicker
-              style={{ width: "100%" }}
-              format="YYYY-MM-DD"
-              disabledDate={disabledDateBegin}
-              value={
-                formik.values.dateBegin ? dayjs(formik.values.dateBegin) : null
+            <Tooltip
+              title={
+                !formik.values.semester
+                  ? "Selecciona un semestre para habilitar"
+                  : ""
               }
-              defaultPickerValue={
-                formik.values.semester
-                  ? ranges[formik.values.semester].start
-                  : undefined
-              }
-              onChange={(date) => {
-                handleDateChange("dateBegin", date);
-                formik.setFieldTouched("dateBegin", true);
-              }}
-              disabled={!formik.values.semester}
-            />
+            >
+              <DatePicker
+                style={{ width: "100%" }}
+                format="DD-MM-YYYY"
+                disabledDate={disabledDateBegin}
+                value={
+                  formik.values.dateBegin
+                    ? dayjs(formik.values.dateBegin)
+                    : null
+                }
+                defaultPickerValue={
+                  formik.values.semester
+                    ? ranges[formik.values.semester].start
+                    : undefined
+                }
+                onChange={(date) => {
+                  handleDateChange("dateBegin", date);
+                  formik.setFieldTouched("dateBegin", true);
+                }}
+                disabled={!formik.values.semester}
+              />
+            </Tooltip>
           </Form.Item>
 
           {/* Fecha de fin */}
           <Form.Item
             label="Fecha de fin"
-            validateStatus={
-              formik.errors.dateEnd && formik.touched.dateEnd ? "error" : ""
-            }
-            help={
-              formik.errors.dateEnd && formik.touched.dateEnd
-                ? formik.errors.dateEnd
-                : null
-            }
+            validateStatus={formik.errors.dateEnd ? "error" : ""}
+            help={formik.errors.dateEnd || null}
           >
-            <DatePicker
-              style={{ width: "100%" }}
-              format="YYYY-MM-DD"
-              disabledDate={disabledDateEnd}
-              value={
-                formik.values.dateEnd ? dayjs(formik.values.dateEnd) : null
+            <Tooltip
+              title={
+                !formik.values.semester
+                  ? "Selecciona un semestre para habilitar"
+                  : !formik.values.dateBegin
+                  ? "Selecciona la fecha de inicio para habilitar"
+                  : ""
               }
-              defaultPickerValue={
-                formik.values.semester
-                  ? ranges[formik.values.semester].start
-                  : undefined
-              }
-              onChange={(date) => {
-                handleDateChange("dateEnd", date);
-                formik.setFieldTouched("dateEnd", true);
-              }}
-              disabled={!formik.values.dateBegin}
-            />
+            >
+              <DatePicker
+                style={{ width: "100%" }}
+                format="DD-MM-YYYY"
+                disabledDate={disabledDateEnd}
+                value={
+                  formik.values.dateEnd ? dayjs(formik.values.dateEnd) : null
+                }
+                defaultPickerValue={
+                  formik.values.semester
+                    ? ranges[formik.values.semester].start
+                    : undefined
+                }
+                onChange={(date) => {
+                  handleDateChange("dateEnd", date);
+                  formik.setFieldTouched("dateEnd", true);
+                }}
+                disabled={!formik.values.dateBegin}
+              />
+            </Tooltip>
           </Form.Item>
 
           {/* Botones */}
