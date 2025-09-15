@@ -1,6 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Input, Button, theme, Typography, Card } from 'antd';
+import { useState, useRef, useEffect } from 'react';
+import { Input, Button, theme, Typography } from 'antd';
 import { SendOutlined, RightOutlined, MessageOutlined } from '@ant-design/icons';
+import apiClient from '../../api/apiClient';
+
+const { Text } = Typography;
+
+const WIDTH = 900;
+const HEIGHT = '60vh';
+const TOP_OFFSET = '5vh'; 
 
 const TypingIndicator: React.FC<{ token: any }> = ({ token }) => (
   <div
@@ -31,27 +38,23 @@ const TypingIndicator: React.FC<{ token: any }> = ({ token }) => (
   </div>
 );
 
-const ChatMessage: React.FC<{
-  text: string;
-  isUser: boolean;
-  token: any;
-}> = ({ text, isUser, token }) => (
+const ChatMessage: React.FC<{ text: string; isUser: boolean; token: any }> = ({ text, isUser, token }) => (
   <div
     style={{
       display: 'flex',
       justifyContent: isUser ? 'flex-end' : 'flex-start',
-      marginBottom: token.marginLG,
+      marginBottom: token.marginMD,
     }}
   >
     <div
       style={{
-        padding: `${token.paddingSM}px ${token.paddingLG}px`,
-        borderRadius: token.borderRadiusXXL,
+        padding: `${token.paddingSM + 2}px ${token.paddingLG}px`,
+        borderRadius: token.borderRadiusLG,
         maxWidth: '75%',
-        backgroundColor: isUser ? token.colorBgElevated : token.colorBgContainer,
+        backgroundColor: isUser ? token.colorPrimary : token.colorBgContainer,
+        color: isUser ? token.colorTextLightSolid : token.colorText,
         boxShadow: token.boxShadow,
         fontSize: token.fontSize,
-        color: token.colorText,
         overflowWrap: 'break-word',
         wordBreak: 'break-word',
         whiteSpace: 'pre-wrap',
@@ -62,11 +65,7 @@ const ChatMessage: React.FC<{
   </div>
 );
 
-interface OpenQuestionProps {
-  onNext: () => void;
-}
-
-export default function OpenQuestion({ onNext }: OpenQuestionProps) {
+export default function OpenQuestion({ onNext }: { onNext: () => void }) {
   const { token } = theme.useToken();
   const [messages, setMessages] = useState<{ sender: 'user' | 'bot'; text: string }[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -103,15 +102,20 @@ export default function OpenQuestion({ onNext }: OpenQuestionProps) {
 
   useEffect(() => {
     if (!scrollRef.current) return;
-    scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    scrollRef.current.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: 'smooth',
+    });
   }, [messages, isBotTyping, showNextButton]);
 
   async function fetchQuestion() {
     try {
-      const res = await fetch(`${import.meta.env.VITE_URL}${import.meta.env.VITE_CHATINT_URL}`);
-      const { question } = await res.json();
+      const response = await apiClient.get("/chatint/question?topico=fisica");
+      const { question } = await response.data;
       setMessages((m) => [...m, { sender: 'bot', text: question }]);
-    } catch {}
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   async function sendAnswer() {
@@ -123,16 +127,11 @@ export default function OpenQuestion({ onNext }: OpenQuestionProps) {
     setInputDisabled(true);
     setIsBotTyping(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_URL}${import.meta.env.VITE_CHATINT_ADVICE_URL}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          question: lastQuestion,
-          answer,
-          topic: 'fisica',
-        }),
+      const { data } = await apiClient.post("/chatint/advice", {
+        question: lastQuestion,
+        answer,
+        topic: 'fisica',
       });
-      const data = await res.json();
       setMessages((m) => [...m, { sender: 'bot', text: data.coaching_advice || 'Error.' }]);
     } catch {
       setMessages((m) => [...m, { sender: 'bot', text: 'Hubo un error.' }]);
@@ -147,71 +146,63 @@ export default function OpenQuestion({ onNext }: OpenQuestionProps) {
     <div
       style={{
         display: 'flex',
-        justifyContent: 'center',
+        flexDirection: 'column',
         alignItems: 'center',
+        width: '100%',
+        height: '100%',
         padding: token.paddingLG,
         backgroundColor: token.colorBgLayout,
-        overflowAnchor: 'none',
       }}
     >
-      <Card
-        title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: token.sizeSM }}>
-            <MessageOutlined />
-            <Typography.Text style={{ fontSize: '1.25rem', fontWeight: 500 }}>
-              Interview
-            </Typography.Text>
-          </div>
-        }
-        bordered={false}
+      <div
         style={{
-          width: '100%',
-          maxWidth: 900,
-          height: '60vh',
-          maxHeight: '60vh',
+          marginTop: TOP_OFFSET,
           display: 'flex',
           flexDirection: 'column',
-          backgroundColor: token.colorBgContainer,
-        }}
-        bodyStyle={{
-          display: 'flex',
-          flexDirection: 'column',
-          flex: 1,
-          padding: 0,
+          width: WIDTH,
+          height: HEIGHT,
+          backgroundColor: token.colorBgLayout,
+          borderRadius: token.borderRadiusLG,
+          boxShadow: token.boxShadow,
           overflow: 'hidden',
         }}
       >
-        <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: token.paddingLG, overflowAnchor: 'none' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            padding: token.paddingMD,
+            borderBottom: `1px solid ${token.colorBorderSecondary}`,
+            backgroundColor: token.colorBgContainer,
+          }}
+        >
+          <MessageOutlined style={{ marginRight: token.marginSM, color: token.colorPrimary }} />
+          <Text style={{ fontSize: '1.25rem', fontWeight: 500, color: token.colorTextHeading }}>
+            Interview
+          </Text>
+        </div>
+        <div
+          ref={scrollRef}
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: token.paddingLG,
+            backgroundColor: token.colorBgLayout,
+          }}
+        >
           {messages.map((msg, i) => (
             <ChatMessage key={i} text={msg.text} isUser={msg.sender === 'user'} token={token} />
           ))}
           {isBotTyping && <TypingIndicator token={token} />}
-          {showNextButton && (
-            <div style={{ display: 'flex', justifyContent: 'center', margin: token.marginLG }}>
-              <Button
-                type="primary"
-                size="large"
-                onClick={onNext}
-                style={{
-                  borderRadius: token.borderRadiusLG,
-                  height: 48,
-                  padding: `0 ${token.paddingLG}px`,
-                  fontWeight: 600,
-                  boxShadow: token.boxShadow,
-                }}
-              >
-                Siguiente Pregunta <RightOutlined />
-              </Button>
-            </div>
-          )}
         </div>
         {!showNextButton && (
           <div
             style={{
-              padding: token.paddingLG,
               borderTop: `1px solid ${token.colorBorderSecondary}`,
               display: 'flex',
               alignItems: 'center',
+              padding: token.paddingSM,
+              backgroundColor: token.colorBgContainer,
             }}
           >
             <Input
@@ -242,7 +233,35 @@ export default function OpenQuestion({ onNext }: OpenQuestionProps) {
             />
           </div>
         )}
-      </Card>
+      </div>
+
+      {showNextButton && (
+        <div
+          style={{
+            width: WIDTH,
+            display: 'flex',
+            justifyContent: 'flex-end',
+            marginTop: token.marginMD,
+            paddingRight: 0,
+          }}
+        >
+          <Button
+            type="primary"
+            size="large"
+            onClick={onNext}
+            style={{
+              borderRadius: token.borderRadiusLG,
+              height: 48,
+              padding: `0 ${token.paddingLG}px`,
+              fontWeight: 600,
+              boxShadow: token.boxShadow,
+              marginRight: 0,
+            }}
+          >
+            Siguiente Pregunta <RightOutlined />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
