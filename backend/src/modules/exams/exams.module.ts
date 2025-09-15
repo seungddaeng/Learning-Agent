@@ -1,5 +1,6 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { PrismaModule } from '../../core/prisma/prisma.module';
+import { IdentityModule } from '../identity/identity.module'
 
 import { EXAM_REPO, EXAM_QUESTION_REPO, EXAM_AI_GENERATOR } from './tokens';
 
@@ -22,41 +23,12 @@ import { LLM_PORT } from '../llm/tokens';
 import { GeminiAdapter } from '../llm/infrastructure/adapters/gemini.adapter';
 import { PromptTemplateModule } from '../prompt-template/prompt-template.module';
 
-import { TOKEN_SERVICE } from '../identity/tokens';
 import { ExamsStartupCheck } from './infrastructure/startup/exams-startup.check';
-
-function decodeJwtPayload(token: string): any {
-  const raw = token.startsWith('Bearer ') ? token.slice(7) : token;
-  const parts = raw.split('.');
-  if (parts.length < 2) throw new Error('Invalid JWT');
-
-  let b64url = parts[1].trim();
-  b64url = b64url.replace(/[^A-Za-z0-9\-_]/g, '');
-  let b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
-  const pad = b64.length % 4;
-  if (pad) b64 += '='.repeat(4 - pad);
-  const json = Buffer.from(b64, 'base64').toString('utf8');
-  return JSON.parse(json);
-}
-
-const DevTokenService = {
-  verifyAccess: (token: string) => decodeJwtPayload(token),
-};
-
-const devTokenAllowed = process.env.USE_DEV_TOKEN === '1';
-const isProd = process.env.NODE_ENV === 'production';
-
-if (isProd && devTokenAllowed) {
-  throw new Error('USE_DEV_TOKEN no está permitido en producción');
-}
-
-const DEV_ONLY_PROVIDERS = devTokenAllowed && !isProd
-  ? [{ provide: TOKEN_SERVICE, useValue: DevTokenService }]
-  : [];
 
 @Module({
   imports: [
     PrismaModule,
+    forwardRef(() => IdentityModule),
     PromptTemplateModule,
   ],
   providers: [
@@ -71,14 +43,13 @@ const DEV_ONLY_PROVIDERS = devTokenAllowed && !isProd
     CreateExamCommandHandler,
     AddExamQuestionCommandHandler,
     UpdateExamQuestionCommandHandler,
-
     GenerateQuestionsUseCase,
     ListClassExamsUseCase,
     GetExamByIdUseCase,
 
     ExamsStartupCheck,
 
-    ...DEV_ONLY_PROVIDERS,
+    
   ],
   controllers: [ExamsController],
 })
