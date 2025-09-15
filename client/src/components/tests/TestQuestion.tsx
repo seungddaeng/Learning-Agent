@@ -1,18 +1,19 @@
+
+import React from "react";
+
 import { Card, Typography, theme, Alert, Button } from "antd";
 
 const { Title } = Typography;
 
-
-
-
 interface TestQuestionProps {
-  onNext?: () => void;
+  onNext: (isCorrect: boolean) => void;
   question?: string;
-  options?: string[]; 
+  options?: string[];
 }
 
 export default function TestQuestion({ onNext, question = "", options }: TestQuestionProps) {
   const { token } = theme.useToken();
+
 
   const safeOptions = Array.isArray(options) ? options : [];
 
@@ -22,6 +23,7 @@ export default function TestQuestion({ onNext, question = "", options }: TestQue
     } else {
       window.location.reload();
     }
+
   };
 
   if (safeOptions.length === 0) {
@@ -57,8 +59,10 @@ export default function TestQuestion({ onNext, question = "", options }: TestQue
           description={
             <div>
 
+
               Esta vista espera recibir <code>options</code> desde el backend. Usa{" "}
               <strong>TestRunner</strong> para obtener preguntas generadas.
+
 
             </div>
           }
@@ -67,9 +71,7 @@ export default function TestQuestion({ onNext, question = "", options }: TestQue
         />
 
         <div style={{ marginTop: 8 }}>
-          <Button onClick={() => (onNext ? onNext() : window.location.reload())}>
-            Intentar cargar / recargar
-          </Button>
+          <Button onClick={() => onNext(false)}>Intentar cargar / recargar</Button>
         </div>
       </div>
     );
@@ -104,12 +106,8 @@ export default function TestQuestion({ onNext, question = "", options }: TestQue
           boxShadow: token.boxShadow,
         }}
       >
-
-
         <Title level={3} style={{ margin: 0, color: token.colorTextHeading }}>
           {question}
-
-
         </Title>
       </Card>
 
@@ -122,12 +120,12 @@ export default function TestQuestion({ onNext, question = "", options }: TestQue
           maxWidth: 800,
         }}
       >
-
-
         {safeOptions.map((label, index) => (
           <div
             key={index}
+
             onClick={() => handleSelect(String(index))}
+
             style={{
               backgroundColor: optionColors[index % optionColors.length],
               color: token.colorTextLightSolid,
@@ -143,11 +141,7 @@ export default function TestQuestion({ onNext, question = "", options }: TestQue
             }}
 
           >
-
-
             {label}
-
-
           </div>
         ))}
       </div>

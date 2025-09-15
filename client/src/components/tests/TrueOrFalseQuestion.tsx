@@ -3,11 +3,14 @@ import { Card, Typography, theme, Alert, Button } from "antd";
 const { Title } = Typography;
 
 interface TrueOrFalseQuestionProps {
-  onNext?: () => void;
+  onNext: (isCorrect: boolean) => void;
   question?: string;
 }
 
-export default function TrueOrFalseQuestion({ onNext, question = "" }: TrueOrFalseQuestionProps) {
+export default function TrueOrFalseQuestion({
+  onNext,
+  question = "",
+}: TrueOrFalseQuestionProps) {
   const { token } = theme.useToken();
 
   const handleSelect = (_value: boolean) => {
@@ -18,6 +21,7 @@ export default function TrueOrFalseQuestion({ onNext, question = "" }: TrueOrFal
       window.location.reload();
 
     }
+
   };
 
   if (!question) {
@@ -60,7 +64,7 @@ export default function TrueOrFalseQuestion({ onNext, question = "" }: TrueOrFal
         />
 
         <div style={{ marginTop: 8 }}>
-          <Button onClick={() => (onNext ? onNext() : window.location.reload())}>Recargar</Button>
+          <Button onClick={() => onNext(false)}>Recargar</Button>
         </div>
       </div>
     );
