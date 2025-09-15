@@ -110,6 +110,7 @@ model StudentProfile {
   admissionYear Int?
   // relation 1:N
   enrollment    Enrollment[]
+  attendance    Attendance[]
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -415,6 +416,11 @@ model Classes {
 
   // relation 1:N
   enrollment    Enrollment[]
+  attendance Attendance[]
+
+  quizQuestions    QuizQuestion[]
+  interviewQuestions InterviewQuestion[]
+
 
   courseId      String            
   course        Course            @relation(fields: [courseId], references: [id])
@@ -436,3 +442,55 @@ model Enrollment {
 
   @@id([studentId, classId])
 }
+
+
+/* ===========================
+   Reinforcement (entrevistas y examenes )
+   =========================== */
+   model QuizQuestion {
+    id         String   @id @default(uuid())
+    classId    String
+    text       String   @db.Text
+    type       String
+    options    Json?
+    createdAt  DateTime @default(now())
+    lastUsedAt DateTime?
+
+    // Relación con Classes
+    class      Classes  @relation(fields: [classId], references: [id], onDelete: Cascade)
+    @@index([classId])
+    @@index([createdAt])
+    @@index([lastUsedAt])
+    @@map("quiz_questions")
+  }
+
+  model InterviewQuestion {
+    id         String   @id @default(uuid())
+    classId    String
+    text       String   @db.Text
+    createdAt  DateTime @default(now())
+    lastUsedAt DateTime?
+
+    // Relación con Classes
+    class      Classes  @relation(fields: [classId], references: [id], onDelete: Cascade)
+    @@index([classId])
+    @@index([createdAt])
+    @@index([lastUsedAt])
+    @@map("interview_questions")
+  }
+// relation N:N - StudentProfile-Classes by Dates
+model Attendance {
+  id            String            @id @default(uuid())
+
+  studentId     String
+  student       StudentProfile    @relation(fields: [studentId], references: [userId])
+  classId       String
+  class         Classes           @relation(fields: [classId], references: [id])
+  
+  date          DateTime          @default(now())
+  isPresent     Boolean           @default(false)
+
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+}
+
