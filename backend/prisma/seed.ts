@@ -7,6 +7,14 @@ const prisma = new PrismaClient();
 
 async function main() {
   console.log('==> Seed iniciado');
+  
+  // Verificar si ya existen datos para evitar sobreescritura
+  const existingUsers = await prisma.user.count();
+  if (existingUsers > 0) {
+    console.log('==> Base de datos ya contiene datos, saltando seed');
+    return;
+  }
+  
   // --- Crear Roles ---
   let docenteRole: Role;
   let estudianteRole: Role;
