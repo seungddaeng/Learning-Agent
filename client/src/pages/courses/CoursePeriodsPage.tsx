@@ -8,6 +8,7 @@ import useClasses from "../../hooks/useClasses";
 import type { Clase, CreateClassDTO } from "../../interfaces/claseInterface";
 import { useUserStore } from "../../store/userStore";
 import dayjs from "dayjs";
+import GlobalScrollbar from '../../components/GlobalScrollbar';
 import AccessDenied from "../../components/shared/AccessDenied";
 import CustomCard from "../../components/shared/CustomCard";
 import useCourses from "../../hooks/useCourses";
@@ -101,6 +102,7 @@ export function CoursePeriodsPage() {
           { label: "Cargando..." }
         ]}
       >
+        <GlobalScrollbar />        
         <div style={{ textAlign: "center", padding: "50px" }}>
           <div>Cargando curso y períodos...</div>
         </div>
@@ -119,6 +121,7 @@ export function CoursePeriodsPage() {
           { label: "Error" }
         ]}
       >
+        <GlobalScrollbar />                
         <div style={{ textAlign: "center", padding: "50px" }}>
           <Empty description="Curso no encontrado" />
           <Button type="primary" onClick={() => navigate("/courses")}>
@@ -141,6 +144,7 @@ export function CoursePeriodsPage() {
             { label: actualCourse.name }
           ]}
         >
+        <GlobalScrollbar />        
           <div
             style={{
               maxWidth: 1200,
