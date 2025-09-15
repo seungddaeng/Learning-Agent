@@ -65,6 +65,8 @@ function PeriodForm({
 
   const formik = useFormik({
     enableReinitialize: true,
+    validateOnBlur: false,
+    validateOnChange: false,
     initialValues: {
       semester: period?.semester || "",
       dateBegin: period?.dateBegin || "",
@@ -164,7 +166,7 @@ function PeriodForm({
   }
 
   let availableSemesters = allPeriods.sort((a, b) =>
-    dayjs(a.start).diff(dayjs(b.start))
+    dayjs(b.start).diff(dayjs(a.start))
   );
 
   const ranges = availableSemesters.reduce((acc, sem) => {
@@ -252,14 +254,8 @@ function PeriodForm({
           {/* Select semestre */}
           <Form.Item
             label="Semestre"
-            validateStatus={
-              formik.errors.semester && formik.touched.semester ? "error" : ""
-            }
-            help={
-              formik.errors.semester && formik.touched.semester
-                ? formik.errors.semester
-                : null
-            }
+            validateStatus={formik.errors.semester ? "error" : ""}
+            help={formik.errors.semester || null}
           >
             <Select
               placeholder="Selecciona un semestre"
@@ -283,14 +279,8 @@ function PeriodForm({
           {/* Fecha de inicio */}
           <Form.Item
             label="Fecha de inicio"
-            validateStatus={
-              formik.errors.dateBegin && formik.touched.dateBegin ? "error" : ""
-            }
-            help={
-              formik.errors.dateBegin && formik.touched.dateBegin
-                ? formik.errors.dateBegin
-                : null
-            }
+            validateStatus={formik.errors.dateBegin ? "error" : ""}
+            help={formik.errors.dateBegin || null}
           >
             <DatePicker
               style={{ width: "100%" }}
@@ -315,14 +305,8 @@ function PeriodForm({
           {/* Fecha de fin */}
           <Form.Item
             label="Fecha de fin"
-            validateStatus={
-              formik.errors.dateEnd && formik.touched.dateEnd ? "error" : ""
-            }
-            help={
-              formik.errors.dateEnd && formik.touched.dateEnd
-                ? formik.errors.dateEnd
-                : null
-            }
+            validateStatus={formik.errors.dateEnd ? "error" : ""}
+            help={formik.errors.dateEnd || null}
           >
             <DatePicker
               style={{ width: "100%" }}
