@@ -428,6 +428,7 @@ export function CourseDetailPage() {
         </>
       }
     >
+      <GlobalScrollbar />        
       <div style={{ padding: "1rem" }}>
         <div
           style={{
@@ -569,6 +570,7 @@ export function CourseDetailPage() {
                         pageSize: 10,
                       }}
                       size="middle"
+                      scroll={{ x: 'max-content' }}
                     />
                     <div style={{ marginTop: 24 }}>
                       <div className="flex gap-3">

@@ -158,7 +158,7 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
       maskClosable={false}
       centered
       footer={[
-        <Button key="cancel" danger onClick={handleCancel}>
+        <Button key="cancel" danger type="primary" onClick={handleCancel}>
           Cancelar
         </Button>,
         <Button type="primary" onClick={handleSubmit}>
