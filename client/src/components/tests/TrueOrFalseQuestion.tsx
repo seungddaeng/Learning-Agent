@@ -1,23 +1,24 @@
-import { Card, Typography, theme, Alert, Button } from "antd";
+import { Card, Typography, theme } from "antd";
 
 const { Title } = Typography;
 
 interface TrueOrFalseQuestionProps {
+  questionData: {
+    question: string;
+    correctIndex: number;
+  };
   onNext: (isCorrect: boolean) => void;
-  question?: string;
 }
 
-export default function TrueOrFalseQuestion({
-  onNext,
-  question = "",
-}: TrueOrFalseQuestionProps) {
+export default function TrueOrFalseQuestion({ questionData, onNext }: TrueOrFalseQuestionProps) {
   const { token } = theme.useToken();
+  const { question, correctIndex } = questionData;
 
+  const options = ["Verdadero", "Falso"];
 
-
-  const handleSelect = (_value: boolean) => {
-    const action = onNext ?? (() => window.location.reload());
-    setTimeout(action, parseInt(token.motionDurationMid) || 300);
+  const handleSelect = (index: number) => {
+    const isCorrect = index === correctIndex;
+    setTimeout(() => onNext(isCorrect), parseInt(token.motionDurationMid) || 300);
   };
 
   const containerStyle: React.CSSProperties = {
@@ -44,61 +45,23 @@ export default function TrueOrFalseQuestion({
     justifyContent: "center",
   };
 
-  const optionStyleBase: React.CSSProperties = {
+  const optionStyle: React.CSSProperties = {
     borderRadius: token.borderRadiusLG,
     backgroundColor: token.colorPrimary,
     color: token.colorTextLightSolid,
     fontWeight: token.fontWeightStrong,
-    fontSize: token.fontSizeLG * 1.3,
+    fontSize: token.fontSizeLG,
     textAlign: "center",
     cursor: "pointer",
     transition: `transform ${token.motionDurationMid} ${token.motionEaseOut}, box-shadow ${token.motionDurationMid} ${token.motionEaseOut}`,
     boxShadow: token.boxShadow,
     userSelect: "none",
     padding: token.paddingMD,
-    minHeight: 94,
+    minHeight: 72,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-
-
   };
-
-  if (!question) {
-    return (
-      <div style={containerStyle}>
-        <Card
-          style={{
-            ...questionCardStyle,
-            borderLeft: "none",
-            boxShadow: token.boxShadow,
-          }}
-        >
-          <Title level={4} style={{ margin: 0, color: token.colorTextHeading }}>
-            Pregunta no disponible
-          </Title>
-        </Card>
-
-        <Alert
-          message="No se encontró la pregunta"
-          description={
-            <div>
-              Esta vista espera recibir la pregunta desde el backend. Usa{" "}
-              <strong>TestRunner</strong> para obtener preguntas generadas.
-            </div>
-          }
-          type="info"
-          showIcon
-        />
-
-
-        <Button onClick={() => (onNext ? onNext() : window.location.reload())}>
-          Recargar
-        </Button>
-
-      </div>
-    );
-  }
 
   return (
     <div style={containerStyle}>
@@ -124,27 +87,23 @@ export default function TrueOrFalseQuestion({
           maxWidth: token.screenLG,
         }}
       >
-
-        {[{ label: "Verdadero", value: true }, { label: "Falso", value: false }].map(
-          (opt) => (
-            <div
-              key={opt.label}
-              style={optionStyleBase}
-              onClick={() => handleSelect(opt.value)}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "scale(1.02)";
-                e.currentTarget.style.boxShadow = token.boxShadowSecondary;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "scale(1)";
-                e.currentTarget.style.boxShadow = token.boxShadow;
-              }}
-            >
-              {opt.label}
-            </div>
-          )
-        )}
-
+        {options.map((label, index) => (
+          <div
+            key={index}
+            onClick={() => handleSelect(index)}
+            style={optionStyle}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "scale(1.02)";
+              e.currentTarget.style.boxShadow = token.boxShadowSecondary;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "scale(1)";
+              e.currentTarget.style.boxShadow = token.boxShadow;
+            }}
+          >
+            {label}
+          </div>
+        ))}
       </div>
     </div>
   );
