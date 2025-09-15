@@ -135,26 +135,26 @@ function PeriodForm({
     allPeriods.push(
       {
         name: `PRIMERO ${year}`,
-        start: `${year}-01-25`,
+        start: `${year}-01-01`,
         end: `${year}-06-30`,
         type: "NORMAL",
       },
       {
         name: `INVIERNO ${year}`,
-        start: `${year}-07-01`,
-        end: `${year}-07-24`,
+        start: `${year}-06-01`,
+        end: `${year}-07-31`,
         type: "SPECIAL",
       },
       {
         name: `SEGUNDO ${year}`,
-        start: `${year}-07-25`,
+        start: `${year}-07-01`,
         end: `${year}-12-31`,
         type: "NORMAL",
       },
       {
-        name: `VERANO ${year + 1}`,
-        start: `${year + 1}-01-01`,
-        end: `${year + 1}-01-24`,
+        name: `VERANO ${year}`,
+        start: `${year - 1}-12-01`,
+        end: `${year}-01-31`,
         type: "SPECIAL",
       }
     );
@@ -177,67 +177,23 @@ function PeriodForm({
     const { semester } = formik.values;
     if (!semester || !ranges[semester]) return true;
 
-    const { start, end, type } = ranges[semester];
-    const minDate = start.isAfter(today) ? start : today;
-
-    if (type === "SPECIAL") {
-      return (
-        current.isBefore(minDate, "day") ||
-        current.isAfter(end, "day") ||
-        current.day() === 0 ||
-        current.day() === 6
-      );
-    }
-
-    let temp = end.clone();
-    let days = 0;
-    while (days < MIN_BUSINESS_DAYS) {
-      temp = temp.subtract(1, "day");
-      if (temp.day() !== 0 && temp.day() !== 6) days++;
-    }
-    const maxDate = temp;
-
+    const { start, end } = ranges[semester];
     return (
-      current.isBefore(minDate, "day") ||
-      current.isAfter(maxDate, "day") ||
+      current.isBefore(start, "day") ||
+      current.isAfter(end, "day") ||
       current.day() === 0 ||
       current.day() === 6
     );
   };
 
   const disabledDateEnd = (current: Dayjs) => {
-    const { semester, dateBegin } = formik.values;
+    const { semester } = formik.values;
     if (!semester || !ranges[semester]) return true;
 
-    const { start, end, type } = ranges[semester];
-
-    if (type === "SPECIAL") {
-      return (
-        current.isBefore(start, "day") ||
-        current.isAfter(end, "day") ||
-        current.day() === 0 ||
-        current.day() === 6
-      );
-    }
-
-    if (!dateBegin) return true;
-
-    const beginDate = dayjs(dateBegin);
-
-    // Calcular fecha mínima válida
-    let temp = beginDate.clone();
-    let days = 0;
-    while (days < MIN_BUSINESS_DAYS) {
-      temp = temp.add(1, "day");
-      if (temp.day() !== 0 && temp.day() !== 6) days++;
-    }
-    const minDate = temp;
-
-    const maxDate = end;
-
+    const { start, end } = ranges[semester];
     return (
-      current.isBefore(minDate, "day") ||
-      current.isAfter(maxDate, "day") ||
+      current.isBefore(start, "day") ||
+      current.isAfter(end, "day") ||
       current.day() === 0 ||
       current.day() === 6
     );
@@ -342,6 +298,11 @@ function PeriodForm({
               value={
                 formik.values.dateBegin ? dayjs(formik.values.dateBegin) : null
               }
+              defaultPickerValue={
+                formik.values.semester
+                  ? ranges[formik.values.semester].start
+                  : undefined
+              }
               onChange={(date) => {
                 handleDateChange("dateBegin", date);
                 formik.setFieldTouched("dateBegin", true);
@@ -368,6 +329,11 @@ function PeriodForm({
               disabledDate={disabledDateEnd}
               value={
                 formik.values.dateEnd ? dayjs(formik.values.dateEnd) : null
+              }
+              defaultPickerValue={
+                formik.values.semester
+                  ? ranges[formik.values.semester].start
+                  : undefined
               }
               onChange={(date) => {
                 handleDateChange("dateEnd", date);
