@@ -17,7 +17,7 @@ import isBetween from "dayjs/plugin/isBetween";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 
 import type { Course } from "../interfaces/courseInterface";
-import type { Clase, CreateClassDTO } from "../interfaces/claseInterface";
+import type { Clase } from "../interfaces/claseInterface";
 
 dayjs.locale("es");
 dayjs.extend(isBetween);
@@ -38,7 +38,7 @@ const periodValidationSchema = yup.object({
 interface PeriodFormProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (periodData: CreateClassDTO | Clase) => Promise<void>;
+  onSubmit: (periodData: Clase) => void;
   course: Course;
   period?: Clase;
   loading?: boolean;
@@ -85,8 +85,7 @@ function PeriodForm({
           return;
         }
 
-        // Crear DTO según modo (crear / editar)
-        let periodData: CreateClassDTO | Clase;
+        let periodData:  Clase;
         if (period) {
           periodData = {
             ...period,

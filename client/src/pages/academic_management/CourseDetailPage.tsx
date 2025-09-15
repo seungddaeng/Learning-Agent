@@ -19,7 +19,7 @@ import PeriodForm from "../../components/PeriodForm";
 import { SafetyModal } from "../../components/safetyModal";
 import { SingleStudentForm } from "../../components/singleStudentForm";
 import StudentPreviewModal from "../../components/StudentPreviewModal";
-import type { Clase, CreateClassDTO } from "../../interfaces/claseInterface";
+import type { Clase } from "../../interfaces/claseInterface";
 import type {
   createEnrollmentInterface,
   EnrollGroupRow,
@@ -149,7 +149,7 @@ export function CourseDetailPage() {
     fetchStudents();
   }, [fetchStudents]);
 
-  const handleEditClass = async (values: Clase | CreateClassDTO) => {
+  const handleEditClass = async (values: Clase) => {
     const data = await updateClass(values as Clase);
     if (data.state == "success") {
       message.success(data.message);
@@ -428,7 +428,7 @@ export function CourseDetailPage() {
         </>
       }
     >
-      <GlobalScrollbar />        
+      <GlobalScrollbar />
       <div style={{ padding: "1rem" }}>
         <div
           style={{
@@ -570,7 +570,7 @@ export function CourseDetailPage() {
                         pageSize: 10,
                       }}
                       size="middle"
-                      scroll={{ x: 'max-content' }}
+                      scroll={{ x: "max-content" }}
                     />
                     <div style={{ marginTop: 24 }}>
                       <div className="flex gap-3">
@@ -710,7 +710,6 @@ export function CourseDetailPage() {
               </div>
             </TabPane>
 
-
             <TabPane
               tab={
                 <span
@@ -769,6 +768,7 @@ export function CourseDetailPage() {
           open={editModalOpen}
           onClose={() => setEditModalOpen(false)}
           onSubmit={handleEditClass}
+          period={actualClass!}
           course={actualCourse!}
         />
 
