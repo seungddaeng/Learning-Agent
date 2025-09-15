@@ -27,7 +27,7 @@ interface UserInfo {
 
 // Función auxiliar para obtener el token de autenticación y verificar que el usuario esté autenticado
 const getAuthTokenAndVerifyUser = async (): Promise<{ token: string; user: UserInfo }> => {
-  const authData = localStorage.getItem("auth");
+  const authData = sessionStorage.getItem("auth");
   if (!authData) {
     throw new Error('No hay datos de autenticación disponibles. Por favor, inicia sesión.');
   }

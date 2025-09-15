@@ -3,7 +3,7 @@ import { ExamsChatController } from './infrastructure/http/exams.controller';
 import * as AiGenModule from './infrastructure/ai/ai-question.generator';
 import { EXAM_AI_GENERATOR } from './tokens';
 import { GenerateOptionsForQuestionUseCase } from './application/usecases/generate-options-for-question.usecase';
-import { DeepseekModule } from '../deepseek/deepseek.module';
+import { ReinforcementModule } from '../reinforcement/reinforcement.module';
 
 const AiGeneratorClass =
   (AiGenModule as any).AIQuestionGenerator ??
@@ -22,7 +22,7 @@ const AiProvider =
     : { provide: EXAM_AI_GENERATOR, useClass: AiGeneratorFallback };
 
 @Module({
-  imports: [DeepseekModule],
+  imports: [ReinforcementModule],
   controllers: [ExamsChatController],
   providers: [
     AiProvider,
