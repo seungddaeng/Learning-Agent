@@ -1,25 +1,27 @@
 import { Card, Typography, theme, Alert, Button } from "antd";
-import { useRef } from "react";
 
 const { Title } = Typography;
 
 interface TrueOrFalseQuestionProps {
-  onNext?: () => void;
+  onNext: (isCorrect: boolean) => void;
   question?: string;
 }
 
-export default function TrueOrFalseQuestion({ onNext, question = "" }: TrueOrFalseQuestionProps) {
+export default function TrueOrFalseQuestion({
+  onNext,
+  question = "",
+}: TrueOrFalseQuestionProps) {
   const { token } = theme.useToken();
-  const hasSelected = useRef(false);
 
   const handleSelect = (_value: boolean) => {
-    if (hasSelected.current) return;
-    hasSelected.current = true;
-    setTimeout(() => {
-      if (onNext) {
-        onNext();
-      }
-    }, 300);
+    if (onNext) {
+
+      onNext();
+    } else {
+      window.location.reload();
+
+    }
+
   };
 
   if (!question) {
@@ -49,6 +51,7 @@ export default function TrueOrFalseQuestion({ onNext, question = "" }: TrueOrFal
             Pregunta no disponible
           </Title>
         </Card>
+
         <Alert
           message="No se encontró la pregunta"
           description={
@@ -59,8 +62,9 @@ export default function TrueOrFalseQuestion({ onNext, question = "" }: TrueOrFal
           type="info"
           showIcon
         />
+
         <div style={{ marginTop: 8 }}>
-          <Button onClick={() => onNext && onNext()}>Recargar</Button>
+          <Button onClick={() => onNext(false)}>Recargar</Button>
         </div>
       </div>
     );
@@ -92,6 +96,7 @@ export default function TrueOrFalseQuestion({ onNext, question = "" }: TrueOrFal
           {question}
         </Title>
       </Card>
+
       <div
         style={{
           display: "grid",
@@ -116,17 +121,10 @@ export default function TrueOrFalseQuestion({ onNext, question = "" }: TrueOrFal
             boxShadow: token.boxShadow,
             userSelect: "none",
           }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLDivElement).style.transform = "scale(1.03)";
-            (e.currentTarget as HTMLDivElement).style.boxShadow = token.boxShadowSecondary;
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLDivElement).style.transform = "scale(1)";
-            (e.currentTarget as HTMLDivElement).style.boxShadow = token.boxShadow;
-          }}
         >
           Verdadero
         </div>
+
         <div
           onClick={() => handleSelect(false)}
           style={{
@@ -141,14 +139,6 @@ export default function TrueOrFalseQuestion({ onNext, question = "" }: TrueOrFal
             transition: "transform 0.15s ease, box-shadow 0.15s ease",
             boxShadow: token.boxShadow,
             userSelect: "none",
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLDivElement).style.transform = "scale(1.03)";
-            (e.currentTarget as HTMLDivElement).style.boxShadow = token.boxShadowSecondary;
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLDivElement).style.transform = "scale(1)";
-            (e.currentTarget as HTMLDivElement).style.boxShadow = token.boxShadow;
           }}
         >
           Falso
