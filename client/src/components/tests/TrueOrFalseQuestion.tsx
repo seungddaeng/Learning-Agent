@@ -13,12 +13,15 @@ export default function TrueOrFalseQuestion({
 }: TrueOrFalseQuestionProps) {
   const { token } = theme.useToken();
 
-  // Simulación: "Verdadero" es la respuesta correcta
-  const correctAnswer = true;
+  const handleSelect = (_value: boolean) => {
+    if (onNext) {
 
-  const handleSelect = (selected: boolean) => {
-    const isCorrect = selected === correctAnswer;
-    setTimeout(() => onNext(isCorrect), 300);
+      onNext();
+    } else {
+      window.location.reload();
+
+    }
+
   };
 
   if (!question) {
@@ -118,14 +121,6 @@ export default function TrueOrFalseQuestion({
             boxShadow: token.boxShadow,
             userSelect: "none",
           }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLDivElement).style.transform = "scale(1.03)";
-            (e.currentTarget as HTMLDivElement).style.boxShadow = token.boxShadowSecondary;
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLDivElement).style.transform = "scale(1)";
-            (e.currentTarget as HTMLDivElement).style.boxShadow = token.boxShadow;
-          }}
         >
           Verdadero
         </div>
@@ -144,14 +139,6 @@ export default function TrueOrFalseQuestion({
             transition: "transform 0.15s ease, box-shadow 0.15s ease",
             boxShadow: token.boxShadow,
             userSelect: "none",
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLDivElement).style.transform = "scale(1.03)";
-            (e.currentTarget as HTMLDivElement).style.boxShadow = token.boxShadowSecondary;
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLDivElement).style.transform = "scale(1)";
-            (e.currentTarget as HTMLDivElement).style.boxShadow = token.boxShadow;
           }}
         >
           Falso
