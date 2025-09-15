@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { DsService } from 'src/modules/reinforcement/infrastructure/ds.service';
+import { DsIntService } from 'src/modules/interviewChat/infrastructure/dsInt.service';
 
 export type GeneratedOptions = {
   options: string[];
@@ -13,18 +13,18 @@ export type GeneratedQuestion = {
 
 @Injectable()
 export class AIQuestionGenerator {
-  constructor(private readonly dsService?: DsService) {}
+  constructor(private readonly dsIntService?: DsIntService) {}
 
   private normalizeLine(l: string) {
     return l.replace(/^[\d\)\.\-\s]+/, '').trim();
   }
 
   async generateQuestion(): Promise<GeneratedQuestion> {
-    if (!this.dsService)
+    if (!this.dsIntService)
       return {
         text: 'Genera una pregunta sobre algoritmos de programación, de opción múltiple',
       };
-    const resp = await this.dsService?.generateQuestion(
+    const resp = await this.dsIntService?.generateQuestion(
       'Genera una pregunta sobre algoritmos de programación, de opción múltiple',
     );
     const text =
@@ -34,11 +34,11 @@ export class AIQuestionGenerator {
   }
 
   async generateTrueFalseQuestion(): Promise<GeneratedQuestion> {
-    if (!this.dsService)
+    if (!this.dsIntService)
       return {
         text: 'El algoritmo de Quicksort siempre es estable. (Verdadero o Falso)',
       };
-    const resp = await this.dsService?.generateQuestion(
+    const resp = await this.dsIntService?.generateQuestion(
       'Genera una pregunta de verdadero o falso sobre algoritmos de programación',
     );
     const text =
@@ -61,13 +61,13 @@ export class AIQuestionGenerator {
       confidence: null,
     };
 
-    if (!this.dsService) return fallback;
+    if (!this.dsIntService) return fallback;
 
     try {
-      const resp = await this.dsService?.generateResponse(
+      const resp = await this.dsIntService?.generateResponse(
         `Genera 4 opciones relacionadas y distintas para esta pregunta: "${questionText}"`,
       );
-      const candidate = (resp?.answer ?? resp?.explanatio ?? '')
+      const candidate = (resp?.answer ?? resp?.explanation ?? '')
         .toString()
         .trim();
       if (!candidate) return fallback;
