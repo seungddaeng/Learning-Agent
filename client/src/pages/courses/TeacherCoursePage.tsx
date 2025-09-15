@@ -150,7 +150,7 @@ export function TeacherCoursePage() {
                       title={course.name}
                     />
                     <CustomCard.Description>
-                      {`Vea a detalle los periodos que ha dictado en ${course.name}`}
+                      {`Vea a detalle los períodos que ha dictado en ${course.name}`}
                     </CustomCard.Description>
                     <CustomCard.Actions>
                       <Button
