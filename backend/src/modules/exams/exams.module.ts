@@ -13,6 +13,7 @@ import { AddExamQuestionCommandHandler } from './application/commands/add-exam-q
 import { UpdateExamQuestionCommandHandler } from './application/commands/update-exam-question.handler';
 import { GenerateExamUseCase } from './application/commands/generate-exam.usecase';
 
+import { GenerateQuestionsUseCase } from './application/commands/generate-questions.usecase';
 import { ListClassExamsUseCase } from './application/queries/list-class-exams.usecase';
 import { GetExamByIdUseCase } from './application/queries/get-exam-by-id.usecase';
 
@@ -71,6 +72,7 @@ const DEV_ONLY_PROVIDERS = devTokenAllowed && !isProd
     AddExamQuestionCommandHandler,
     UpdateExamQuestionCommandHandler,
 
+    GenerateQuestionsUseCase,
     ListClassExamsUseCase,
     GetExamByIdUseCase,
 

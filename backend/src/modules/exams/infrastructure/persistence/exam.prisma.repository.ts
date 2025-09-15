@@ -134,4 +134,11 @@ export class PrismaExamRepository implements ExamRepositoryPort {
       updatedAt: updated.updatedAt,
     });
   }
+
+    async teacherOwnsClass(classId: string, teacherId: string): Promise<boolean> {
+    const owns = await this.prisma.classes.count({
+      where: { id: classId, course: { teacherId } },
+    });
+    return owns > 0;
+  }
 }
