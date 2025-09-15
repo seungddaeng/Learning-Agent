@@ -477,4 +477,19 @@ model Enrollment {
     @@index([lastUsedAt])
     @@map("interview_questions")
   }
+// relation N:N - StudentProfile-Classes by Dates
+model Attendance {
+  id            String            @id @default(uuid())
+
+  studentId     String
+  student       StudentProfile    @relation(fields: [studentId], references: [userId])
+  classId       String
+  class         Classes           @relation(fields: [classId], references: [id])
+  
+  date          DateTime          @default(now())
+  isPresent     Boolean           @default(false)
+
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+}
 
