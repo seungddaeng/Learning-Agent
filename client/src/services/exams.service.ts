@@ -323,7 +323,7 @@ export async function createExam(payload: any): Promise<any> {
   return (res as any)?.data ?? res;
 }
 
-export type CreateExamApprovedInput = {
+export type ExamInput = {
   classId?: string;        
   courseId?: string;       
   title: string;
@@ -346,6 +346,9 @@ export type CreateExamApprovedInput = {
     options?: string[];
   }>;
 };
+
+export type CreateExamApprovedInput = ExamInput;
+export type UpdateExamApprovedInput = ExamInput & { examId: string };
 
 export async function createExamApproved(input: CreateExamApprovedInput) {
   const classId = input.classId ?? null;
@@ -373,7 +376,11 @@ export async function createExamApproved(input: CreateExamApprovedInput) {
   };
 
   const createdExam = await createExam(createBody);
-  const examId = createdExam?.data?.id ?? createdExam?.id;
+  const examId =
+  createdExam?.id ??
+  createdExam?.data?.id ??
+  createdExam?.exam?.id ??
+  createdExam?.data?.exam?.id; 
 
   if (!examId) {
     throw new Error('No se pudo crear el examen (sin id).');
@@ -407,6 +414,54 @@ export async function createExamApproved(input: CreateExamApprovedInput) {
   }
 
   return createdExam?.data ?? createdExam;
+}
+
+export async function updateExamApprovedFull(input: UpdateExamApprovedInput) {
+  const { examId } = input;
+  
+  const questions = await api.get(`/api/exams/${examId}/questions`);
+  for (const question of questions.data) {
+    await api.delete(`/api/exams/${examId}/questions/${question.id}`);
+  }
+
+  await api.put(`/api/exams/${examId}`, {
+    title: input.title,
+    subject: input.content?.subject ?? 'Tema general',
+    difficulty: toSpanishDifficulty(input.content?.difficulty ?? 'medio'),
+    attempts: 1,
+    totalQuestions: Math.max(1, (input.questions?.length || 1)),
+    timeMinutes: 45,
+  });
+
+  const newQuestions = input.content?.questions ?? input.questions ?? [];
+  for (const q of newQuestions) {
+    const kind =
+      q.type === 'multiple_choice' ? 'MULTIPLE_CHOICE'
+      : q.type === 'true_false' ? 'TRUE_FALSE'
+      : q.type === 'open_analysis' ? 'OPEN_ANALYSIS'
+      : 'OPEN_EXERCISE';
+
+    const dto: any = {
+      kind,
+      text: String(q.text ?? ''),
+      position: 'end',
+    };
+
+    if (q.type === 'multiple_choice') {
+      dto.options = Array.isArray(q.options) ? q.options.map(String) : ['Opción A','Opción B'];
+      dto.correctOptionIndex = 0;
+    }
+    if (q.type === 'true_false') {
+      dto.correctBoolean = true;
+    }
+    if (q.type === 'open_analysis' || q.type === 'open_exercise') {
+      dto.expectedAnswer = undefined;
+    }
+
+    await api.post(`/api/exams/${examId}/questions`, dto);
+  }
+
+  return { id: examId };
 }
 
 export async function quickSaveExam(p: { title: string; questions: any[]; content?: any; classId?: string; courseId?: string; teacherId?: string }) {
@@ -497,4 +552,3 @@ export async function deleteExamByCandidates(classId: string, candidates: Array<
 }
 
 export default { generateQuestions, createExam, createExamApproved };
-
