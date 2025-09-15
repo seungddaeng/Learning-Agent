@@ -110,6 +110,7 @@ model StudentProfile {
   admissionYear Int?
   // relation 1:N
   enrollment    Enrollment[]
+  attendance    Attendance[]
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -415,8 +416,10 @@ model Classes {
 
   // relation 1:N
   enrollment    Enrollment[]
+
   quizQuestions    QuizQuestion[]
   interviewQuestions InterviewQuestion[]
+
 
   courseId      String            
   course        Course            @relation(fields: [courseId], references: [id])
@@ -438,6 +441,7 @@ model Enrollment {
 
   @@id([studentId, classId])
 }
+
 
 /* ===========================
    Reinforcement (entrevistas y examenes )
@@ -473,3 +477,4 @@ model Enrollment {
     @@index([lastUsedAt])
     @@map("interview_questions")
   }
+
