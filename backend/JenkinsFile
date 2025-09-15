@@ -37,26 +37,28 @@ pipeline {
 
         stage('Deploy Locally') {
             steps {
-                script {
-                    sh '''
-                        echo "Stopping existing container..."
-                        docker stop learning-agent-backend || true
-                        docker rm learning-agent-backend || true
+                withCredentials([file(credentialsId: 'env_backend_deploy', variable: 'ENV_FILE')]) {
+                    script {
+                        sh '''
+                            echo "Stopping existing container..."
+                            docker stop learning-agent-backend || true
+                            docker rm learning-agent-backend || true
 
-                        echo "Running new container..."
-                        docker run -d \
-                            --name learning-agent-backend \
-                            --env-file .env \
-                            -p 3000:3000 \
-                            --restart unless-stopped \
-                            $DOCKER_IMAGE:$DOCKER_TAG
+                            echo "Running new container..."
+                            docker run -d \
+                                --name learning-agent-backend \
+                                --env-file $ENV_FILE \
+                                -p 3000:3000 \
+                                --restart unless-stopped \
+                                $DOCKER_IMAGE:$DOCKER_TAG
 
-                        echo "Deployment completed!"
-                    '''
+                            echo "Deployment completed!"
+                        '''
+                    }
                 }
             }
         }
-    }
+    } 
 
     post {
         success {
