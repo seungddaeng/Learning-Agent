@@ -13,7 +13,7 @@ type ServerResp = {
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
 interface Props {
-  onAnswered?: () => void;
+  onAnswered?: (isCorrect: boolean) => void;
 }
 
 export default function TestRunner({ onAnswered }: Props): JSX.Element {
@@ -58,8 +58,8 @@ export default function TestRunner({ onAnswered }: Props): JSX.Element {
     fetchQuestion();
   }, []);
 
-  const handleNext = () => {
-    if (onAnswered) onAnswered();
+  const handleNext = (isCorrect: boolean) => {
+    if (onAnswered) onAnswered(isCorrect);
     fetchQuestion();
   };
 
@@ -137,8 +137,19 @@ export default function TestRunner({ onAnswered }: Props): JSX.Element {
   }
 
   if (item.options.length === 2) {
-    return <TrueOrFalseQuestion question={item.question} onNext={handleNext} />;
+    return (
+      <TrueOrFalseQuestion
+        question={item.question}
+        onNext={handleNext}
+      />
+    );
   }
 
-  return <TestQuestion question={item.question} options={item.options} onNext={handleNext} />;
+  return (
+    <TestQuestion
+      question={item.question}
+      options={item.options}
+      onNext={handleNext}
+    />
+  );
 }
