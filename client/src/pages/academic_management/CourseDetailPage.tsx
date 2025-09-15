@@ -15,8 +15,7 @@ import {
 import useClasses from "../../hooks/useClasses";
 import useTeacher from "../../hooks/useTeacher";
 import PageTemplate from "../../components/PageTemplate";
-import GlobalScrollbar from '../../components/GlobalScrollbar';
-import { CursosForm } from "../../components/cursosForm";
+import PeriodForm from "../../components/PeriodForm";
 import { SafetyModal } from "../../components/safetyModal";
 import { SingleStudentForm } from "../../components/singleStudentForm";
 import StudentPreviewModal from "../../components/StudentPreviewModal";
@@ -35,6 +34,7 @@ import { processFile } from "../../utils/enrollGroupByFile";
 import type { StudentInfo } from "../../interfaces/studentInterface";
 import CourseExamsPanel from "../courses/CourseExamsPanel";
 import AttendanceModal from "../../components/AttendanceModal";
+import GlobalScrollbar from "../../components/GlobalScrollbar";
 
 const { Text } = Typography;
 const { TabPane } = Tabs;
@@ -150,7 +150,7 @@ export function CourseDetailPage() {
   }, [fetchStudents]);
 
   const handleEditClass = async (values: Clase) => {
-    const data = await updateClass(values);
+    const data = await updateClass(values as Clase);
     if (data.state == "success") {
       message.success(data.message);
     } else if (data.state == "info") {
@@ -299,10 +299,6 @@ export function CourseDetailPage() {
     setSafetyModalOpen(false);
   };
 
-  const goToExams = () => {
-    navigate(`/exams`);
-  };
-
   const studentsColumns = [
     {
       title: "Código",
@@ -419,7 +415,7 @@ export function CourseDetailPage() {
             icon={<EditOutlined />}
             onClick={() => setEditModalOpen(true)}
           >
-            Editar Curso
+            Editar Periodo
           </Button>
           <Button
             danger
@@ -432,7 +428,7 @@ export function CourseDetailPage() {
         </>
       }
     >
-      <GlobalScrollbar />        
+      <GlobalScrollbar />
       <div style={{ padding: "1rem" }}>
         <div
           style={{
@@ -574,7 +570,7 @@ export function CourseDetailPage() {
                         pageSize: 10,
                       }}
                       size="middle"
-                      scroll={{ x: 'max-content' }}
+                      scroll={{ x: "max-content" }}
                     />
                     <div style={{ marginTop: 24 }}>
                       <div className="flex gap-3">
@@ -714,7 +710,6 @@ export function CourseDetailPage() {
               </div>
             </TabPane>
 
-
             <TabPane
               tab={
                 <span
@@ -769,11 +764,12 @@ export function CourseDetailPage() {
         </div>
 
         {/* Modals */}
-        <CursosForm
+        <PeriodForm
           open={editModalOpen}
           onClose={() => setEditModalOpen(false)}
           onSubmit={handleEditClass}
-          clase={actualClass}
+          period={actualClass!}
+          course={actualCourse!}
         />
 
         <SafetyModal
