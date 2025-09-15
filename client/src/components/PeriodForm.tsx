@@ -77,11 +77,16 @@ function PeriodForm({
         const end = dayjs(values.dateEnd);
 
         // Validar mínimo de días hábiles
-        const businessDays = countBusinessDays(start, end);
-        if (businessDays < MIN_BUSINESS_DAYS) {
-          message.error(
-            `El período debe tener mínimo ${MIN_BUSINESS_DAYS} días hábiles`
-          );
+        const isSpecial =
+          values.semester.startsWith("VERANO") ||
+          values.semester.startsWith("INVIERNO");
+
+        const minDays = isSpecial ? MIN_BUSINESS_DAYS - 5 : MIN_BUSINESS_DAYS;
+
+        let businessDays = countBusinessDays(start, end);
+
+        if (businessDays < minDays) {
+          message.error(`El período debe tener mínimo ${minDays} días hábiles`);
           return;
         }
 
@@ -206,26 +211,24 @@ function PeriodForm({
     const { semester } = formik.values;
     if (!semester || !ranges[semester]) return;
 
-    const { start, end, type } = ranges[semester];
+    const { end, type } = ranges[semester];
 
     if (value) {
       const isoDate = value.format("YYYY-MM-DD");
       formik.setFieldValue(field, isoDate);
 
       if (field === "dateBegin") {
-        if (type === "SPECIAL") {
-          formik.setFieldValue("dateBegin", start.format("YYYY-MM-DD"));
-          formik.setFieldValue("dateEnd", end.format("YYYY-MM-DD"));
-        } else {
-          let temp = value.clone();
-          let days = 0;
-          while (days < MIN_BUSINESS_DAYS && temp.isBefore(end)) {
-            temp = temp.add(1, "day");
-            if (temp.day() !== 0 && temp.day() !== 6) days++;
-          }
-          if (temp.isAfter(end)) temp = end;
-          formik.setFieldValue("dateEnd", temp.format("YYYY-MM-DD"));
+        const minDays =
+          type === "SPECIAL" ? MIN_BUSINESS_DAYS - 5 : MIN_BUSINESS_DAYS;
+
+        let temp = value.clone();
+        let days = 0;
+        while (days < minDays && temp.isBefore(end)) {
+          temp = temp.add(1, "day");
+          if (temp.day() !== 0 && temp.day() !== 6) days++;
         }
+        if (temp.isAfter(end)) temp = end;
+        formik.setFieldValue("dateEnd", temp.format("YYYY-MM-DD"));
       }
     } else {
       formik.setFieldValue(field, "");
@@ -293,7 +296,7 @@ function PeriodForm({
           >
             <DatePicker
               style={{ width: "100%" }}
-              format="YYYY-MM-DD"
+              format="DD-MM-YYYY"
               disabledDate={disabledDateBegin}
               value={
                 formik.values.dateBegin ? dayjs(formik.values.dateBegin) : null
@@ -325,7 +328,7 @@ function PeriodForm({
           >
             <DatePicker
               style={{ width: "100%" }}
-              format="YYYY-MM-DD"
+              format="DD-MM-YYYY"
               disabledDate={disabledDateEnd}
               value={
                 formik.values.dateEnd ? dayjs(formik.values.dateEnd) : null
