@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Alert, theme } from "antd";
 import PageTemplate from "../../components/PageTemplate";
@@ -14,6 +14,23 @@ export default function Test() {
   const { token } = theme.useToken();
   const [isExamStarted, setIsExamStarted] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+
+  const loadingMessages = [
+    "Accediendo a la base de datos...",
+    "Cargando preguntas...",
+    "Preparando interfaz...",
+    "Inicializando lógica...",
+    "Verificando dificultad..."
+  ];
+
+  useEffect(() => {
+    if (!isExamStarted) return;
+    const interval = setInterval(() => {
+      setLoadingMessageIndex((prev) => (prev + 1) % loadingMessages.length);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [isExamStarted]);
 
   const {
     isTestModalOpen,
@@ -91,50 +108,51 @@ export default function Test() {
                   alignItems: "center",
                   justifyContent: "center",
                   zIndex: 20,
-                  padding: token.paddingLG,
-                  gap: token.marginMD
+                  padding: token.paddingXL,
+                  gap: token.marginXL
                 }}
               >
-                <h2
+                <div className="puzzle-loader">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="piece" />
+                  ))}
+                </div>
+                <div
                   style={{
                     fontSize: token.fontSizeHeading3,
                     fontWeight: token.fontWeightStrong,
-                    color: token.colorText,
+                    color: token.colorPrimary,
                     textAlign: "center",
                     animation: "fadePulse 1.5s infinite ease-in-out"
                   }}
                 >
-                  Generando pregunta...
-                </h2>
-                <div
-                  style={{
-                    width: "80%",
-                    maxWidth: 420,
-                    height: 16,
-                    background: token.colorBorderSecondary,
-                    borderRadius: token.borderRadiusLG,
-                    overflow: "hidden",
-                    position: "relative",
-                    boxShadow: token.boxShadowTertiary
-                  }}
-                >
-                  <div
-                    style={{
-                      height: "100%",
-                      width: "40%",
-                      background: token.colorPrimary,
-                      position: "absolute",
-                      animation: "loadingBar 1.5s infinite linear"
-                    }}
-                  />
+                  {loadingMessages[loadingMessageIndex]}
                 </div>
                 <style>
                   {`
-                    @keyframes loadingBar {
-                      0% { left: -40%; }
-                      50% { left: 30%; }
-                      100% { left: 100%; }
+                    .puzzle-loader {
+                      display: grid;
+                      grid-template-columns: repeat(2, 48px);
+                      grid-template-rows: repeat(2, 48px);
+                      gap: 16px;
                     }
+                    .piece {
+                      width: 48px;
+                      height: 48px;
+                      background-color: ${token.colorPrimary};
+                      border-radius: 10px;
+                      animation: puzzleBounce 1.2s infinite ease-in-out;
+                    }
+                    .piece:nth-child(1) { animation-delay: 0s; }
+                    .piece:nth-child(2) { animation-delay: 0.2s; }
+                    .piece:nth-child(3) { animation-delay: 0.4s; }
+                    .piece:nth-child(4) { animation-delay: 0.6s; }
+
+                    @keyframes puzzleBounce {
+                      0%, 100% { transform: scale(1); opacity: 1; }
+                      50% { transform: scale(1.3); opacity: 0.6; }
+                    }
+
                     @keyframes fadePulse {
                       0%, 100% { opacity: 1; }
                       50% { opacity: 0.5; }
