@@ -11,20 +11,19 @@ interface TestQuestionProps {
   options?: string[];
 }
 
-export default function TestQuestion({
-  onNext,
-  question = "",
-  options,
-}: TestQuestionProps) {
+export default function TestQuestion({ onNext, question = "", options }: TestQuestionProps) {
   const { token } = theme.useToken();
+
+
   const safeOptions = Array.isArray(options) ? options : [];
 
-  // Simulación: la primera opción es la correcta
-  const correctIndex = 0;
+  const handleSelect = (_value: string) => {
+    if (onNext) {
+      onNext();
+    } else {
+      window.location.reload();
+    }
 
-  const handleSelect = (selectedIndex: number) => {
-    const isCorrect = selectedIndex === correctIndex;
-    setTimeout(() => onNext(isCorrect), 300);
   };
 
   if (safeOptions.length === 0) {
@@ -59,8 +58,12 @@ export default function TestQuestion({
           message="No hay opciones disponibles"
           description={
             <div>
-              Esta vista espera recibir <code>options</code> desde el backend. Asegúrate de usar
-              <strong> TestRunner </strong> para obtener preguntas generadas (POST a <code>/exams-chat/generate-options</code>).
+
+
+              Esta vista espera recibir <code>options</code> desde el backend. Usa{" "}
+              <strong>TestRunner</strong> para obtener preguntas generadas.
+
+
             </div>
           }
           type="info"
@@ -120,7 +123,9 @@ export default function TestQuestion({
         {safeOptions.map((label, index) => (
           <div
             key={index}
-            onClick={() => handleSelect(index)}
+
+            onClick={() => handleSelect(String(index))}
+
             style={{
               backgroundColor: optionColors[index % optionColors.length],
               color: token.colorTextLightSolid,
@@ -134,14 +139,7 @@ export default function TestQuestion({
               boxShadow: token.boxShadow,
               userSelect: "none",
             }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLDivElement).style.transform = "scale(1.03)";
-              (e.currentTarget as HTMLDivElement).style.boxShadow = token.boxShadowSecondary;
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLDivElement).style.transform = "scale(1)";
-              (e.currentTarget as HTMLDivElement).style.boxShadow = token.boxShadow;
-            }}
+
           >
             {label}
           </div>
