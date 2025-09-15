@@ -16,6 +16,7 @@ import {
 import useClasses from "../../hooks/useClasses";
 import useTeacher from "../../hooks/useTeacher";
 import PageTemplate from "../../components/PageTemplate";
+import GlobalScrollbar from '../../components/GlobalScrollbar';
 import { CursosForm } from "../../components/cursosForm";
 import { SafetyModal } from "../../components/safetyModal";
 import { SingleStudentForm } from "../../components/singleStudentForm";
@@ -432,6 +433,7 @@ export function CourseDetailPage() {
         </>
       }
     >
+      <GlobalScrollbar />        
       <div style={{ padding: "1rem" }}>
         <div
           style={{
@@ -573,6 +575,7 @@ export function CourseDetailPage() {
                         pageSize: 10,
                       }}
                       size="middle"
+                      scroll={{ x: 'max-content' }}
                     />
                     <div style={{ marginTop: 24 }}>
                       <div className="flex gap-3">
