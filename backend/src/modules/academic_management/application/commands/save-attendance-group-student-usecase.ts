@@ -64,7 +64,7 @@ export class SaveAttendanceGroupStudentUseCase {
 
         if (existingRows === totalRows) {
             this.logger.error(`Attendance on class ${input.classId} already saved today. Trying to overwrite attendances on POST endpoint.`)
-            throw new ConflictError(`Ya se ha guardado la asistencia del día de hoy`)
+            throw new ConflictError(`La asistencia del día ya fue registrada previamente`)
         }
         return { totalRows, errorRows, existingRows, successRows };
     }
