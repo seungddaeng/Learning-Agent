@@ -1,13 +1,16 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
+import { Role } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('==> Seed iniciado');
   // --- Crear Roles ---
-  let docenteRole, estudianteRole;
+  let docenteRole: Role;
+  let estudianteRole: Role;
+
   try {
     docenteRole = await prisma.role.upsert({
     where: { name: 'docente' },
