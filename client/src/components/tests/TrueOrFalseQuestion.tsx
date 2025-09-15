@@ -3,7 +3,7 @@ import { Card, Typography, theme, Alert, Button } from "antd";
 const { Title } = Typography;
 
 interface TrueOrFalseQuestionProps {
-  onNext?: () => void;
+  onNext: (isCorrect: boolean) => void;
   question?: string;
 }
 
@@ -12,6 +12,7 @@ export default function TrueOrFalseQuestion({
   question = "",
 }: TrueOrFalseQuestionProps) {
   const { token } = theme.useToken();
+
 
   const handleSelect = (_value: boolean) => {
     const action = onNext ?? (() => window.location.reload());
@@ -58,6 +59,7 @@ export default function TrueOrFalseQuestion({
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
+
   };
 
   if (!question) {
@@ -87,9 +89,11 @@ export default function TrueOrFalseQuestion({
           showIcon
         />
 
+
         <Button onClick={() => (onNext ? onNext() : window.location.reload())}>
           Recargar
         </Button>
+
       </div>
     );
   }

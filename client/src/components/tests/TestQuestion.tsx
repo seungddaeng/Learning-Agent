@@ -1,9 +1,11 @@
+
 import { Card, Typography, theme } from "antd";
 
 const { Title } = Typography;
 
+
 interface TestQuestionProps {
-  onNext?: () => void;
+  onNext: (isCorrect: boolean) => void;
   question?: string;
   options?: string[];
 }
@@ -15,6 +17,7 @@ export default function TestQuestion({
 }: TestQuestionProps) {
   const { token } = theme.useToken();
   const safeOptions = Array.isArray(options) ? options : [];
+
 
   const handleSelect = (_value: string) => {
     const action = onNext ?? (() => window.location.reload());
@@ -45,6 +48,7 @@ export default function TestQuestion({
     justifyContent: "center",
   };
 
+
   const optionStyleBase: React.CSSProperties = {
     borderRadius: token.borderRadiusLG,
     backgroundColor: token.colorPrimary,
@@ -64,6 +68,7 @@ export default function TestQuestion({
   };
 
   return (
+
     <div style={containerStyle}>
       <Card style={questionCardStyle}>
         <Title
@@ -74,6 +79,7 @@ export default function TestQuestion({
             fontWeight: token.fontWeightStrong,
           }}
         >
+
           {question}
         </Title>
       </Card>
@@ -90,8 +96,22 @@ export default function TestQuestion({
         {safeOptions.map((label, index) => (
           <div
             key={index}
-            style={optionStyleBase}
-            onClick={() => handleSelect(String(index))}
+
+            onClick={() => handleSelect(index)}
+            style={{
+              backgroundColor: optionColors[index % optionColors.length],
+              color: token.colorTextLightSolid,
+              padding: token.paddingLG,
+              borderRadius: token.borderRadiusLG,
+              fontWeight: 600,
+              fontSize: token.fontSizeLG,
+              textAlign: "center",
+              cursor: "pointer",
+              transition: "transform 0.15s ease, box-shadow 0.15s ease",
+              boxShadow: token.boxShadow,
+              userSelect: "none",
+            }}
+
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = "scale(1.02)";
               e.currentTarget.style.boxShadow = token.boxShadowSecondary;
