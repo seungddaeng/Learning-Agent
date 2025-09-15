@@ -551,8 +551,6 @@ const UploadButton: React.FC<UploadButtonProps> = ({
                   icon={<PlusOutlined />}
                   onClick={handleManualSelect}
                   style={{
-                    backgroundColor: isDark ? token.colorPrimary : '#1890ff',
-                    borderColor: isDark ? token.colorPrimary : '#1890ff',
                     borderRadius: '6px',
                     fontWeight: '500'
                   }}

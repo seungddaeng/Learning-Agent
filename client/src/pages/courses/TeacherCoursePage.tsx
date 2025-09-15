@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { CreateCourseForm } from "./CreateCourseForm";
 import { PlusOutlined, SolutionOutlined } from "@ant-design/icons";
 import { useUserStore } from "../../store/userStore";
+import GlobalScrollbar from '../../components/GlobalScrollbar';
 import AccessDenied from "../../components/shared/AccessDenied";
 import CustomCard from "../../components/shared/CustomCard";
 
@@ -96,6 +97,7 @@ export function TeacherCoursePage() {
           subtitle="Revisa a detalle las materias que dictaste en algún momento."
           breadcrumbs={[{ label: "Home", href: "/" }, { label: "Materias" }]}
         >
+          <GlobalScrollbar />
           <div
             style={{
               maxWidth: '100%',
