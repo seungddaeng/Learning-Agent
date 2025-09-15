@@ -1,27 +1,24 @@
-
 import { Card, Typography, theme } from "antd";
 
 const { Title } = Typography;
 
 
 interface TestQuestionProps {
+  questionData: {
+    question: string;
+    options: string[];
+    correctIndex: number;
+  };
   onNext: (isCorrect: boolean) => void;
-  question?: string;
-  options?: string[];
 }
 
-export default function TestQuestion({ onNext, question = "", options }: TestQuestionProps) {
+export default function TestQuestion({ questionData, onNext }: TestQuestionProps) {
   const { token } = theme.useToken();
+  const { question, options = [], correctIndex } = questionData;
 
-
-  const safeOptions = Array.isArray(options) ? options : [];
-
-
-
-  const handleSelect = (_value: string) => {
-    const action = onNext ?? (() => window.location.reload());
-    setTimeout(action, parseInt(token.motionDurationMid) || 300);
-
+  const handleSelect = (index: number) => {
+    const isCorrect = index === correctIndex;
+    setTimeout(() => onNext(isCorrect), parseInt(token.motionDurationMid) || 300);
   };
 
   const containerStyle: React.CSSProperties = {
@@ -48,8 +45,7 @@ export default function TestQuestion({ onNext, question = "", options }: TestQue
     justifyContent: "center",
   };
 
-
-  const optionStyleBase: React.CSSProperties = {
+  const optionStyle: React.CSSProperties = {
     borderRadius: token.borderRadiusLG,
     backgroundColor: token.colorPrimary,
     color: token.colorTextLightSolid,
@@ -68,7 +64,6 @@ export default function TestQuestion({ onNext, question = "", options }: TestQue
   };
 
   return (
-
     <div style={containerStyle}>
       <Card style={questionCardStyle}>
         <Title
@@ -79,43 +74,6 @@ export default function TestQuestion({ onNext, question = "", options }: TestQue
             fontWeight: token.fontWeightStrong,
           }}
         >
-
-          <Title level={3} style={{ margin: 0, color: token.colorTextHeading }}>
-            {question || "Pregunta no disponible"}
-          </Title>
-        </Card>
-
-        <Alert
-          message="No hay opciones disponibles"
-          description={
-            <div>
-
-
-              Esta vista espera recibir <code>options</code> desde el backend. Usa{" "}
-              <strong>TestRunner</strong> para obtener preguntas generadas.
-
-
-            </div>
-          }
-          type="info"
-          showIcon
-        />
-
-        <div style={{ marginTop: 8 }}>
-          <Button onClick={() => onNext(false)}>Intentar cargar / recargar</Button>
-        </div>
-      </div>
-    );
-  }
-
-  const optionColors = [
-    token.colorPrimary,
-    token.colorPrimaryHover,
-    token.colorInfo,
-    token.colorInfoHover,
-  ];
-
-
           {question}
         </Title>
       </Card>
@@ -129,28 +87,13 @@ export default function TestQuestion({ onNext, question = "", options }: TestQue
           maxWidth: token.screenLG,
         }}
       >
-        {safeOptions.map((label, index) => (
+        {options.map((label, index) => (
           <div
             key={index}
 
 
             onClick={() => handleSelect(index)}
-
-            style={{
-              backgroundColor: optionColors[index % optionColors.length],
-              color: token.colorTextLightSolid,
-              padding: token.paddingLG,
-              borderRadius: token.borderRadiusLG,
-              fontWeight: 600,
-              fontSize: token.fontSizeLG,
-              textAlign: "center",
-              cursor: "pointer",
-              transition: "transform 0.15s ease, box-shadow 0.15s ease",
-              boxShadow: token.boxShadow,
-              userSelect: "none",
-            }}
-
-
+            style={optionStyle}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = "scale(1.02)";
               e.currentTarget.style.boxShadow = token.boxShadowSecondary;
