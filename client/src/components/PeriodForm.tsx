@@ -7,6 +7,7 @@ import {
   DatePicker,
   message,
   ConfigProvider,
+  Tooltip,
 } from "antd";
 import { useFormik } from "formik";
 import * as yup from "yup";
@@ -282,24 +283,34 @@ function PeriodForm({
             validateStatus={formik.errors.dateBegin ? "error" : ""}
             help={formik.errors.dateBegin || null}
           >
-            <DatePicker
-              style={{ width: "100%" }}
-              format="DD-MM-YYYY"
-              disabledDate={disabledDateBegin}
-              value={
-                formik.values.dateBegin ? dayjs(formik.values.dateBegin) : null
+            <Tooltip
+              title={
+                !formik.values.semester
+                  ? "Selecciona un semestre para habilitar"
+                  : ""
               }
-              defaultPickerValue={
-                formik.values.semester
-                  ? ranges[formik.values.semester].start
-                  : undefined
-              }
-              onChange={(date) => {
-                handleDateChange("dateBegin", date);
-                formik.setFieldTouched("dateBegin", true);
-              }}
-              disabled={!formik.values.semester}
-            />
+            >
+              <DatePicker
+                style={{ width: "100%" }}
+                format="DD-MM-YYYY"
+                disabledDate={disabledDateBegin}
+                value={
+                  formik.values.dateBegin
+                    ? dayjs(formik.values.dateBegin)
+                    : null
+                }
+                defaultPickerValue={
+                  formik.values.semester
+                    ? ranges[formik.values.semester].start
+                    : undefined
+                }
+                onChange={(date) => {
+                  handleDateChange("dateBegin", date);
+                  formik.setFieldTouched("dateBegin", true);
+                }}
+                disabled={!formik.values.semester}
+              />
+            </Tooltip>
           </Form.Item>
 
           {/* Fecha de fin */}
@@ -308,24 +319,34 @@ function PeriodForm({
             validateStatus={formik.errors.dateEnd ? "error" : ""}
             help={formik.errors.dateEnd || null}
           >
-            <DatePicker
-              style={{ width: "100%" }}
-              format="DD-MM-YYYY"
-              disabledDate={disabledDateEnd}
-              value={
-                formik.values.dateEnd ? dayjs(formik.values.dateEnd) : null
+            <Tooltip
+              title={
+                !formik.values.semester
+                  ? "Selecciona un semestre para habilitar"
+                  : !formik.values.dateBegin
+                  ? "Selecciona la fecha de inicio para habilitar"
+                  : ""
               }
-              defaultPickerValue={
-                formik.values.semester
-                  ? ranges[formik.values.semester].start
-                  : undefined
-              }
-              onChange={(date) => {
-                handleDateChange("dateEnd", date);
-                formik.setFieldTouched("dateEnd", true);
-              }}
-              disabled={!formik.values.dateBegin}
-            />
+            >
+              <DatePicker
+                style={{ width: "100%" }}
+                format="DD-MM-YYYY"
+                disabledDate={disabledDateEnd}
+                value={
+                  formik.values.dateEnd ? dayjs(formik.values.dateEnd) : null
+                }
+                defaultPickerValue={
+                  formik.values.semester
+                    ? ranges[formik.values.semester].start
+                    : undefined
+                }
+                onChange={(date) => {
+                  handleDateChange("dateEnd", date);
+                  formik.setFieldTouched("dateEnd", true);
+                }}
+                disabled={!formik.values.dateBegin}
+              />
+            </Tooltip>
           </Form.Item>
 
           {/* Botones */}
