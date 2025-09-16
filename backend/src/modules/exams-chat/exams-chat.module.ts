@@ -8,6 +8,8 @@ import { DsIntService } from '../interviewChat/infrastructure/dsInt.service';
 import { DeepseekAdapter } from '../llm/infrastructure/adapters/ds.adapter';
 import { LLM_PORT } from '../llm/tokens';
 import { PromptTemplateModule } from '../prompt-template/prompt-template.module';
+import { InterviewExamDbModule } from '../interview-exam-db/interview-exam-db.module';
+import { DocumentsModule } from '../repository_documents/documents.module';
 
 const AiGeneratorClass =
   (AiGenModule as any).AIQuestionGenerator ??
@@ -26,7 +28,12 @@ const AiProvider =
     : { provide: EXAM_AI_GENERATOR, useClass: AiGeneratorFallback };
 
 @Module({
-  imports: [InterviewModule, PromptTemplateModule],
+  imports: [
+    InterviewModule,
+    PromptTemplateModule,
+    InterviewExamDbModule,
+    DocumentsModule,
+  ],
   controllers: [ExamsChatController],
   providers: [
     DsIntService,

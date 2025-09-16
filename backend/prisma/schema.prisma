@@ -160,6 +160,8 @@ model Document {
   chunks           DocumentChunk[]
   categories       DocumentCategoryMapping[]
   processingJobs   ProcessingJob[]
+  quizQuestions    QuizQuestion[]
+  interviewQuestions  InterviewQuestion[]
   
   // Información adicional extraída
   pageCount        Int?                      // Número de páginas (PDFs)
@@ -401,6 +403,8 @@ model Course {
   
   // Relación con documentos para el contrato
   documents     Document[]
+  quizQuestions    QuizQuestion[]
+  interviewQuestions  InterviewQuestion[]
 
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
@@ -417,9 +421,6 @@ model Classes {
   // relation 1:N
   enrollment    Enrollment[]
   attendance Attendance[]
-
-  quizQuestions    QuizQuestion[]
-  interviewQuestions InterviewQuestion[]
 
 
   courseId      String            
@@ -449,16 +450,18 @@ model Enrollment {
    =========================== */
    model QuizQuestion {
     id         String   @id @default(uuid())
-    classId    String
+    courseId    String
+    docId       String
     text       String   @db.Text
     type       String
     options    Json?
     createdAt  DateTime @default(now())
     lastUsedAt DateTime?
 
-    // Relación con Classes
-    class      Classes  @relation(fields: [classId], references: [id], onDelete: Cascade)
-    @@index([classId])
+    // Relación con Course
+    course      Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+    document    Document @relation(fields: [docId], references: [id], onDelete: Cascade)
+    @@index([courseId, docId])
     @@index([createdAt])
     @@index([lastUsedAt])
     @@map("quiz_questions")
@@ -466,14 +469,15 @@ model Enrollment {
 
   model InterviewQuestion {
     id         String   @id @default(uuid())
-    classId    String
-    text       String   @db.Text
+    courseId      String            
+    course        Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+    docId      String
+    document        Document  @relation(fields: [docId], references: [id], onDelete: Cascade)
+    json       Json?   
+    type      String
     createdAt  DateTime @default(now())
     lastUsedAt DateTime?
-
-    // Relación con Classes
-    class      Classes  @relation(fields: [classId], references: [id], onDelete: Cascade)
-    @@index([classId])
+    @@index([courseId, docId])
     @@index([createdAt])
     @@index([lastUsedAt])
     @@map("interview_questions")
