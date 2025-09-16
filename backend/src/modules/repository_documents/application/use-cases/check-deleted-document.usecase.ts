@@ -151,7 +151,7 @@ export class CheckDeletedDocumentUseCase {
       // paso 4: restaurar chunks eliminados
       this.logger.log(`restaurando chunks eliminados del documento: ${deletedDocument.id}`);
       await this.chunkRepository.restoreByDocumentId(deletedDocument.id);
-      this.logger.log(`chunks restaurados exitosamente`);
+      this.logger.log(`chunks restored successfully`);
 
       if (!restoredDocument) {
         this.logger.error(
