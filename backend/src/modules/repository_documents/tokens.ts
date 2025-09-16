@@ -18,3 +18,7 @@ export const VECTOR_SEARCH_PORT = Symbol('VectorSearchPort');
 export const DELETED_DOCUMENT_REPOSITORY_PORT = Symbol(
   'DeletedDocumentRepositoryPort',
 );
+
+export const DOCUMENT_INDEX_REPOSITORY_PORT = Symbol(
+  'DOCUMENT_INDEX_REPOSITORY_PORT',
+);

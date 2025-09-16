@@ -1,101 +1,83 @@
-import { Modal, Button, Typography, Space, Divider, theme } from "antd";
+import { Button, Space, Divider, theme } from "antd";
 import { BookOutlined } from "@ant-design/icons";
-
-const { Text, Title } = Typography;
+import CustomModal from "../reinforcement/CustomModal";
 
 interface InterviewModalProps {
   open: boolean;
   onClose: () => void;
-  onSelectDifficulty: (difficulty: number) => void;
+  onSelectDifficulty: (count: number) => void;
 }
 
-export default function InterviewModal({ open, onClose, onSelectDifficulty }: InterviewModalProps) {
+export default function InterviewModal({
+  open,
+  onClose,
+  onSelectDifficulty,
+}: InterviewModalProps) {
   const { token } = theme.useToken();
 
+  const buttonStyle = {
+    background: token.colorPrimary,
+    color: token.colorTextLightSolid,
+    border: "none",
+    borderRadius: token.borderRadius,
+    fontWeight: 600,
+    minWidth: 140,
+    height: 48,
+    boxShadow: `0 2px 8px ${token.colorPrimary}40`,
+    transition: "all 0.2s ease",
+  } as const;
+
   return (
-    <Modal
-      open={open}
-      onCancel={onClose}
-      footer={null}
-      centered
-      width={500}
-      bodyStyle={{
-        padding: 28,
-        background: token.colorBgElevated,
-        borderRadius: token.borderRadiusLG,
-      }}
+    <CustomModal
+      visible={open}
+      onClose={onClose}
+      status="default"
+      width={540}
+      padding={32}
     >
-      <Space direction="vertical" size="large" style={{ width: "100%" }}>
-        <div style={{ textAlign: "center" }}>
-          <Title
-            level={4}
-            style={{
-              marginBottom: 4,
-              color: token.colorTextHeading,
-              fontWeight: 600,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-            }}
-          >
-            <BookOutlined style={{ color: token.colorPrimary }} />
-            Creación de Entrevista
-          </Title>
-          <Text style={{ fontSize: 15, color: token.colorTextSecondary }}>
-            Selecciona la dificultad para comenzar tu entrevista
-          </Text>
-        </div>
-        <Divider style={{ margin: "12px 0", borderColor: token.colorBorder }} />
-        <Space
-          direction="horizontal"
-          size="middle"
-          style={{ width: "100%", justifyContent: "center" }}
+      <CustomModal.Header
+        icon={<BookOutlined />}
+        title="Creación de Entrevista"
+      />
+      <CustomModal.Description>
+        Selecciona la dificultad para comenzar tu entrevista
+      </CustomModal.Description>
+      <CustomModal.Body>
+        <Divider style={{ margin: "16px 0", borderColor: token.colorBorder }} />
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            gap: token.marginMD,
+            flexWrap: "nowrap",
+          }}
         >
           <Button
-            size="middle"
-            style={{
-              background: token.colorPrimary,
-              color: token.colorTextLightSolid,
-              border: "none",
-              borderRadius: token.borderRadius,
-              fontWeight: 500,
-            }}
+            size="large"
             icon={<BookOutlined />}
+            style={buttonStyle}
+            onClick={() => onSelectDifficulty(3)}
+          >
+            Junior — 3
+          </Button>
+          <Button
+            size="large"
+            icon={<BookOutlined />}
+            style={buttonStyle}
             onClick={() => onSelectDifficulty(5)}
           >
-            Junior — 5
+            Senior — 5
           </Button>
           <Button
-            size="middle"
-            style={{
-              background: token.colorPrimary,
-              color: token.colorTextLightSolid,
-              border: "none",
-              borderRadius: token.borderRadius,
-              fontWeight: 500,
-            }}
+            size="large"
             icon={<BookOutlined />}
+            style={buttonStyle}
             onClick={() => onSelectDifficulty(7)}
           >
-            Senior — 7
+            Master — 7
           </Button>
-          <Button
-            size="middle"
-            style={{
-              background: token.colorPrimary,
-              color: token.colorTextLightSolid,
-              border: "none",
-              borderRadius: token.borderRadius,
-              fontWeight: 500,
-            }}
-            icon={<BookOutlined />}
-            onClick={() => onSelectDifficulty(10)}
-          >
-            Master — 10
-          </Button>
-        </Space>
-      </Space>
-    </Modal>
+        </div>
+      </CustomModal.Body>
+    </CustomModal>
   );
 }
