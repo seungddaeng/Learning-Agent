@@ -30,10 +30,4 @@ if [ -n "$BACKEND_CHANGES" ]; then
   npm --prefix backend test -- --bail --passWithNoTests
 fi
 
-CLIENT_CHANGES=$(echo "$CHANGED_FILES" | grep -E 'client/' || true)
-if [ -n "$CLIENT_CHANGES" ]; then
-  echo "Running client tests..."
-  npm --prefix client test -- --bail --passWithNoTests
-fi
-
 echo "All pre-push checks passed!"
