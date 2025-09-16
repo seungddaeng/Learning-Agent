@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import {
@@ -19,11 +19,12 @@ import { DocumentChunk } from '../../domain/entities/document-chunk.entity';
 @Injectable()
 export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
   private readonly genAI: GoogleGenerativeAI;
+  private readonly logger = new Logger(GeminiIndexGeneratorAdapter.name);
   private readonly defaultConfig: IndexGenerationConfig = {
     model: 'gemini-1.5-flash',
     temperature: 0.7,
     maxTokens: 8192,
-    language: 'es',
+    language: 'en',
     detailLevel: 'intermediate',
     exerciseTypes: [
       'CONCEPTUAL',
@@ -37,7 +38,7 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
   constructor(private readonly configService: ConfigService) {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
     if (!apiKey) {
-      throw new Error('GEMINI_API_KEY no está configurada');
+      throw new Error('GEMINI_API_KEY is not configured');
     }
     this.genAI = new GoogleGenerativeAI(apiKey);
   }
@@ -66,14 +67,14 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
 
       const prompt = this.buildPrompt(documentTitle, fullText, finalConfig);
 
-      console.log(`Generando índice para documento: ${documentTitle}`);
-      console.log(`Procesando ${chunks.length} chunks`);
+      this.logger.log(`Generating index for document: ${documentTitle}`);
+      this.logger.log(`Processing ${chunks.length} chunks`);
 
       const result = await model.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
 
-      console.log(`Respuesta recibida de Gemini`);
+      this.logger.log(`Response received from Gemini`);
 
       // Parsear la respuesta JSON
       const indexData = this.parseGeminiResponse(text);
@@ -88,15 +89,15 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
         IndexStatus.GENERATED,
       );
 
-      console.log(
-        `Índice generado con ${documentIndex.chapters.length} capítulos`,
+      this.logger.log(
+        `Index generated with ${documentIndex.chapters.length} chapters`,
       );
 
       return documentIndex;
     } catch (error) {
-      console.error('Error generando índice con Gemini:', error);
+      this.logger.error('Error generating index with Gemini:', error);
       throw new Error(
-        `Error generando índice: ${error instanceof Error ? error.message : 'Error desconocido'}`,
+        `Error generating index: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
     }
   }
@@ -181,16 +182,16 @@ IMPORTANTE:
       const jsonEnd = cleanResponse.lastIndexOf('}') + 1;
 
       if (jsonStart === -1 || jsonEnd === 0) {
-        throw new Error('No se encontró JSON válido en la respuesta');
+        throw new Error('No valid JSON found in response');
       }
 
       cleanResponse = cleanResponse.substring(jsonStart, jsonEnd);
 
       return JSON.parse(cleanResponse);
     } catch (error) {
-      console.error('Error parseando respuesta de Gemini:', error);
-      console.error('Respuesta recibida:', response);
-      throw new Error('La respuesta de Gemini no es un JSON válido');
+      this.logger.error('Error parsing Gemini response:', error);
+      this.logger.error('Received response:', response);
+      throw new Error('Gemini response is not valid JSON');
     }
   }
 
@@ -267,6 +268,6 @@ IMPORTANTE:
   }
 
   private generateId(): string {
-    return `idx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `idx_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
   }
 }

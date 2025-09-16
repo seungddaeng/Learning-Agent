@@ -1,6 +1,18 @@
-export interface GenerateDocumentIndexRequestDto {
+import { IsOptional, IsString, IsArray, IsIn } from 'class-validator';
+
+export class GenerateDocumentIndexRequestDto {
+  @IsOptional()
+  @IsString()
   language?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['basic', 'intermediate', 'advanced'])
   detailLevel?: 'basic' | 'intermediate' | 'advanced';
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
   exerciseTypes?: string[];
 }
 

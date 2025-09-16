@@ -1,8 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import type { DocumentRepositoryPort } from '../../domain/ports/document-repository.port';
 import type { DocumentChunkRepositoryPort } from '../../domain/ports/document-chunk-repository.port';
 import type { DocumentIndexGeneratorPort } from '../../domain/ports/document-index-generator.port';
 import { DocumentIndex } from '../../domain/entities/document-index.entity';
+import {
+  DOCUMENT_REPOSITORY_PORT,
+  DOCUMENT_CHUNK_REPOSITORY_PORT,
+  DOCUMENT_INDEX_GENERATOR_PORT,
+} from '../../tokens';
 
 export interface GenerateDocumentIndexCommand {
   documentId: string;
@@ -18,8 +23,11 @@ export class GenerateDocumentIndexUseCase {
   private readonly logger = new Logger(GenerateDocumentIndexUseCase.name);
 
   constructor(
+    @Inject(DOCUMENT_REPOSITORY_PORT)
     private readonly documentRepository: DocumentRepositoryPort,
+    @Inject(DOCUMENT_CHUNK_REPOSITORY_PORT)
     private readonly chunkRepository: DocumentChunkRepositoryPort,
+    @Inject(DOCUMENT_INDEX_GENERATOR_PORT)
     private readonly indexGenerator: DocumentIndexGeneratorPort,
   ) {}
 
@@ -28,16 +36,16 @@ export class GenerateDocumentIndexUseCase {
 
     try {
       this.logger.log(
-        `Iniciando generación de índice para documento: ${documentId}`,
+        `Starting index generation for document: ${documentId}`,
       );
 
       // 1. Verificar que el documento existe
       const document = await this.documentRepository.findById(documentId);
       if (!document) {
-        throw new Error(`Documento con ID ${documentId} no encontrado`);
+        throw new Error(`Document with ID ${documentId} not found`);
       }
 
-      this.logger.log(`Documento encontrado: ${document.originalName}`);
+      this.logger.log(`Document found: ${document.originalName}`);
 
       // 2. Obtener todos los chunks del documento
       const chunksResult =
@@ -48,12 +56,12 @@ export class GenerateDocumentIndexUseCase {
         chunksResult.chunks.length === 0
       ) {
         throw new Error(
-          `No se encontraron chunks para el documento ${documentId}`,
+          `No chunks found for document ${documentId}`,
         );
       }
 
       const chunks = chunksResult.chunks;
-      this.logger.log(`Se encontraron ${chunks.length} chunks para procesar`);
+      this.logger.log(`Found ${chunks.length} chunks to process`);
 
       // 3. Generar el índice con ejercicios usando el LLM
       const documentIndex = await this.indexGenerator.generateDocumentIndex(
@@ -64,7 +72,7 @@ export class GenerateDocumentIndexUseCase {
       );
 
       this.logger.log(
-        `Índice generado exitosamente con ${documentIndex.chapters.length} capítulos`,
+        `Index generated successfully with ${documentIndex.chapters.length} chapters`,
       );
 
       // Log detallado del contenido generado
@@ -79,20 +87,20 @@ export class GenerateDocumentIndexUseCase {
         totalExercises += totalChapterExercises;
 
         this.logger.log(
-          `Capítulo ${chapterIndex + 1}: "${chapter.title}" - ${totalChapterExercises} ejercicios`,
+          `Chapter ${chapterIndex + 1}: "${chapter.title}" - ${totalChapterExercises} exercises`,
         );
       });
 
-      this.logger.log(`Total de ejercicios generados: ${totalExercises}`);
+      this.logger.log(`Total exercises generated: ${totalExercises}`);
 
       return documentIndex;
     } catch (error) {
       this.logger.error(
-        `Error generando índice para documento ${documentId}:`,
+        `Error generating index for document ${documentId}:`,
         error,
       );
       throw new Error(
-        `Error generando índice: ${error instanceof Error ? error.message : 'Error desconocido'}`,
+        `Error generating index: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
     }
   }

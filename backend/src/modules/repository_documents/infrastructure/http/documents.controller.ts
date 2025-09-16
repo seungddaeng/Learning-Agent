@@ -1033,7 +1033,7 @@ export class DocumentsController {
       });
 
       this.logger.log(
-        `Índice generado exitosamente para documento: ${documentId}`,
+        `Index generated successfully for document: ${documentId}`,
       );
 
       return {
@@ -1069,7 +1069,7 @@ export class DocumentsController {
           generatedAt: result.generatedAt.toISOString(),
           status: result.status,
         },
-        message: 'Índice generado exitosamente',
+        message: 'Index generated successfully',
       };
     } catch (error) {
       if (
