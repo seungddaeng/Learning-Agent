@@ -1,6 +1,5 @@
 import apiClient from "../api/apiClient";
 import axios from "axios";
-import { meAPI } from "./authService";
 import type { 
   Document, 
   DocumentListResponse, 
@@ -16,6 +15,9 @@ interface HttpError {
   message?: string;
 }
 
+// Function to get authentication token
+const getAuthToken = async (): Promise<string> => {
+
 // Interface para la información del usuario
 interface UserInfo {
   id: string;
@@ -25,8 +27,6 @@ interface UserInfo {
   roles: string[];
 }
 
-// Function to get authentication token and verify user is authenticated
-const getAuthTokenAndVerifyUser = async (): Promise<{ token: string; user: UserInfo }> => {
   const authData = localStorage.getItem("auth");
   if (!authData) {
     throw new Error('No authentication data available. Please log in.');
@@ -40,14 +40,13 @@ const getAuthTokenAndVerifyUser = async (): Promise<{ token: string; user: UserI
       throw new Error('Access token not found. Please log in again.');
     }
     
+    return token;
+  } catch (_error) {
     // Verify token is valid and get user information
     const user = await meAPI(token) as UserInfo;
     
     return { token, user };
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('Error getting user information')) {
-      throw new Error('Session expired. Please log in again.');
-    }
+  } 
     throw new Error('Error verifying authentication. Please log in again.');
   }
 };
@@ -165,10 +164,14 @@ export const documentService = {
   /**
    * Upload a document
    */
-  async uploadDocument(file: File): Promise<UploadResponse> {
+  async uploadDocument(file: File, userId?: string | null): Promise<UploadResponse> {
     try {
-      // Get token and verify authentication using meAPI
-      const { token } = await getAuthTokenAndVerifyUser();
+
+      // Get authentication token
+      const token = await getAuthToken();
+      
+      // Note: userId is available for future use if needed
+      console.log('Uploading document for user:', userId);
 
       const formData = new FormData();
       formData.append('file', file);
@@ -424,7 +427,7 @@ export const documentService = {
   }> {
     try {
       // Paso 1: Upload
-      onProgress?.('upload', 25, 'Subiendo documento...');
+      onProgress?.('upload', 25, 'Uploading document...');
       const uploadResult = await this.uploadDocument(file);
       
       if (!uploadResult.data.id) {

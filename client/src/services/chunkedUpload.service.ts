@@ -1,6 +1,5 @@
 import axios from 'axios';
 import type { CancelTokenSource } from 'axios';
-import { meAPI } from './authService';
 
 export interface ChunkedUploadProgress {
   stepKey: string;
@@ -68,7 +67,6 @@ class ChunkedUploadService {
         throw new Error('Access token not found. Please log in again.');
       }
 
-      await meAPI(token);
       return token;
     } catch {
       throw new Error('Session expired. Please log in again.');
@@ -131,7 +129,8 @@ class ChunkedUploadService {
 
   async uploadFileWithChunks(
     file: File,
-    options: ChunkedUploadOptions = {}
+    options: ChunkedUploadOptions = {},
+    userId?: string | null
   ): Promise<ChunkedUploadResult> {
     const sessionId = `upload_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
@@ -154,7 +153,7 @@ class ChunkedUploadService {
         options.onProgress?.({
           stepKey: 'upload',
           progress,
-          message: `Subiendo chunk ${i + 1} de ${totalChunks}`,
+          message: `Uploading chunk ${i + 1} of ${totalChunks}`,
           uploadedBytes,
           totalBytes: file.size,
         });
@@ -165,23 +164,23 @@ class ChunkedUploadService {
       }
 
       const { documentService } = await import('./documents.service');
-      const result = await documentService.uploadDocument(file);
+      const result = await documentService.uploadDocument(file, userId);
 
       if (!result.success) {
-        throw new Error('Error en la subida del documento');
+        throw new Error('Error uploading document');
       }
 
       options.onProgress?.({
         stepKey: 'complete',
         progress: 100,
-        message: 'Subida completada exitosamente'
+        message: 'Upload completed successfully'
       });
 
       return {
         success: true,
         document: result.data,
         sessionId,
-        status: result.status, // Pass status from backend
+        status: result.status, // Pass the backend status
       };
 
     } catch (error) {
@@ -199,7 +198,7 @@ class ChunkedUploadService {
     try {
       const cancelTokenSource = this.cancelTokens.get(sessionId);
       if (cancelTokenSource) {
-        cancelTokenSource.cancel('Upload cancelado por el usuario');
+        cancelTokenSource.cancel('Upload cancelled by user');
         this.cancelTokens.delete(sessionId);
       }
 
@@ -217,7 +216,7 @@ class ChunkedUploadService {
           }
         );
       } catch (error) {
-        console.warn('Error notificando cancelación al backend:', error);
+        console.warn('Error notifying cancellation to backend:', error);
       }
 
       this.uploadSessions.delete(sessionId);
