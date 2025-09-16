@@ -37,6 +37,7 @@ import { PrismaDocumentIndexRepositoryAdapter } from './infrastructure/persisten
 import { OpenAIEmbeddingAdapter } from './infrastructure/ai/openai-embedding.adapter';
 import { PgVectorSearchAdapter } from './infrastructure/search/pgvector-search.adapter';
 import { PrismaDeletedDocumentRepositoryAdapter } from './infrastructure/persistence/prisma-deleted-document-repository.adapter';
+import { GeminiIndexGeneratorAdapter } from './infrastructure/ai/gemini-index-generator.adapter';
 
 // Domain services
 import { DocumentChunkingService } from './domain/services/document-chunking.service';
@@ -347,7 +348,6 @@ import { ContextualLoggerService } from './infrastructure/services/contextual-lo
       },
       inject: [DOCUMENT_INDEX_REPOSITORY_PORT],
     },
-
     // Contract use cases
     {
       provide: GetDocumentsBySubjectUseCase,
