@@ -102,7 +102,7 @@ function PeriodForm({
             dateBegin: values.dateBegin,
             dateEnd: values.dateEnd,
           };
-          await onSubmit(periodData as Clase);
+          await onSubmit(periodData);
         } else {
           const newPeriod: CreateClassDTO = {
             teacherId: course.teacherId,
@@ -111,7 +111,7 @@ function PeriodForm({
             dateBegin: values.dateBegin,
             dateEnd: values.dateEnd,
           };
-          await onSubmit(newPeriod as CreateClassDTO);
+          await onSubmit(newPeriod);
         }
 
         resetForm();

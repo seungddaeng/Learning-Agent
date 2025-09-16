@@ -417,7 +417,7 @@ export function CourseDetailPage() {
             icon={<EditOutlined />}
             onClick={() => setEditModalOpen(true)}
           >
-            Editar Periodo
+            Editar Período
           </Button>
           <Button
             danger

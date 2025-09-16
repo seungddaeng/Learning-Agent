@@ -73,12 +73,10 @@ export function CoursePeriodsPage() {
     if (!courseId) return;
 
     setCreatingPeriod(true);
-    // If periodData is a Clase, convert it to CreateClassDTO
     let createData: CreateClassDTO;
     if ("courseId" in periodData && typeof periodData.courseId === "string") {
       createData = periodData as CreateClassDTO;
     } else {
-      // If periodData is Clase, extract CreateClassDTO fields
       createData = {
         semester: periodData.semester,
         dateBegin: periodData.dateBegin,
