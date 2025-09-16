@@ -11,6 +11,7 @@ import useAttendance from "../hooks/useAttendance";
 interface AttendanceModalProps {
   open: boolean;
   onClose: () => void;
+  onSubmit: () => void;
   students: StudentInfo[];
   classId: string;
 }
@@ -19,6 +20,7 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
   open,
   onClose,
   students = [],
+  onSubmit,
   classId,
 }) => {
   const [studentMap, setStudentMap] = useState<Map<string, boolean>>(new Map())
@@ -134,6 +136,7 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
       message.info(res.message)
     }
     resetStudentMap();
+    onSubmit();
     onClose();
   }
 
