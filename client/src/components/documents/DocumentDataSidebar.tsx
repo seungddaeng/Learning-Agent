@@ -109,8 +109,7 @@ export const DocumentDataSidebar: React.FC<DocumentDataSidebarProps> = ({ docume
       setIndexData(null);
       return;
     }
-    
-    console.log('Loading index data for document:', document.id);
+
     setIndexLoading(true);
     setIndexError(null);
     
@@ -118,7 +117,6 @@ export const DocumentDataSidebar: React.FC<DocumentDataSidebarProps> = ({ docume
       const data = await getDocumentIndex(document.id);
       console.log('Index data loaded:', data);
       
-      // Verificar si la respuesta es exitosa
       if (!data.success) {
         throw new Error(data.message || 'Error desconocido al cargar el índice');
       }
@@ -126,9 +124,7 @@ export const DocumentDataSidebar: React.FC<DocumentDataSidebarProps> = ({ docume
       setIndexData(data);
       
     } catch (err: any) {
-      console.error('Error loading index data:', err);
       
-      // Determinar el mensaje de error más específico
       let errorMessage = 'Error al cargar el índice';
       
       if (err?.response?.status === 404) {
