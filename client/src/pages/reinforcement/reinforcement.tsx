@@ -4,7 +4,7 @@ import { BookOutlined } from "@ant-design/icons";
 import { ProgressCard } from "../../components/reinforcement/ProgressCard";
 import { CourseCards } from "../../components/reinforcement/CourseCards";
 import { ChatModal } from "../../components/reinforcement/ChatModal";
-import { useChatLogic } from "../../hooks/useChatLogic";
+import { useChatLogic } from "../../hooks/useReinforcementData";
 import { ChatFloatButton } from "../../components/reinforcement/ChatFloatButton";
 import PageTemplate from "../../components/PageTemplate";
 
@@ -38,8 +38,8 @@ export function Reinforcement() {
       subtitle="Select a category to practice"
       actions={headerActions}
       breadcrumbs={[
-        { label: "Home", href: "/" }, 
-        { label: "Classes", href: "/student/classes" }, 
+        { label: "Home", href: "/" },
+        { label: "Classes", href: "/student/classes" },
         { label: "Reinforcement" }
       ]}
     >
@@ -53,9 +53,7 @@ export function Reinforcement() {
           </div>
         </div>
       </div>
-
       <ChatFloatButton onClick={handleChatClick} />
-
       <Modal
         title="Feature in development"
         open={isModalOpen}
@@ -65,7 +63,6 @@ export function Reinforcement() {
       >
         <p>This feature is still in development and will be available soon.</p>
       </Modal>
-
       <ChatModal isChatOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
     </PageTemplate>
   );
