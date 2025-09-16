@@ -19,7 +19,11 @@ export class GetOrGenerateQuestionUseCase {
     const signature = createSignature({ text: input.prompt });
     const existing = await this.repo.findBySignature(signature);
 
-    if (existing && existing.lastUsedAt && (now.getTime() - existing.lastUsedAt.getTime()) <= this.ttlMs) {
+    if (
+      existing &&
+      ((existing.lastUsedAt ?? existing.createdAt) &&
+        (now.getTime() - (existing.lastUsedAt ?? existing.createdAt).getTime()) <= this.ttlMs)
+    ) {
       existing.lastUsedAt = now;
       await this.repo.incrementUsage(existing.id, 0);
 
