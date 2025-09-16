@@ -1,9 +1,10 @@
-import { Modal, Table, Empty, message, Typography } from "antd";
+import { Modal, Table, Empty, message, Typography, Button } from "antd";
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import type { StudentInfo } from "../interfaces/studentInterface";
 import type { AbsenceRow } from "../interfaces/attendanceInterface";
 import useAttendance from "../hooks/useAttendance";
+import { CalendarOutlined } from "@ant-design/icons";
 
 interface AbsencesModalProps {
   open: boolean;
@@ -54,11 +55,23 @@ function AbsencesModal({
     <Modal
       open={open}
       onCancel={onClose}
-      onOk={onClose}
-      title={`Ausencias de ${student ? student.name + " " + student.lastname : ""
-        }`}
-      footer={null}
-      width={window.innerWidth < 600 ? '50%' : '35%'}
+      title={
+        <div style={{
+          display: 'flex', alignItems: 'center', fontSize: '16px', marginBottom: '16px',
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%',
+        }}>
+          <CalendarOutlined
+            style={{ marginRight: '8px', fontSize: '20px' }}
+          />
+          {`Ausencias de ${student?.name} ${student?.lastname}`}
+        </div>
+      }
+      footer={[
+        <Button type="primary" onClick={onClose}>
+          Aceptar
+        </Button>
+      ]}
+      width={window.innerWidth < 600 ? '60%' : '35%'}
     >
       {actualAbsencesDates && actualAbsencesDates.length > 0 ? (
         <Table
