@@ -86,7 +86,6 @@ export function CourseDetailPage() {
 
   const [absencesModalOpen, setAbsencesModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<StudentInfo>();
-  const [loadingAbsences, setLoadingAbsences] = useState(false);
 
   const fetchPeriod = async () => {
     if (!id) return;
@@ -336,9 +335,6 @@ export function CourseDetailPage() {
           onClick={async () => {
             setSelectedStudent(record);
             setAbsencesModalOpen(true);
-            setLoadingAbsences(true);
-            //TODO: Conectar con el backend para traer las ausencias
-            //const absences = await fetchAbsencesByStudent(record.userId);
           }}
         >
           {absencesMap.get(record.userId)}
@@ -866,13 +862,12 @@ export function CourseDetailPage() {
           classId={id || ""}
         />
 
-        {/* <AbsencesModal
+        <AbsencesModal
           open={absencesModalOpen}
           onClose={() => setAbsencesModalOpen(false)}
           student={selectedStudent}
-          absences={studentAbsences}
-          loading={loadingAbsences}
-        /> */}
+          classId={id || ""}
+        />
       </div>
     </PageTemplate>
   );

@@ -1,39 +1,53 @@
-import { Modal, Table, Empty } from "antd";
+import { Modal, Table, Empty, message, Typography } from "antd";
+import { useEffect, useState } from "react";
+import dayjs from "dayjs";
 import type { StudentInfo } from "../interfaces/studentInterface";
-
-interface Absence {
-  id: string;
-  date: string;
-  reason?: string;
-}
+import type { AbsenceRow } from "../interfaces/attendanceInterface";
+import useAttendance from "../hooks/useAttendance";
 
 interface AbsencesModalProps {
   open: boolean;
   onClose: () => void;
+  classId: string,
   student?: StudentInfo;
-  absences?: Absence[];
-  loading?: boolean;
 }
 
 function AbsencesModal({
   open,
   onClose,
+  classId,
   student,
-  absences = [],
-  loading = false,
 }: AbsencesModalProps) {
+  const { actualAbsencesDates, getAbsencesByStudent } = useAttendance();
+  const [loading, setLoading] = useState(true);
+
+  const fetchAbsencesByStudent = async (studentId: string) => {
+    const res = await getAbsencesByStudent(classId, studentId);
+
+    if (res.state == "error") {
+      message.error(res.message);
+    }
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    setLoading(true);
+    if (!student) return;
+
+    fetchAbsencesByStudent(student.userId);
+  }, [student])
+
   const columns = [
     {
       title: "Fecha",
       dataIndex: "date",
       key: "date",
-    },
-    {
-      title: "Motivo",
-      dataIndex: "reason",
-      key: "reason",
-      render: (value: string) => value || "-",
-    },
+      render: (_: any, record: AbsenceRow) => (
+        <Typography.Text>
+          {dayjs(record.date).format("DD/MM/YYYY")}
+        </Typography.Text>
+      ),
+    }
   ];
 
   return (
@@ -41,17 +55,15 @@ function AbsencesModal({
       open={open}
       onCancel={onClose}
       onOk={onClose}
-      title={`Ausencias de ${
-        student ? student.name + " " + student.lastname : ""
-      }`}
+      title={`Ausencias de ${student ? student.name + " " + student.lastname : ""
+        }`}
       footer={null}
-      width={600}
+      width={window.innerWidth < 600 ? '50%' : '35%'}
     >
-      {absences.length > 0 ? (
+      {actualAbsencesDates && actualAbsencesDates.length > 0 ? (
         <Table
           columns={columns}
-          dataSource={absences}
-          rowKey={(r) => r.id}
+          dataSource={actualAbsencesDates}
           loading={loading}
           pagination={false}
         />

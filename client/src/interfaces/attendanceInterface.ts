@@ -17,3 +17,7 @@ export interface StudentAbsenceInfo {
     lastname: string,
     totalAbsences: number,
 }
+
+export interface AbsenceRow {
+    date: Date,
+}

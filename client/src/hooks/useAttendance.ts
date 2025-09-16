@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { useUserStore } from "../store/userStore";
-import type { StudentAbsenceInfo, CreateAttendanceInterface } from "../interfaces/attendanceInterface";
+import type { StudentAbsenceInfo, CreateAttendanceInterface, AbsenceRow } from "../interfaces/attendanceInterface";
 import { attendanceService } from "../services/attendance.service";
 
 const useAttendance = () => {
     const [studentAbsences, setStudentAbsences] = useState<StudentAbsenceInfo[]>();
     const [absencesMap, setAbsencesMap] = useState<Map<string, number>>(new Map());
-    const [actualAbsencesDates, setActualAbsencesDates] = useState<Date[]>();
+    const [actualAbsencesDates, setActualAbsencesDates] = useState<AbsenceRow[]>();
     const user = useUserStore((s) => s.user);
     const fetchUser = useUserStore((s) => s.fetchUser);
 
@@ -63,8 +63,14 @@ const useAttendance = () => {
         const success = res?.code === 200
 
         if (success) {
-            const dateInfo = res.data.map((date: string) => new Date(date));
-            setActualAbsencesDates(dateInfo);
+            const absencesInfo: AbsenceRow[] = [];
+            const absences = res.data;
+            absences.forEach((date: string) => {
+                const absenceDate = new Date(date);
+                absencesInfo.push({date: absenceDate})
+            });
+
+            setActualAbsencesDates(absencesInfo);
         }
 
         return {
