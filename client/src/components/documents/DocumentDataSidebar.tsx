@@ -659,8 +659,6 @@ export const DocumentDataSidebar: React.FC<DocumentDataSidebarProps> = ({ docume
                     />
                   )}
 
-
-
                   {(!indexData?.data?.chapters || indexData?.data?.chapters?.length === 0) && !indexLoading && !indexError && (
                     <Card>
                       <Empty 
