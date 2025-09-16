@@ -34,7 +34,7 @@ export class GetOrGenerateQuestionUseCase {
         examId: input.examId,
         signature,
         source: 'cached',
-        tokensUsed: existing.tokensGenerated,
+        tokensUsed: 0,
       });
 
       this.metrics.incrementCacheHits();
