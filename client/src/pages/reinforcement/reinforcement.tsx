@@ -1,16 +1,24 @@
-import { useState } from "react";
-import { Modal, Space, Button } from "antd";
-import { BookOutlined } from "@ant-design/icons";
+import { Space, Button, theme } from "antd";
+import { ReadOutlined } from "@ant-design/icons";
 import { ProgressCard } from "../../components/reinforcement/ProgressCard";
 import { CourseCards } from "../../components/reinforcement/CourseCards";
 import { ChatModal } from "../../components/reinforcement/ChatModal";
-import { useChatLogic } from "../../hooks/useChatLogic";
+import { useChatLogic } from "../../hooks/useReinforcementData";
 import { ChatFloatButton } from "../../components/reinforcement/ChatFloatButton";
 import PageTemplate from "../../components/PageTemplate";
+import { useNavigate, useParams } from "react-router-dom";
 
 export function Reinforcement() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const { isChatOpen, handleChatClick, setIsChatOpen } = useChatLogic();
+  const navigate = useNavigate();
+  const { id: classId } = useParams<{ id: string }>();
+  const { token } = theme.useToken();
+
+  const goToSyllabus = () => {
+    if (classId) {
+      navigate(`/student/classes/${classId}/reinforcement/documents`);
+    }
+  };
 
   const studentActivities = {
     courses: [
@@ -20,12 +28,22 @@ export function Reinforcement() {
   };
 
   const headerActions = (
-    <Space wrap>
+    <Space align="center" wrap>
       <Button
-        icon={<BookOutlined />}
-        onClick={() => setIsModalOpen(true)}
+        icon={<ReadOutlined style={{ fontSize: 18 }} />}
+        onClick={goToSyllabus}
         size="middle"
-        className="!bg-[#1A2A80] !text-white !border-none h-9 rounded-lg font-medium px-4 shadow-md transition-all duration-200 ease-in-out hover:!bg-[#3B38A0] hover:shadow-xl hover:-translate-y-1"
+        style={{
+          backgroundColor: token.colorPrimary,
+          color: token.colorTextLightSolid,
+          border: "none",
+          height: 36,
+          borderRadius: 8,
+          fontWeight: 500,
+          paddingInline: 16,
+          boxShadow: token.boxShadow,
+        }}
+        className="transition-all duration-200 ease-in-out hover:shadow-xl hover:-translate-y-1"
       >
         Syllabus
       </Button>
@@ -38,8 +56,8 @@ export function Reinforcement() {
       subtitle="Select a category to practice"
       actions={headerActions}
       breadcrumbs={[
-        { label: "Home", href: "/" }, 
-        { label: "Classes", href: "/student/classes" }, 
+        { label: "Home", href: "/" },
+        { label: "Classes", href: "/student/classes" },
         { label: "Reinforcement" }
       ]}
     >
@@ -53,19 +71,7 @@ export function Reinforcement() {
           </div>
         </div>
       </div>
-
       <ChatFloatButton onClick={handleChatClick} />
-
-      <Modal
-        title="Feature in development"
-        open={isModalOpen}
-        onOk={() => setIsModalOpen(false)}
-        onCancel={() => setIsModalOpen(false)}
-        footer={[<Button key="back" onClick={() => setIsModalOpen(false)}>Close</Button>]}
-      >
-        <p>This feature is still in development and will be available soon.</p>
-      </Modal>
-
       <ChatModal isChatOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
     </PageTemplate>
   );
