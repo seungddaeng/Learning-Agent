@@ -1,17 +1,18 @@
-import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { Button, Empty, Input, message } from "antd";
 import { PlusOutlined, ReadOutlined } from "@ant-design/icons";
+import dayjs from "dayjs";
+
+import AccessDenied from "../../components/shared/AccessDenied";
+import type { Clase, CreateClassDTO } from "../../interfaces/claseInterface";
+import CustomCard from "../../components/shared/CustomCard";
+import GlobalScrollbar from '../../components/GlobalScrollbar';
 import PageTemplate from "../../components/PageTemplate";
 import PeriodForm from "../../components/PeriodForm";
 import useClasses from "../../hooks/useClasses";
-import type { Clase, CreateClassDTO } from "../../interfaces/claseInterface";
-import { useUserStore } from "../../store/userStore";
-import dayjs from "dayjs";
-import GlobalScrollbar from '../../components/GlobalScrollbar';
-import AccessDenied from "../../components/shared/AccessDenied";
-import CustomCard from "../../components/shared/CustomCard";
 import useCourses from "../../hooks/useCourses";
+import { useUserStore } from "../../store/userStore";
 
 export default function CoursePeriodsPage() {
   const { courseId } = useParams<{ courseId: string }>();
