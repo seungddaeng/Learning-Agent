@@ -26,13 +26,13 @@ import type { StudentInfo } from "../../interfaces/studentInterface";
 import type { createEnrollmentInterface, EnrollGroupRow } from "../../interfaces/enrollmentInterface";
 
 import PageTemplate from "../../components/PageTemplate";
-import GlobalScrollbar from '../../components/GlobalScrollbar';
-import { CursosForm } from "../../components/cursosForm";
+import PeriodForm from "../../components/PeriodForm";
 import { SafetyModal } from "../../components/safetyModal";
 import { SingleStudentForm } from "../../components/singleStudentForm";
 import StudentPreviewModal from "../../components/StudentPreviewModal";
 import UploadButton from "../../components/shared/UploadButton";
 import AttendanceModal from "../../components/AttendanceModal";
+import GlobalScrollbar from "../../components/GlobalScrollbar";
 import AbsencesModal from "../../components/AbsencesModal";
 import CourseExamsPanel from "../courses/CourseExamsPanel";
 import { processFile } from "../../utils/enrollGroupByFile";
@@ -165,7 +165,7 @@ export function CourseDetailPage() {
   }, [fetchStudents]);
 
   const handleEditClass = async (values: Clase) => {
-    const data = await updateClass(values);
+    const data = await updateClass(values as Clase);
     if (data.state == "success") {
       message.success(data.message);
     } else if (data.state == "info") {
@@ -443,7 +443,7 @@ export function CourseDetailPage() {
             icon={<EditOutlined />}
             onClick={() => setEditModalOpen(true)}
           >
-            Editar Curso
+            Editar Período
           </Button>
           <Button
             danger
@@ -598,7 +598,7 @@ export function CourseDetailPage() {
                         pageSize: 10,
                       }}
                       size="middle"
-                      scroll={{ x: 'max-content' }}
+                      scroll={{ x: "max-content" }}
                     />
                     <div style={{ marginTop: 24 }}>
                       <div className="flex gap-3">
@@ -792,11 +792,12 @@ export function CourseDetailPage() {
         </div>
 
         {/* Modals */}
-        <CursosForm
+        <PeriodForm
           open={editModalOpen}
           onClose={() => setEditModalOpen(false)}
           onSubmit={handleEditClass}
-          clase={actualClass}
+          period={actualClass!}
+          course={actualCourse!}
         />
 
         <SafetyModal
