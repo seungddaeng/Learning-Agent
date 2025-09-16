@@ -16,10 +16,11 @@ if echo "$msg" | grep -Eq "$pattern"; then
     exit 1
   fi
 
-  # Avoid vague commit messages
-  banned='(update|fix|changes|test|tmp)'
-  if echo "$msg" | grep -Eq "$banned"; then
+  # Avoid overly vague commit messages - but allow reasonable ones
+  overly_vague='^(chore|fix|test|update):\s*$'
+  if echo "$msg" | grep -Eq "$overly_vague"; then
     echo "✖ Commit message too vague. Be more descriptive!"
+    echo "  Example: Instead of 'fix: update', use 'fix(auth): handle null token'"
     exit 1
   fi
 

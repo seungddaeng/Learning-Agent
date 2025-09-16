@@ -11,15 +11,15 @@ else
   echo "Type check failed, commit aborted"
   exit 1
 fi
-#arreglar tests
+
 echo "Running unit tests (related files only)..."
-if npm --prefix backend test -- --passWithNoTests --bail --findRelatedTests; then
+if npm --prefix backend test -- --passWithNoTests --bail; then
   echo "Unit tests passed"
 else
   echo "Unit tests failed, commit aborted"
   exit 1
 fi
-#build de backend arreglar
+#the frontend build has to be fixed ...
 echo "Building frontend..."
 if npm --prefix client run build; then
   echo "Frontend build completed successfully"
