@@ -13,28 +13,30 @@ import {
   UserAddOutlined,
   CheckSquareOutlined,
 } from "@ant-design/icons";
+import dayjs from "dayjs";
+
 import useClasses from "../../hooks/useClasses";
 import useTeacher from "../../hooks/useTeacher";
+import useStudents from "../../hooks/useStudents";
+import useCourses from "../../hooks/useCourses";
+import useEnrollment from "../../hooks/useEnrollment";
+import useAttendance from "../../hooks/useAttendance";
+
+import type { Clase } from "../../interfaces/claseInterface";
+import type { StudentInfo } from "../../interfaces/studentInterface";
+import type { createEnrollmentInterface, EnrollGroupRow } from "../../interfaces/enrollmentInterface";
+
 import PageTemplate from "../../components/PageTemplate";
 import { CursosForm } from "../../components/cursosForm";
 import { SafetyModal } from "../../components/safetyModal";
 import { SingleStudentForm } from "../../components/singleStudentForm";
 import StudentPreviewModal from "../../components/StudentPreviewModal";
-import type { Clase } from "../../interfaces/claseInterface";
-import type {
-  createEnrollmentInterface,
-  EnrollGroupRow,
-} from "../../interfaces/enrollmentInterface";
-import useEnrollment from "../../hooks/useEnrollment";
-import dayjs from "dayjs";
-import useStudents from "../../hooks/useStudents";
-import { useUserStore } from "../../store/userStore";
-import useCourses from "../../hooks/useCourses";
 import UploadButton from "../../components/shared/UploadButton";
-import { processFile } from "../../utils/enrollGroupByFile";
-import type { StudentInfo } from "../../interfaces/studentInterface";
-import CourseExamsPanel from "../courses/CourseExamsPanel";
 import AttendanceModal from "../../components/AttendanceModal";
+import AbsencesModal from "../../components/AbsencesModal";
+import CourseExamsPanel from "../courses/CourseExamsPanel";
+import { processFile } from "../../utils/enrollGroupByFile";
+import { useUserStore } from "../../store/userStore";
 
 const { Text } = Typography;
 const { TabPane } = Tabs;
@@ -45,8 +47,7 @@ export function CourseDetailPage() {
   const navigate = useNavigate();
   const user = useUserStore((s) => s.user);
 
-  const { fetchClassById, actualClass, updateClass, softDeleteClass } =
-    useClasses();
+  const { fetchClassById, actualClass, updateClass, softDeleteClass } = useClasses();
   const { students, fetchStudentsByClass } = useStudents();
   const {
     enrollSingleStudent,
@@ -55,6 +56,7 @@ export function CourseDetailPage() {
   } = useEnrollment();
   const { actualCourse, getCourseByID } = useCourses();
   const { teacherInfo, fetchTeacherInfoById } = useTeacher();
+  const { absencesMap, getStudentAbsencesByClass } = useAttendance();
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [safetyModalOpen, setSafetyModalOpen] = useState(false);
@@ -81,6 +83,9 @@ export function CourseDetailPage() {
   const [loading, setLoading] = useState(true);
 
   const [attendanceModalOpen, setAttendanceModalOpen] = useState(false);
+
+  const [absencesModalOpen, setAbsencesModalOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<StudentInfo>();
 
   const fetchPeriod = async () => {
     if (!id) return;
@@ -110,12 +115,16 @@ export function CourseDetailPage() {
     }
   };
 
-  const fetchStudents = useCallback(async () => {
+  const fetchStudentAndAbsences = useCallback(async () => {
     if (!id) return;
 
-    const res = await fetchStudentsByClass(id);
-    if (res.state === "error") {
-      message.error(res.message);
+    const studentRes = await fetchStudentsByClass(id);
+    if (studentRes.state === "error") {
+      message.error(studentRes.message);
+    }
+    const absencesRes = await getStudentAbsencesByClass(id);
+    if (absencesRes.state === "error") {
+      message.error(absencesRes.message);
     }
   }, [id, fetchStudentsByClass]);
 
@@ -146,8 +155,8 @@ export function CourseDetailPage() {
   }, [actualCourse]);
 
   useEffect(() => {
-    fetchStudents();
-  }, [fetchStudents]);
+    fetchStudentAndAbsences();
+  }, [fetchStudentAndAbsences]);
 
   const handleEditClass = async (values: Clase) => {
     const data = await updateClass(values);
@@ -207,7 +216,7 @@ export function CourseDetailPage() {
       await enrollSingleStudent(values);
       message.success("Estudiante inscrito correctamente");
       if (id) fetchClassById(id);
-      await fetchStudents();
+      await fetchStudentAndAbsences();
       setSingleStudentFormOpen(false);
     } catch {
       message.error("Error al inscribir al estudiante");
@@ -261,7 +270,7 @@ export function CourseDetailPage() {
       setParsedStudents([]);
       setDuplicates([]);
       fetchClassById(id);
-      await fetchStudents();
+      await fetchStudentAndAbsences();
     } else {
       message.error(result.message);
     }
@@ -295,12 +304,8 @@ export function CourseDetailPage() {
       return;
     }
     message.success(res.message);
-    await fetchStudents();
+    await fetchStudentAndAbsences();
     setSafetyModalOpen(false);
-  };
-
-  const goToExams = () => {
-    navigate(`/exams`);
   };
 
   const studentsColumns = [
@@ -321,11 +326,22 @@ export function CourseDetailPage() {
     },
 
     {
-      title: "Asistencia",
-      dataIndex: "asistencia",
-      key: "asistencia",
-      render: () => "-",
+      title: "Ausencias",
+      dataIndex: "absences",
+      key: "absences",
+      render: (_: any, record: StudentInfo) => (
+        <Button
+          type="link"
+          onClick={async () => {
+            setSelectedStudent(record);
+            setAbsencesModalOpen(true);
+          }}
+        >
+          {absencesMap.get(record.userId)}
+        </Button>
+      ),
     },
+
     {
       title: "Acciones",
       key: "actions",
@@ -843,6 +859,13 @@ export function CourseDetailPage() {
           open={attendanceModalOpen}
           onClose={() => setAttendanceModalOpen(false)}
           students={students ? students : []}
+          classId={id || ""}
+        />
+
+        <AbsencesModal
+          open={absencesModalOpen}
+          onClose={() => setAbsencesModalOpen(false)}
+          student={selectedStudent}
           classId={id || ""}
         />
       </div>
