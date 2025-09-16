@@ -36,4 +36,4 @@ if [ -n "$CLIENT_CHANGES" ]; then
   npm --prefix client test -- --bail --passWithNoTests
 fi
 
-echo "All pre-push checks passed! ✅"
+echo "All pre-push checks passed!"
