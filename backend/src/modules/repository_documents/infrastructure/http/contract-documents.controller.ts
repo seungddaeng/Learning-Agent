@@ -35,10 +35,10 @@ import {
 } from '../../domain/entities/document-index.entity';
 
 /**
- * Controlador para endpoints del contrato con el módulo de estudiantes
- * Base URL: /api/v1/documentos
+ * Controller for contract endpoints with the student module
+ * Base URL: /api/v1/documents
  */
-@Controller('api/v1/documentos')
+@Controller('api/v1/documents')
 @UseGuards(AuthGuard('jwt'))
 export class ContractDocumentsController {
   private readonly genAI: GoogleGenerativeAI;
@@ -60,22 +60,18 @@ export class ContractDocumentsController {
     this.genAI = new GoogleGenerativeAI(apiKey);
   }
 
-  /**
-   * GET /materias/{materiaId}/documentos
-   * Obtiene la lista de documentos disponibles para una materia.
-   */
-  @Get('materias/:materiaId/documentos')
+  @Get('subject/:subjectId/documents')
   async getDocumentsBySubject(
-    @Param('materiaId') materiaId: string,
+    @Param('subjectId') subjectId: string,
     @Query() query: GetDocumentsBySubjectQueryDto,
   ): Promise<ContractDocumentListResponseDto> {
     try {
       this.logger.logDocumentOperation('list', undefined, {
-        materiaId,
+        subjectId,
         query,
       });
 
-      if (!materiaId || !materiaId.trim()) {
+      if (!subjectId || !subjectId.trim()) {
         throw new HttpException(
           {
             statusCode: HttpStatus.BAD_REQUEST,
@@ -87,27 +83,27 @@ export class ContractDocumentsController {
       }
 
       const result = await this.getDocumentsBySubjectUseCase.execute({
-        materiaId: materiaId.trim(),
+        subjectId: subjectId.trim(),
         tipo: query.tipo,
         page: query.page || 1,
         limit: query.limit || 10,
       });
 
-      // Mapear la respuesta del dominio a DTOs del contrato
+      // Map the domain response to contract DTOs
       const documentos = result.docs.map(
         (doc) =>
           new ContractDocumentItemDto(
             doc.id,
-            doc.originalName, // titulo
-            this.extractFileType(doc.mimeType), // tipo
+            doc.originalName, // title
+            this.extractFileType(doc.mimeType), // type
             doc.downloadUrl, // url
-            doc.uploadedAt, // fechaCarga
-            doc.uploadedBy, // profesorId
+            doc.uploadedAt, // UploadDate
+            doc.uploadedBy, // professorId
           ),
       );
 
       this.logger.log('Documents retrieved successfully for subject', {
-        materiaId,
+        subjectId,
         totalDocuments: result.total,
         documentsReturned: documentos.length,
         page: result.page,
@@ -126,12 +122,12 @@ export class ContractDocumentsController {
         'Error retrieving documents by subject',
         error instanceof Error ? error : errorMessage,
         {
-          materiaId,
+          subjectId,
           errorType: 'DOCUMENTS_BY_SUBJECT_ERROR',
         },
       );
 
-      // Manejar diferentes tipos de errores
+      // handle different types of errors
       if (errorMessage.includes('no encontrado')) {
         throw new HttpException(
           {
@@ -156,7 +152,7 @@ export class ContractDocumentsController {
         );
       }
 
-      // Error genérico
+      // Generic error
       throw new HttpException(
         {
           statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -170,10 +166,10 @@ export class ContractDocumentsController {
   }
 
   /**
-   * GET /documentos/{docId}/contenido
-   * Obtiene el índice generado de un documento específico.
+   * GET /documents/{docId}/content
+   * Obtain the extracted content of a specific document.
    */
-  @Get(':docId/contenido')
+  @Get(':docId/content')
   async getDocumentContent(
     @Param('docId') docId: string,
   ): Promise<DocumentContentResponseDto> {
@@ -270,7 +266,7 @@ export class ContractDocumentsController {
         },
       );
 
-      // Manejar diferentes tipos de errores
+      // Handle different types of errors
       if (errorMessage.includes('no encontrado')) {
         throw new HttpException(
           {
@@ -295,7 +291,7 @@ export class ContractDocumentsController {
         );
       }
 
-      // Error genérico
+      // Generic error
       throw new HttpException(
         {
           statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -747,7 +743,8 @@ IMPORTANTE:
   }
 
   /**
-   * Extrae el tipo de archivo del mimeType para cumplir con el contrato
+   * Extracts the file type from the mimeType to comply with the contract
+
    */
   private extractFileType(mimeType: string): string {
     if (mimeType.includes('pdf')) return 'pdf';
