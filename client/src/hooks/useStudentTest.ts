@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { fetchQuestion, type QuestionData } from "../services/testService";
 
 export function useStudentTest(context: string, onFinish?: () => void) {
   const navigate = useNavigate();
+  const { id: classId } = useParams<{ id: string }>();
 
   const [isTestModalOpen, setIsTestModalOpen] = useState(false);
   const [questionCount, setQuestionCount] = useState(0);
@@ -21,8 +22,12 @@ export function useStudentTest(context: string, onFinish?: () => void) {
   const openTestModal = useCallback(() => setIsTestModalOpen(true), []);
 
   const handleModalClose = useCallback(() => {
-    navigate("/reinforcement");
-  }, [navigate]);
+    if (classId) {
+      navigate(`/student/classes/${classId}/reinforcement`);
+    } else {
+      navigate("/student/classes");
+    }
+  }, [navigate, classId]);
 
   const loadQuestion = useCallback(async () => {
     if (examFinished) return;
@@ -42,7 +47,7 @@ export function useStudentTest(context: string, onFinish?: () => void) {
   const startExam = useCallback(
     (count: number) => {
       if (!count || count <= 0) {
-        navigate("/reinforcement");
+        handleModalClose();
         return;
       }
       const total = count * 30;
@@ -57,7 +62,7 @@ export function useStudentTest(context: string, onFinish?: () => void) {
       setIsTestModalOpen(false);
       loadQuestion();
     },
-    [loadQuestion, navigate]
+    [loadQuestion, handleModalClose]
   );
 
   const recordAnswer = useCallback(

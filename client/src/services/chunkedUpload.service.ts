@@ -77,7 +77,7 @@ class ChunkedUploadService {
     file: File, 
     options: ChunkedUploadOptions = {}
   ): Promise<{ sessionId: string; session: ChunkedUploadSession }> {
-    const { chunkSize = 1024 * 1024 } = options;
+    const { chunkSize = Number(import.meta.env.VITE_DEFAULT_CHUNK_SIZE) || 1024 * 1024 } = options;
     
     try {
       const token = await this.getAuthToken();
@@ -115,7 +115,8 @@ class ChunkedUploadService {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
-          cancelToken: cancelTokenSource.token
+          cancelToken: cancelTokenSource.token,
+          timeout: Number(import.meta.env.VITE_UPLOAD_TIMEOUT) || 600000 // 10 minutes for upload initialization
         }
       );
 
@@ -142,7 +143,7 @@ class ChunkedUploadService {
         throw new Error('File is empty');
       }
 
-      const { chunkSize = 1024 * 1024 } = options;
+      const { chunkSize = Number(import.meta.env.VITE_DEFAULT_CHUNK_SIZE) || 1024 * 1024 } = options;
       const totalChunks = Math.ceil(file.size / chunkSize);
       
       for (let i = 0; i < totalChunks; i++) {
