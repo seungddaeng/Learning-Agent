@@ -1,7 +1,11 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback } from "react";
 import { Modal, Button, Typography, theme as antTheme } from "antd";
-import { DeleteOutlined, ExclamationCircleOutlined, FileTextOutlined } from '@ant-design/icons';
-import type { ButtonProps } from 'antd';
+import {
+  DeleteOutlined,
+  ExclamationCircleOutlined,
+  FileTextOutlined,
+} from "@ant-design/icons";
+import type { ButtonProps } from "antd";
 import { useThemeStore } from '../store/themeStore';
 
 const { Text } = Typography;
@@ -119,48 +123,6 @@ export const SafetyModal = ({
   );
 };
 
-/**
- * DeleteButton - Componente reutilizable para eliminación con confirmación
- *
- * Este componente encapsula un botón de eliminación junto con un modal de confirmación.
- * Maneja internamente todos los estados necesarios (loading, modal abierto, etc.)
- * y proporciona callbacks para diferentes eventos del flujo de eliminación.
- *
- * Características:
- * - Color fijo: #bb1717ff
- * - Ícono fijo: DeleteOutlined
- * - Modal de confirmación con estilos predefinidos
- * - Manejo automático de estados de carga y errores
- *
- * @example
- * ```tsx
- * // Botón simple con texto
- * <DeleteButton
- *   onDelete={() => deleteDocument(doc.id)}
- *   resourceInfo={{
- *     name: doc.name,
- *     type: "Documento PDF",
- *     icon: <FileTextOutlined />
- *   }}
- *   buttonConfig={{ showText: true }}
- *   onDeleteSuccess={() => message.success("Eliminado")}
- * />
- *
- * // Botón solo con ícono
- * <DeleteButton
- *   onDelete={() => deleteUser(user.id)}
- *   resourceInfo={{
- *     name: user.name,
- *     type: "Usuario"
- *   }}
- *   buttonConfig={{
- *     showText: false,
- *     variant: "ghost",
- *     shape: "circle"
- *   }}
- * />
- * ```
- */
 const DeleteButton: React.FC<DeleteButtonProps> = ({
   onDelete,
   resourceInfo,
@@ -311,7 +273,6 @@ const DeleteButton: React.FC<DeleteButtonProps> = ({
         cancelButtonProps={{
           size: "large",
           style: {
-
             borderColor: isDark ? token.colorBorder : '#7A85C1',
             color: isDark ? token.colorText : '#3B38A0',
             fontWeight: '500'
@@ -342,7 +303,6 @@ const DeleteButton: React.FC<DeleteButtonProps> = ({
           </p>
 
           {/* Información del recurso */}
-
           <div style={{
             backgroundColor: isDark ? token.colorWarningBg : '#fff2e8',
             border: `1px solid ${isDark ? token.colorWarningBorder : '#ffcc7a'}`,
@@ -371,7 +331,6 @@ const DeleteButton: React.FC<DeleteButtonProps> = ({
                   marginLeft: token.marginXS,
                   color: isDark ? token.colorWarningText : '#fa8c16'
                 }}>
-
                   ({resourceInfo.type})
                 </Text>
               )}
@@ -400,6 +359,7 @@ const DeleteButton: React.FC<DeleteButtonProps> = ({
                 fontStyle: 'italic',
                 color: isDark ? token.colorWarningText : '#d48806'
               }}>
+                Esta acción no se puede deshacer
               </Text>
             </div>
           </div>

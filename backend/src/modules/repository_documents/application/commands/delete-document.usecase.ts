@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { DocumentStoragePort } from '../../domain/ports/document-storage.port';
 import type { DocumentRepositoryPort } from '../../domain/ports/document-repository.port';
+import type { DocumentChunkRepositoryPort } from '../../domain/ports/document-chunk-repository.port';
 import { DocumentStatus } from '../../domain/entities/document.entity';
 
 @Injectable()
@@ -10,6 +11,7 @@ export class DeleteDocumentUseCase {
   constructor(
     private readonly storageAdapter: DocumentStoragePort,
     private readonly documentRepository: DocumentRepositoryPort,
+    private readonly chunkRepository: DocumentChunkRepositoryPort,
   ) {}
 
   async execute(documentId: string): Promise<{
@@ -57,9 +59,19 @@ export class DeleteDocumentUseCase {
       this.logger.log(`Iniciando soft delete en storage...`);
       await this.storageAdapter.softDeleteDocument(document.fileName);
       this.logger.log(`Soft delete en storage completado`);
+      // Realizar soft delete de los chunks asociados PRIMERO
+      this.logger.log(`Marcando chunks como eliminados...`);
+      await this.chunkRepository.softDeleteByDocumentId(documentId);
+      this.logger.log(`Chunks marcados como eliminados`);
 
-      this.logger.log(`Eliminando registro en base de datos...`);
-      await this.documentRepository.delete(documentId);
+      // Cambiar status del documento a DELETED (soft delete)
+      this.logger.log(`Marcando documento como eliminado en base de datos...`);
+
+      await this.documentRepository.updateStatus(
+        documentId,
+        DocumentStatus.DELETED,
+      );
+      this.logger.log(`Documento marcado como eliminado`);
 
       this.logger.log(
         `Eliminación completada exitosamente: ${document.originalName}`,
