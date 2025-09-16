@@ -1,6 +1,5 @@
 import apiClient from "../api/apiClient";
 import axios from "axios";
-import { useUserStore } from "../store/userStore";
 import type { 
   Document, 
   DocumentListResponse, 
@@ -16,20 +15,11 @@ interface HttpError {
   message?: string;
 }
 
-// Interface para la información del usuario
-interface UserInfo {
-  id: string;
-  email: string;
-  name: string;
-  lastname: string;
-  roles: string[];
-}
-
-// Función auxiliar para obtener el token de autenticación y verificar que el usuario esté autenticado
-const getAuthTokenAndVerifyUser = async (): Promise<{ token: string; user: UserInfo }> => {
+// Function to get authentication token
+const getAuthToken = async (): Promise<string> => {
   const authData = localStorage.getItem("auth");
   if (!authData) {
-    throw new Error('No hay datos de autenticación disponibles. Por favor, inicia sesión.');
+    throw new Error('No authentication data available. Please log in.');
   }
   
   try {
@@ -37,20 +27,12 @@ const getAuthTokenAndVerifyUser = async (): Promise<{ token: string; user: UserI
     const token = parsedAuth.accessToken;
     
     if (!token) {
-      throw new Error('Token de acceso no encontrado. Por favor, inicia sesión nuevamente.');
+      throw new Error('Access token not found. Please log in again.');
     }
     
-    const user = useUserStore.getState().user;
-    if (!user) {
-      throw new Error('Usuario no encontrado en el contexto. Por favor, inicia sesión nuevamente.');
-    }
-    
-    return { token, user: user as UserInfo };
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('Usuario no encontrado en el contexto')) {
-      throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente.');
-    }
-    throw new Error('Error al verificar la autenticación. Por favor, inicia sesión nuevamente.');
+    return token;
+  } catch (_error) {
+    throw new Error('Error verifying authentication. Please log in again.');
   }
 };
 
@@ -160,17 +142,20 @@ export const documentService = {
       };
     } catch (error) {
       console.error('Error loading documents:', error);
-      throw new Error('Error al cargar los documentos');
+      throw new Error('Error loading documents');
     }
   },
 
   /**
-   * Subir un documento
+   * Upload a document
    */
-  async uploadDocument(file: File): Promise<UploadResponse> {
+  async uploadDocument(file: File, userId?: string | null): Promise<UploadResponse> {
     try {
-      // Obtener el token y verificar autenticación usando meAPI
-      const { token } = await getAuthTokenAndVerifyUser();
+      // Get authentication token
+      const token = await getAuthToken();
+      
+      // Note: userId is available for future use if needed
+      console.log('Uploading document for user:', userId);
 
       const formData = new FormData();
       formData.append('file', file);
@@ -426,7 +411,7 @@ export const documentService = {
   }> {
     try {
       // Paso 1: Upload
-      onProgress?.('upload', 25, 'Subiendo documento...');
+      onProgress?.('upload', 25, 'Uploading document...');
       const uploadResult = await this.uploadDocument(file);
       
       if (!uploadResult.data.id) {

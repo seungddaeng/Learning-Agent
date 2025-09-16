@@ -7,7 +7,6 @@ import { useThemeStore } from "./store/themeStore";
 import "./App.css";
 import { useUserStore } from "./store/userStore";
 import { ThemedVars } from "./ThemedVars";
-import { UserProvider } from "./context/UserContext";
 
 function App() {
   const theme = useThemeStore((s) => s.theme);
@@ -35,15 +34,13 @@ function App() {
   }, [theme, systemTheme]);
 
   return (
-    <UserProvider>
-      <ConfigProvider theme={currentTheme} {...{ cssVar: { key: "app" } }}>
-        <AntApp>
-          <ThemedVars>
-            <AppRoutes />
-          </ThemedVars>
-        </AntApp>
-      </ConfigProvider>
-    </UserProvider>
+    <ConfigProvider theme={currentTheme} {...{ cssVar: { key: "app" } }}>
+      <AntApp>
+        <ThemedVars>
+          <AppRoutes />
+        </ThemedVars>
+      </AntApp>
+    </ConfigProvider>
   );
 }
 
