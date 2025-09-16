@@ -11,7 +11,7 @@ import GlobalScrollbar from '../../components/GlobalScrollbar';
 import AccessDenied from "../../components/shared/AccessDenied";
 import CustomCard from "../../components/shared/CustomCard";
 
-export default function TeacherCoursePage() {
+export default function CoursesPage() {
   const user = useUserStore((s) => s.user);
   const fetchUser = useUserStore((s) => s.fetchUser);
   const { courses, createCourse, fetchCoursesByTeacher } = useCourses();

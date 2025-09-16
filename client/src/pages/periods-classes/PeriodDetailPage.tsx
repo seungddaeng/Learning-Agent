@@ -41,7 +41,7 @@ import { useUserStore } from "../../store/userStore";
 const { Text } = Typography;
 const { TabPane } = Tabs;
 
-export default function CourseDetailPage() {
+export default function PeriodDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
@@ -205,7 +205,7 @@ export default function CourseDetailPage() {
       message.success(res.message);
       setTimeout(() => {
         if (user?.roles.includes("docente")) {
-          navigate("/courses");
+          navigate(`/professor/courses/${courseId}/periods`);
         } else {
           navigate("/");
         }
