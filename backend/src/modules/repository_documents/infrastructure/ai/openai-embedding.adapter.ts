@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { Logger } from '@nestjs/common';
 import type {
   EmbeddingGeneratorPort,
   EmbeddingConfig,
@@ -57,6 +58,26 @@ export const MODEL_TOKEN_LIMITS = {
 } as const;
 
 /**
+ * Constantes de configuración para el procesamiento de embeddings
+ */
+const EMBEDDING_PROCESSING_CONFIG = {
+  /** Tamaño máximo de lote para OpenAI (inputs por request) */
+  MAX_BATCH_SIZE: 2048,
+
+  /** Límite conservador de tokens para procesamiento por lotes */
+  MAX_TOKENS_PER_BATCH: 250000,
+
+  /** Delay entre lotes para evitar rate limiting (ms) */
+  BATCH_DELAY_MS: 150,
+
+  /** Caracteres por token para estimación aproximada */
+  CHARS_PER_TOKEN: 4,
+
+  /** Límite máximo de caracteres antes de tokenización */
+  MAX_TEXT_LENGTH: 50000,
+} as const;
+
+/**
  * Adaptador para generación de embeddings usando OpenAI
  *
  * Implementa la interfaz EmbeddingGeneratorPort utilizando
@@ -65,6 +86,7 @@ export const MODEL_TOKEN_LIMITS = {
 export class OpenAIEmbeddingAdapter implements EmbeddingGeneratorPort {
   private readonly client: OpenAI;
   private readonly defaultConfig: Required<EmbeddingConfig>;
+  private readonly logger = new Logger(OpenAIEmbeddingAdapter.name);
 
   constructor(config: OpenAIConfig) {
     this.client = new OpenAI({
@@ -122,7 +144,7 @@ export class OpenAIEmbeddingAdapter implements EmbeddingGeneratorPort {
         model: finalConfig.model,
       };
     } catch (error) {
-      console.error('Error generando embedding:', error);
+      this.logger.error('Error generando embedding:', error);
       throw this.handleOpenAIError(error, 'generateEmbedding');
     }
   }
@@ -141,22 +163,25 @@ export class OpenAIEmbeddingAdapter implements EmbeddingGeneratorPort {
       }
 
       // 2. Si hay demasiados textos, procesarlos en lotes
-      if (texts.length > 2048) {
-        console.log(
-          `Procesando ${texts.length} textos en lotes (máximo 2048 por lote)`,
+      if (texts.length > EMBEDDING_PROCESSING_CONFIG.MAX_BATCH_SIZE) {
+        this.logger.log(
+          `Procesando ${texts.length} textos en lotes (máximo ${EMBEDDING_PROCESSING_CONFIG.MAX_BATCH_SIZE} por lote)`,
         );
         return await this.processBatchesSequentially(texts, config);
       }
 
       // 3. Estimar tokens para evitar exceder el límite
       const estimatedTokens = this.estimateTokens(texts);
-      const maxTokens = 250000; // Límite conservador para OpenAI
 
-      if (estimatedTokens > maxTokens) {
-        console.log(
-          `Tokens estimados (${estimatedTokens}) exceden límite (${maxTokens}). Procesando en lotes más pequeños.`,
+      if (estimatedTokens > EMBEDDING_PROCESSING_CONFIG.MAX_TOKENS_PER_BATCH) {
+        this.logger.log(
+          `Tokens estimados (${estimatedTokens}) exceden límite (${EMBEDDING_PROCESSING_CONFIG.MAX_TOKENS_PER_BATCH}). Procesando en lotes más pequeños.`,
         );
-        return await this.processBatchesByTokenLimit(texts, maxTokens, config);
+        return await this.processBatchesByTokenLimit(
+          texts,
+          EMBEDDING_PROCESSING_CONFIG.MAX_TOKENS_PER_BATCH,
+          config,
+        );
       }
 
       // Validar cada texto
@@ -211,7 +236,7 @@ export class OpenAIEmbeddingAdapter implements EmbeddingGeneratorPort {
         errors: [],
       };
     } catch (error) {
-      console.error('Error generando embeddings en lote:', error);
+      this.logger.error('Error generando embeddings en lote:', error);
       throw this.handleOpenAIError(error, 'generateBatchEmbeddings');
     }
   }
@@ -229,7 +254,7 @@ export class OpenAIEmbeddingAdapter implements EmbeddingGeneratorPort {
       throw new Error('El texto no puede estar vacío');
     }
 
-    if (trimmed.length > 50000) {
+    if (trimmed.length > EMBEDDING_PROCESSING_CONFIG.MAX_TEXT_LENGTH) {
       // Límite aproximado antes de tokenización
       throw new Error('El texto es demasiado largo para procesar');
     }
@@ -373,21 +398,42 @@ export class OpenAIEmbeddingAdapter implements EmbeddingGeneratorPort {
 
   /**
    * Estima el número de tokens para un array de textos
+   *
+   * Nota: Esta es una estimación aproximada. Para conteo preciso
+   * se recomendaría usar tiktoken u otra librería de tokenización.
    */
   private estimateTokens(texts: string[]): number {
-    // Estimación aproximada: 1 token ≈ 4 caracteres para texto en español/inglés
-    const totalChars = texts.reduce((sum, text) => sum + text.length, 0);
-    return Math.ceil(totalChars / 4);
+    // Estimación mejorada considerando diferentes tipos de contenido
+    const totalChars = texts.reduce((sum, text) => {
+      // Aplicar factor de corrección basado en características del texto
+      const trimmedText = text.trim();
+
+      // Texto con muchos espacios tiende a tener más tokens por carácter
+      const spaceRatio = (text.match(/\s/g) || []).length / text.length;
+      const spaceFactor = 1 + spaceRatio * 0.5;
+
+      // Texto con puntuación tiende a tener más tokens
+      const punctuationRatio =
+        (text.match(/[.,;:!?()[\]{}"'-]/g) || []).length / text.length;
+      const punctuationFactor = 1 + punctuationRatio * 0.3;
+
+      const adjustedLength =
+        trimmedText.length * spaceFactor * punctuationFactor;
+
+      return sum + adjustedLength;
+    }, 0);
+
+    return Math.ceil(totalChars / EMBEDDING_PROCESSING_CONFIG.CHARS_PER_TOKEN);
   }
 
   /**
-   * Procesa textos en lotes secuenciales respetando el límite de 2048 inputs
+   * Procesa textos en lotes secuenciales respetando el límite de MAX_BATCH_SIZE inputs
    */
   private async processBatchesSequentially(
     texts: string[],
     config?: Partial<EmbeddingConfig>,
   ): Promise<BatchEmbeddingResult> {
-    const batchSize = 2048;
+    const batchSize = EMBEDDING_PROCESSING_CONFIG.MAX_BATCH_SIZE;
     const batches: string[][] = [];
 
     // Dividir en lotes
@@ -395,7 +441,7 @@ export class OpenAIEmbeddingAdapter implements EmbeddingGeneratorPort {
       batches.push(texts.slice(i, i + batchSize));
     }
 
-    console.log(
+    this.logger.log(
       `Procesando ${batches.length} lotes de máximo ${batchSize} textos cada uno`,
     );
 
@@ -408,7 +454,7 @@ export class OpenAIEmbeddingAdapter implements EmbeddingGeneratorPort {
     // Procesar cada lote
     for (let i = 0; i < batches.length; i++) {
       const batch = batches[i];
-      console.log(
+      this.logger.debug(
         `Procesando lote ${i + 1}/${batches.length} (${batch.length} textos)`,
       );
 
@@ -424,10 +470,12 @@ export class OpenAIEmbeddingAdapter implements EmbeddingGeneratorPort {
 
         // Pequeña pausa entre lotes para evitar rate limiting
         if (i < batches.length - 1) {
-          await new Promise((resolve) => setTimeout(resolve, 100));
+          await new Promise((resolve) =>
+            setTimeout(resolve, EMBEDDING_PROCESSING_CONFIG.BATCH_DELAY_MS),
+          );
         }
       } catch (error) {
-        console.error(`Error en lote ${i + 1}:`, error);
+        this.logger.error(`Error en lote ${i + 1}:`, error);
         failedCount += batch.length;
         errors.push(
           `Lote ${i + 1}: ${error instanceof Error ? error.message : String(error)}`,
@@ -477,7 +525,7 @@ export class OpenAIEmbeddingAdapter implements EmbeddingGeneratorPort {
       batches.push(currentBatch);
     }
 
-    console.log(
+    this.logger.log(
       `Procesando ${batches.length} lotes por límite de tokens (máximo ${maxTokens} tokens por lote)`,
     );
 
@@ -491,7 +539,7 @@ export class OpenAIEmbeddingAdapter implements EmbeddingGeneratorPort {
     for (let i = 0; i < batches.length; i++) {
       const batch = batches[i];
       const estimatedTokens = this.estimateTokens(batch);
-      console.log(
+      this.logger.debug(
         `Procesando lote ${i + 1}/${batches.length} (${batch.length} textos, ~${estimatedTokens} tokens)`,
       );
 
@@ -507,10 +555,12 @@ export class OpenAIEmbeddingAdapter implements EmbeddingGeneratorPort {
 
         // Pequeña pausa entre lotes para evitar rate limiting
         if (i < batches.length - 1) {
-          await new Promise((resolve) => setTimeout(resolve, 200));
+          await new Promise((resolve) =>
+            setTimeout(resolve, EMBEDDING_PROCESSING_CONFIG.BATCH_DELAY_MS),
+          );
         }
       } catch (error) {
-        console.error(`Error en lote ${i + 1}:`, error);
+        this.logger.error(`Error en lote ${i + 1}:`, error);
         failedCount += batch.length;
         errors.push(
           `Lote ${i + 1}: ${error instanceof Error ? error.message : String(error)}`,
