@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../../core/prisma/prisma.service';
 import { DocumentChunk } from '../../domain/entities/document-chunk.entity';
+import { DocumentChunkService } from '../../domain/services/document-chunk.service';
 import type {
   DocumentChunkRepositoryPort,
   FindChunksResult,
@@ -122,13 +123,13 @@ export class PrismaDocumentChunkRepositoryAdapter
 
       const [chunks, total] = await Promise.all([
         this.prisma.documentChunk.findMany({
-          where: { documentId },
+          where: { documentId, isActive: true },
           orderBy: { [orderBy]: orderDirection },
           take: limit,
           skip: offset,
         }),
         this.prisma.documentChunk.count({
-          where: { documentId },
+          where: { documentId, isActive: true },
         }),
       ]);
 
@@ -162,13 +163,13 @@ export class PrismaDocumentChunkRepositoryAdapter
 
       const [chunks, total] = await Promise.all([
         this.prisma.documentChunk.findMany({
-          where: { type: type },
+          where: { type: type, isActive: true },
           orderBy: { [orderBy]: orderDirection },
           take: limit,
           skip: offset,
         }),
         this.prisma.documentChunk.count({
-          where: { type: type },
+          where: { type: type, isActive: true },
         }),
       ]);
 
@@ -204,6 +205,62 @@ export class PrismaDocumentChunkRepositoryAdapter
   }
 
   /**
+   * Marca todos los chunks de un documento como eliminados (soft delete)
+   */
+  async softDeleteByDocumentId(documentId: string): Promise<void> {
+    try {
+      const result = await this.prisma.documentChunk.updateMany({
+        where: { 
+          documentId,
+          isActive: true
+        },
+        data: {
+          isActive: false,
+          updatedAt: new Date(),
+        },
+      });
+
+      this.logger.log(
+        `Marcados como eliminados ${result.count} chunks del documento ${documentId}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Error marcando chunks como eliminados del documento ${documentId}:`,
+        error,
+      );
+      throw new Error(`Error marcando chunks como eliminados del documento: ${error}`);
+    }
+  }
+
+  /**
+   * Restaura todos los chunks eliminados de un documento
+   */
+  async restoreByDocumentId(documentId: string): Promise<void> {
+    try {
+      const result = await this.prisma.documentChunk.updateMany({
+        where: { 
+          documentId,
+          isActive: false
+        },
+        data: {
+          isActive: true,
+          updatedAt: new Date(),
+        },
+      });
+
+      this.logger.log(
+        `Restaurados ${result.count} chunks del documento ${documentId}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Error restaurando chunks del documento ${documentId}:`,
+        error,
+      );
+      throw new Error(`Error restoring chunks: ${error}`);
+    }
+  }
+
+  /**
    * Elimina un chunk específico
    */
   async deleteById(id: string): Promise<void> {
@@ -224,7 +281,7 @@ export class PrismaDocumentChunkRepositoryAdapter
   async countByDocumentId(documentId: string): Promise<number> {
     try {
       return await this.prisma.documentChunk.count({
-        where: { documentId },
+        where: { documentId, isActive: true },
       });
     } catch (error) {
       this.logger.error(
@@ -241,7 +298,7 @@ export class PrismaDocumentChunkRepositoryAdapter
   async existsByDocumentId(documentId: string): Promise<boolean> {
     try {
       const count = await this.prisma.documentChunk.count({
-        where: { documentId },
+        where: { documentId, isActive: true },
         take: 1, // Solo necesitamos saber si existe al menos uno
       });
 
@@ -456,7 +513,7 @@ export class PrismaDocumentChunkRepositoryAdapter
    * Mapea el resultado de Prisma a la entidad de dominio
    */
   private mapToEntity(prismaChunk: any): DocumentChunk {
-    return DocumentChunk.create(
+    return new DocumentChunk(
       prismaChunk.id,
       prismaChunk.documentId,
       prismaChunk.content,
@@ -464,6 +521,7 @@ export class PrismaDocumentChunkRepositoryAdapter
       prismaChunk.type,
       prismaChunk.metadata || {},
       prismaChunk.createdAt,
+      prismaChunk.updatedAt,
     );
   }
 

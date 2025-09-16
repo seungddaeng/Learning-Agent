@@ -96,7 +96,7 @@ interface ChunkedUploadButtonProps {
   onPostUploadProcess?: (
     document: ChunkedUploadResult['document'],
     onProgress?: (step: string, progress: number, message: string) => void,
-    uploadStatus?: string // Agregar parámetro para el status del upload
+    uploadStatus?: string // Add parameter for upload status
   ) => Promise<unknown>;
   fileConfig: FileConfig;
   processingConfig: ProcessingConfig;
@@ -143,6 +143,9 @@ const ChunkedUploadButton: React.FC<ChunkedUploadButtonProps> = ({
   const { theme } = useThemeStore();
   const isDark = theme === 'dark';
 
+  // Constants
+  const BYTES_PER_MB = 1024 * 1024;
+
   const {
     showText = true,
     width,
@@ -155,13 +158,13 @@ const ChunkedUploadButton: React.FC<ChunkedUploadButtonProps> = ({
   } = buttonConfig;
 
   const {
-    title = 'Cargar Nuevo Archivo',
+    title = 'Upload New File',
     width: modalWidth = 700
   } = modalConfig;
 
   const {
-    processingText = 'Procesando archivo...',
-    successText = '¡Archivo procesado exitosamente!'
+    processingText = 'Processing file...',
+    successText = 'File processed successfully!'
   } = processingConfig;
 
   const FIXED_COLOR = token.colorBgElevated === '#141d47' ? '#5b6ef0' : '#1A2A80';
@@ -259,12 +262,12 @@ const ChunkedUploadButton: React.FC<ChunkedUploadButtonProps> = ({
     });
 
     if (!isValidType) {
-      return fileConfig.validationMessage || `Solo se permiten archivos: ${fileConfig.accept}`;
+      return fileConfig.validationMessage || `Only these file types are allowed: ${fileConfig.accept}`;
     }
 
     if (file.size > fileConfig.maxSize) {
-      const maxSizeMB = (fileConfig.maxSize / 1024 / 1024).toFixed(1);
-      return `El archivo es demasiado grande. Máximo permitido: ${maxSizeMB} MB`;
+      const maxSizeMB = (fileConfig.maxSize / BYTES_PER_MB).toFixed(1);
+      return `File is too large. Maximum allowed: ${maxSizeMB} MB`;
     }
 
     return null;
@@ -317,8 +320,19 @@ const ChunkedUploadButton: React.FC<ChunkedUploadButtonProps> = ({
       lastProgressUpdate.current = Date.now();
       speedHistory.current = [];
 
+      // Show warning for large files
+      const fileSizeMB = file.size / BYTES_PER_MB;
+      const largeFileThreshold = Number(import.meta.env.VITE_LARGE_FILE_THRESHOLD_MB) || 50;
+      if (fileSizeMB > largeFileThreshold) {
+        message.warning({
+          content: `Large file detected (${fileSizeMB.toFixed(1)} MB). Processing may take several minutes. Please do not close this window.`,
+          duration: 8,
+          style: { marginTop: '10vh' }
+        });
+      }
+
       const options: ChunkedUploadOptions = {
-        chunkSize: fileConfig.chunkSize || 2 * 1024 * 1024,
+        chunkSize: fileConfig.chunkSize || Number(import.meta.env.VITE_DEFAULT_CHUNK_SIZE) || 2 * BYTES_PER_MB,
         maxRetries: 3,
         onProgress: handleUploadProgress,
         onChunkComplete: (chunkIndex, totalChunks) => {
@@ -372,13 +386,13 @@ const ChunkedUploadButton: React.FC<ChunkedUploadButtonProps> = ({
       setCurrentPhase('error');
       setUploadProgress(0);
       setProcessingProgress(0);
-      const errorMessage = error instanceof Error ? error.message : 'Error en el procesamiento';
+      const errorMessage = error instanceof Error ? error.message : 'Processing error';
       setError(errorMessage);
       
-      // Mostrar Alert para errores de duplicados (409)
-      if (errorMessage.includes('duplicado') || errorMessage.includes('Duplicate') || errorMessage.includes('similar')) {
+      // Show Alert for duplicate errors (409)
+      if (errorMessage.includes('duplicate') || errorMessage.includes('Duplicate') || errorMessage.includes('similar')) {
         message.error({
-          content: `Documento duplicado detectado: ${errorMessage}`,
+          content: `Duplicate document detected: ${errorMessage}`,
           duration: 8,
           style: { marginTop: '10vh' }
         });
@@ -572,6 +586,20 @@ const ChunkedUploadButton: React.FC<ChunkedUploadButtonProps> = ({
             }}
           />
         )}
+        
+        {/* Informative message specific for large files in processing */}
+        {currentPhase === 'processing' && selectedFile && (selectedFile.size / BYTES_PER_MB) > (Number(import.meta.env.VITE_LARGE_FILE_THRESHOLD_MB) || 50) && (
+          <Alert
+            message="Processing large file"
+            description={`This ${((selectedFile.size) / BYTES_PER_MB).toFixed(1)} MB file is being processed. Estimated time may be 5-10 minutes depending on size. Please keep this window open.`}
+            type="warning"
+            showIcon
+            style={{ 
+              marginTop: '12px',
+              fontSize: isSmallScreen ? '12px' : '14px'
+            }}
+          />
+        )}
       </div>
     );
   };
@@ -615,7 +643,7 @@ const ChunkedUploadButton: React.FC<ChunkedUploadButtonProps> = ({
         onClick={handleButtonClick}
         loading={currentPhase === 'uploading' || currentPhase === 'processing'}
       >
-        {showText && 'Subir Archivo'}
+        {showText && 'Upload File'}
       </Button>
 
       <Modal
@@ -678,7 +706,7 @@ const ChunkedUploadButton: React.FC<ChunkedUploadButtonProps> = ({
                   fontWeight: '500',
                   margin: isSmallScreen ? '12px 0 6px 0' : '16px 0 8px 0'
                 }}>
-                  {isSmallScreen ? 'Toca o arrastra aquí' : 'Haz clic o arrastra el archivo aquí'}
+                  {isSmallScreen ? 'Tap or drag here' : 'Click or drag file here'}
                 </p>
                 <p className="ant-upload-hint" style={{ 
                   color: isDark ? '#bfc7ff' : '#7A85C1',
@@ -687,7 +715,7 @@ const ChunkedUploadButton: React.FC<ChunkedUploadButtonProps> = ({
                   padding: isSmallScreen ? '0 8px' : '0'
                 }}>
                   {fileConfig.validationMessage || 
-                   `Archivos aceptados: ${fileConfig.accept}. Tamaño máximo: ${(fileConfig.maxSize / 1024 / 1024).toFixed(1)}MB`}
+                   `Accepted files: ${fileConfig.accept}. Maximum size: ${(fileConfig.maxSize / BYTES_PER_MB).toFixed(1)}MB`}
                 </p>
               </Dragger>
 
@@ -805,7 +833,7 @@ const ChunkedUploadButton: React.FC<ChunkedUploadButtonProps> = ({
                     </Text>
                   </div>
                   <Text type="secondary" style={{ fontSize: isSmallScreen ? '11px' : '12px' }}>
-                    {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                    {(selectedFile.size / BYTES_PER_MB).toFixed(2)} MB
                   </Text>
                 </div>
               )}

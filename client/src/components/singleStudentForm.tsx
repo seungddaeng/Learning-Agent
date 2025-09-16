@@ -71,7 +71,7 @@ export const SingleStudentForm = ({ open, onClose, onSubmit }: UploadStudentForm
   return (
     <Modal open={open} onCancel={handleCancel} onOk={() => { }}
       footer={[
-        <Button key="cancel" danger onClick={handleCancel}>
+        <Button key="cancel" danger type='primary' onClick={handleCancel}>
           Cancelar
         </Button>,
         <Button type="primary" onClick={handleSubmit}>

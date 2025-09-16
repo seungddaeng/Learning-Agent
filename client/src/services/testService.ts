@@ -59,7 +59,7 @@ export function useQuestionLoader(initialContext: string) {
       const q = await fetchQuestion(ctx ?? initialContext);
       setQuestionData(q);
     } catch (err: any) {
-      setError(err?.message ?? "Error desconocido al pedir la pregunta");
+      setError(err?.message ?? "Unknown error requesting the question");
       setQuestionData(null);
     } finally {
       setLoading(false);
