@@ -10,10 +10,10 @@ export interface AttendanceRow {
     isPresent?: boolean,
 }
 
-export interface AbsenceInfo {
-    id: string;
-    nombre: string;
-    apellido: string;
-    codigo: string;
-    totalAbsences: number;
+export interface StudentAbsenceInfo {
+    userId: string,
+    code: string,
+    name: string,
+    lastname: string,
+    totalAbsences: number,
 }

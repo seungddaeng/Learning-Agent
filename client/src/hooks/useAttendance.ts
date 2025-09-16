@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useUserStore } from "../store/userStore";
-import type { AbsenceInfo, CreateAttendanceInterface } from "../interfaces/attendanceInterface";
+import type { StudentAbsenceInfo, CreateAttendanceInterface } from "../interfaces/attendanceInterface";
 import { attendanceService } from "../services/attendance.service";
 
 const useAttendance = () => {
-    const [classAbsences, setClassAbsences] = useState<AbsenceInfo[]>();
+    const [studentAbsences, setStudentAbsences] = useState<StudentAbsenceInfo[]>();
+    const [absencesMap, setAbsencesMap] = useState<Map<string, number>>(new Map());
     const [actualAbsencesDates, setActualAbsencesDates] = useState<Date[]>();
     const user = useUserStore((s) => s.user);
     const fetchUser = useUserStore((s) => s.fetchUser);
@@ -18,8 +19,18 @@ const useAttendance = () => {
         prepareHook();
     }, [user]);
 
+    useEffect(() => {
+        if (!studentAbsences) return
+        const newMap = new Map<string, number>();
+
+        studentAbsences.forEach((s: StudentAbsenceInfo) => {
+            newMap.set(s.userId, s.totalAbsences)
+        });
+        setAbsencesMap(newMap);
+    }, [studentAbsences])
+
     //Endpoints GET
-    const getAbsencesByClass = async (classId: string) => {
+    const getStudentAbsencesByClass = async (classId: string) => {
         if (!user) return {
             state: "error",
             message: "No se ha podido cargar la información del usuario"
@@ -31,7 +42,7 @@ const useAttendance = () => {
         const success = res?.code === 200
 
         if (success) {
-            setClassAbsences(res.data)
+            setStudentAbsences(res.data)
         }
 
         return {
@@ -89,10 +100,11 @@ const useAttendance = () => {
     }
 
     return {
-        classAbsences,
+        studentAbsences,
         actualAbsencesDates,
+        absencesMap,
         saveAttendanceList,
-        getAbsencesByClass,
+        getStudentAbsencesByClass,
         getAbsencesByStudent,
     }
 }

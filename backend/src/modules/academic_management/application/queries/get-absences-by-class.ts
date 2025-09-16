@@ -7,7 +7,8 @@ import type { AttendanceRepositoryPort } from "../../domain/ports/attendance.rep
 import type { StudentRepositoryPort } from "../../domain/ports/student.repository.ports";
 import type { UserRepositoryPort } from "src/modules/identity/domain/ports/user.repository.port";
 import { Enrollment } from "../../domain/entities/enrollment.entity";
-import { ConflictError, ForbiddenError, NotFoundError } from "../../../../shared/handler/errors";
+import { ForbiddenError, NotFoundError } from "../../../../shared/handler/errors";
+import { StudentAbsenceInfo } from "../../infrastructure/http/dtos/response.student-absences.dto";
 
 
 @Injectable()
@@ -47,15 +48,8 @@ export class GetAbsencesByClass {
           throw new ForbiddenError("El docente no tiene permisos sobre esta clase");
         }
         const enrollments: Enrollment[] = await this.enrollmentRepo.findByClassId(input.classId);
-        type AbsenceInfo = {
-            id: string ;
-            nombre: string ;
-            apellido: string;
-            codigo:string;
-            totalAbsences: number;
-        };  
 
-        const result: AbsenceInfo[] = [];
+        const result: StudentAbsenceInfo[] = [];
         // const result = [];
         for (const enrollment of enrollments) {
             if (!enrollment.isActive)continue
@@ -75,10 +69,10 @@ export class GetAbsencesByClass {
               continue;
             }
             result.push({
-                id: student.userId,
-                nombre: user.name,
-                apellido: user.lastname,
-                codigo: student.code,
+                userId: student.userId,
+                code: student.code,
+                name: user.name,
+                lastname: user.lastname,
                 totalAbsences,
             });
         }
