@@ -65,7 +65,7 @@ export function CourseDetailPage() {
   const [safetyModalConfig, setSafetyModalConfig] = useState({
     title: "",
     message: "",
-    onConfirm: () => {},
+    onConfirm: () => { },
   });
 
   const [parsedStudents, setParsedStudents] = useState<
@@ -115,18 +115,23 @@ export function CourseDetailPage() {
     }
   };
 
-  const fetchStudentAndAbsences = useCallback(async () => {
+  const fetchStudents = useCallback(async () => {
     if (!id) return;
 
     const studentRes = await fetchStudentsByClass(id);
     if (studentRes.state === "error") {
       message.error(studentRes.message);
     }
+  }, [id, fetchStudentsByClass]);
+
+  const fetchAbsences = useCallback(async () => {
+    if (!id) return;
+
     const absencesRes = await getStudentAbsencesByClass(id);
     if (absencesRes.state === "error") {
       message.error(absencesRes.message);
     }
-  }, [id, fetchStudentsByClass]);
+  }, [id, getStudentAbsencesByClass])
 
   useEffect(() => {
     const preparePeriods = async () => {
@@ -155,8 +160,9 @@ export function CourseDetailPage() {
   }, [actualCourse]);
 
   useEffect(() => {
-    fetchStudentAndAbsences();
-  }, [fetchStudentAndAbsences]);
+    fetchStudents();
+    fetchAbsences();
+  }, [fetchStudents]);
 
   const handleEditClass = async (values: Clase) => {
     const data = await updateClass(values);
@@ -216,7 +222,7 @@ export function CourseDetailPage() {
       await enrollSingleStudent(values);
       message.success("Estudiante inscrito correctamente");
       if (id) fetchClassById(id);
-      await fetchStudentAndAbsences();
+      await fetchStudents();
       setSingleStudentFormOpen(false);
     } catch {
       message.error("Error al inscribir al estudiante");
@@ -270,7 +276,7 @@ export function CourseDetailPage() {
       setParsedStudents([]);
       setDuplicates([]);
       fetchClassById(id);
-      await fetchStudentAndAbsences();
+      await fetchStudents();
     } else {
       message.error(result.message);
     }
@@ -304,7 +310,7 @@ export function CourseDetailPage() {
       return;
     }
     message.success(res.message);
-    await fetchStudentAndAbsences();
+    await fetchStudents();
     setSafetyModalOpen(false);
   };
 
@@ -337,7 +343,7 @@ export function CourseDetailPage() {
             setAbsencesModalOpen(true);
           }}
         >
-          {absencesMap.get(record.userId)}
+          {absencesMap.get(record.userId) || "-"}
         </Button>
       ),
     },
@@ -450,7 +456,7 @@ export function CourseDetailPage() {
         </>
       }
     >
-      <GlobalScrollbar />        
+      <GlobalScrollbar />
       <div style={{ padding: "1rem" }}>
         <div
           style={{
@@ -541,8 +547,8 @@ export function CourseDetailPage() {
                         {teacherInfo
                           ? `${teacherInfo.name} ${teacherInfo.lastname}`
                           : actualClass.teacherId
-                          ? "Cargando..."
-                          : "No asignado"}
+                            ? "Cargando..."
+                            : "No asignado"}
                       </Text>
                     </div>
                   </div>
@@ -832,6 +838,7 @@ export function CourseDetailPage() {
         <AttendanceModal
           open={attendanceModalOpen}
           onClose={() => setAttendanceModalOpen(false)}
+          onSubmit={() => fetchAbsences()}
           students={students ? students : []}
           classId={id || ""}
         />
