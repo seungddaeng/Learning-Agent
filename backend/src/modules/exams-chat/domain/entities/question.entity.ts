@@ -1,4 +1,3 @@
-// domain/entities/question.entity.ts
 import { v4 as uuidv4 } from 'uuid';
 
 export type QuestionStatus = 'generated' | 'invalid' | 'published';
@@ -9,7 +8,6 @@ export class Question {
   public readonly createdAt: Date;
   public readonly status: QuestionStatus;
   public signature: string;
-  public examId?: string | null;
   public topic?: string | null;
   public difficulty?: number | null;
   public tokensGenerated: number;
@@ -26,7 +24,6 @@ export class Question {
     id?: string,
     createdAt?: Date,
     signature?: string,
-    examId?: string | null,
     topic?: string | null,
     tokensGenerated = 0,
     lastUsedAt?: Date | null,
@@ -45,7 +42,6 @@ export class Question {
     this.createdAt = createdAt ?? new Date();
     this.status = status ?? 'generated';
     this.signature = signature ?? '';
-    this.examId = examId ?? null;
     this.topic = topic ?? null;
     this.difficulty = difficulty ?? null;
     this.tokensGenerated = tokensGenerated ?? 0;
@@ -71,7 +67,6 @@ export class Question {
       undefined,
       undefined,
       undefined,
-      undefined,
       0,
       undefined,
       0,
@@ -88,7 +83,6 @@ export class Question {
     options?: string[] | null;
     status?: QuestionStatus;
     signature?: string;
-    examId?: string | null;
     topic?: string | null;
     tokensGenerated?: number;
     createdAt?: Date | string;
@@ -106,7 +100,6 @@ export class Question {
       payload.id,
       payload.createdAt ? new Date(payload.createdAt) : new Date(),
       payload.signature ?? '',
-      payload.examId ?? null,
       payload.topic ?? null,
       payload.tokensGenerated ?? 0,
       payload.lastUsedAt ? new Date(payload.lastUsedAt) : null,
@@ -125,7 +118,6 @@ export class Question {
       options: this.options ?? null,
       status: this.status,
       signature: this.signature,
-      examId: this.examId ?? null,
       topic: this.topic ?? null,
       difficulty: this.difficulty ?? null,
       tokensGenerated: this.tokensGenerated,

@@ -19,18 +19,22 @@ export class GenerateOptionsForQuestionUseCase {
     @Inject(EXAM_QUESTION_REPO) private readonly repo: QuestionRepositoryPort
   ) {}
 
-  async execute(params: { questionId?: string; examId?: string; prompt?: string; userId?: string }): Promise<GenerateOptionsResult> {
+  async execute(params: { questionId?: string; courseId?: string; prompt?: string }): Promise<GenerateOptionsResult> {
     if (params.questionId) {
       const q = await this.repo.findById(params.questionId);
       if (!q) throw new Error('Question not found');
       const aiResult: GeneratedOptions = await this.aiGenerator.generateOptions(q.text);
-      const options = aiResult.options && aiResult.options.length >= 2 ? aiResult.options.slice(0, 4) : ['Opción A', 'Opción B', 'Opción C', 'Opción D'];
+      const options = aiResult.options && aiResult.options.length >= 2 ? aiResult.options.slice(0, 4) : ['Option A', 'Option B', 'Option C', 'Option D'];
       return { result: 'options_generated', question: q.text, options, id: q.id };
     } else {
-      const prompt = params.prompt ?? 'Genera una pregunta';
-      const generated = await this.getOrGenerate.execute({ prompt, examId: params.examId, userId: params.userId });
+      const prompt = params.prompt ?? 'Generate a question';
+      const generated = await this.getOrGenerate.execute({ prompt, courseId: params.courseId ?? '' });
       const aiResult: GeneratedOptions = await this.aiGenerator.generateOptions(generated.question);
-      const options = aiResult.options && aiResult.options.length >= 2 ? aiResult.options.slice(0, 4) : (generated.question.includes('Verdadero') || generated.question.includes('Falso') ? ['Verdadero', 'Falso'] : ['Opción A', 'Opción B', 'Opción C', 'Opción D']);
+      const options = aiResult.options && aiResult.options.length >= 2
+        ? aiResult.options.slice(0, 4)
+        : (generated.question.includes('True') || generated.question.includes('False')
+          ? ['True', 'False']
+          : ['Option A', 'Option B', 'Option C', 'Option D']);
       return { result: 'options_generated', question: generated.question, options, id: generated.id };
     }
   }

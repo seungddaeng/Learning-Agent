@@ -21,23 +21,24 @@ export class QuestionCacheCleaner {
     }
 
     const all = await this.repo.findAll()
-    const byExam = new Map<string, Question[]>()
+    const byCourse = new Map<string, Question[]>()
 
     for (const q of all) {
-      const key = q.examId ?? ''
-      const arr = byExam.get(key) ?? []
+      const courseId = (q.metadata && (q.metadata as any).courseId) ?? ''
+      const key = courseId
+      const arr = byCourse.get(key) ?? []
       arr.push(q)
-      byExam.set(key, arr)
+      byCourse.set(key, arr)
     }
 
-    for (const [examId, items] of byExam.entries()) {
-      if (!examId) continue
+    for (const [courseId, items] of byCourse.entries()) {
+      if (!courseId) continue
       if (items.length > this.maxQuestions) {
         try {
-          await this.repo.pruneToLimitByExam(examId, this.maxQuestions)
-          this.logger.log(`Pruned exam ${examId} from ${items.length} to ${this.maxQuestions}`)
+          await this.repo.pruneToLimitByCourse(courseId, this.maxQuestions)
+          this.logger.log(`Pruned course ${courseId} from ${items.length} to ${this.maxQuestions}`)
         } catch (err) {
-          this.logger.error(`Error pruning exam ${examId}`, err as any)
+          this.logger.error(`Error pruning course ${courseId}`, err as any)
         }
       }
     }
