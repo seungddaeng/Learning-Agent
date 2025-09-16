@@ -10,7 +10,7 @@ import AccessDenied from "../../components/shared/AccessDenied";
 import CustomCard from "../../components/shared/CustomCard";
 import { SolutionOutlined } from "@ant-design/icons";
 
-export function ClassMenu() {
+export default function ClassMenu() {
   const user = useUserStore((s) => s.user);
   const fetchUser = useUserStore((s) => s.fetchUser);
   const { classes, fetchClassesByStudent } = useClasses();

@@ -13,7 +13,7 @@ import AccessDenied from "../../components/shared/AccessDenied";
 import CustomCard from "../../components/shared/CustomCard";
 import useCourses from "../../hooks/useCourses";
 
-export function CoursePeriodsPage() {
+export default function CoursePeriodsPage() {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
   const user = useUserStore((s) => s.user);

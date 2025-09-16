@@ -41,7 +41,7 @@ import { useUserStore } from "../../store/userStore";
 const { Text } = Typography;
 const { TabPane } = Tabs;
 
-export function CourseDetailPage() {
+export default function CourseDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
