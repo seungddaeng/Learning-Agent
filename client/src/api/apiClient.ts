@@ -9,13 +9,13 @@ const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 60000, // 1 minuto para peticiones generales
+  timeout: Number(import.meta.env.VITE_API_TIMEOUT) || 60000, // 1 minute for general requests
 });
 
-// Cliente específico para uploads con timeout extendido
+// Specific client for uploads with extended timeout
 export const uploadApiClient = axios.create({
   baseURL: API_URL || "http://localhost:3000/",
-  timeout: 600000, // 10 minutos para uploads
+  timeout: Number(import.meta.env.VITE_UPLOAD_TIMEOUT) || 600000, // 10 minutes for uploads
 });
 
 apiClient.interceptors.request.use((config) => {
@@ -28,7 +28,7 @@ apiClient.interceptors.request.use((config) => {
   return config;
 })
 
-// Aplicar interceptors al cliente de upload también
+// Apply interceptors to upload client as well
 uploadApiClient.interceptors.request.use((config) => {
   const token = readAuth().accessToken;
   if (token) {
@@ -57,8 +57,8 @@ apiClient.interceptors.response.use(
         } catch {}
 
         Modal.warning({
-          title: "Sesión finalizada",
-          content: "Tu sesión ha expirado. Por favor, inicia sesión nuevamente.",
+          title: "Session ended",
+          content: "Your session has expired. Please log in again.",
           onOk: () => {
             window.location.replace("/login");
           },

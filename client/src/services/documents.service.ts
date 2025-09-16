@@ -25,11 +25,11 @@ interface UserInfo {
   roles: string[];
 }
 
-// Función auxiliar para obtener el token de autenticación y verificar que el usuario esté autenticado
+// Function to get authentication token and verify user is authenticated
 const getAuthTokenAndVerifyUser = async (): Promise<{ token: string; user: UserInfo }> => {
   const authData = localStorage.getItem("auth");
   if (!authData) {
-    throw new Error('No hay datos de autenticación disponibles. Por favor, inicia sesión.');
+    throw new Error('No authentication data available. Please log in.');
   }
   
   try {
@@ -37,22 +37,22 @@ const getAuthTokenAndVerifyUser = async (): Promise<{ token: string; user: UserI
     const token = parsedAuth.accessToken;
     
     if (!token) {
-      throw new Error('Token de acceso no encontrado. Por favor, inicia sesión nuevamente.');
+      throw new Error('Access token not found. Please log in again.');
     }
     
-    // Verificar que el token sea válido y obtener información del usuario
+    // Verify token is valid and get user information
     const user = await meAPI(token) as UserInfo;
     
     return { token, user };
   } catch (error) {
-    if (error instanceof Error && error.message.includes('Error al obtener información del usuario')) {
-      throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente.');
+    if (error instanceof Error && error.message.includes('Error getting user information')) {
+      throw new Error('Session expired. Please log in again.');
     }
-    throw new Error('Error al verificar la autenticación. Por favor, inicia sesión nuevamente.');
+    throw new Error('Error verifying authentication. Please log in again.');
   }
 };
 
-// Interfaces para las respuestas del backend
+// Interfaces for backend responses
 interface DocumentBackendResponse {
   id: string;
   fileName: string;
@@ -132,7 +132,7 @@ interface DocumentChunksBackendResponse {
 
 export const documentService = {
   /**
-   * Obtener lista de documentos
+   * Get list of documents
    */
   async getDocuments(): Promise<DocumentListResponse> {
     try {
@@ -158,27 +158,27 @@ export const documentService = {
       };
     } catch (error) {
       console.error('Error loading documents:', error);
-      throw new Error('Error al cargar los documentos');
+      throw new Error('Error loading documents');
     }
   },
 
   /**
-   * Subir un documento
+   * Upload a document
    */
   async uploadDocument(file: File): Promise<UploadResponse> {
     try {
-      // Obtener el token y verificar autenticación usando meAPI
+      // Get token and verify authentication using meAPI
       const { token } = await getAuthTokenAndVerifyUser();
 
       const formData = new FormData();
       formData.append('file', file);
 
-      // Preparar headers (NO incluir Content-Type para multipart/form-data)
+      // Prepare headers (DO NOT include Content-Type for multipart/form-data)
       const headers = {
         'Authorization': `Bearer ${token}`,
       };
 
-      // Usar axios directamente para evitar conflictos con interceptores
+      // Use axios directly to avoid conflicts with interceptors
       const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/";
       
       const response = await axios.post<UploadBackendResponse>(
@@ -186,16 +186,16 @@ export const documentService = {
         formData,
         { 
           headers,
-          timeout: 600000 // 10 minutos de timeout para uploads de archivos grandes
+          timeout: Number(import.meta.env.VITE_UPLOAD_TIMEOUT) || 600000 // 10 minutes timeout for large file uploads
         }
       );
 
-      // Verificar que el documento existe en la respuesta
+      // Verify document exists in response
       if (!response.data.document) {
-        throw new Error('El servidor no devolvió información del documento');
+        throw new Error('Server did not return document information');
       }
 
-      // Mapear respuesta del backend a nuestra interfaz
+      // Map backend response to our interface
       const document: Document = {
         id: response.data.document.id,
         fileName: response.data.document.fileName,
@@ -219,31 +219,31 @@ export const documentService = {
       // Manejar errores específicos de duplicados (409)
       if (httpError.response?.status === 409) {
         const errorData = httpError.response.data as { message?: string };
-        throw new Error(errorData?.message || 'Documento duplicado detectado');
+        throw new Error(errorData?.message || 'Duplicate document detected');
       }
       
-      // Manejar errores específicos de autenticación
+      // Handle specific authentication errors
       if (httpError.response?.status === 401) {
-        throw new Error('No autorizado. Por favor, inicia sesión nuevamente.');
+        throw new Error('Unauthorized. Please log in again.');
       }
       
       if (httpError.response?.status === 403) {
-        throw new Error('Sin permisos para subir documentos.');
+        throw new Error('No permissions to upload documents.');
       }
       
-      // Si es un error de la función getAuthTokenAndVerifyUser, mantener el mensaje original
-      if ((error as Error).message?.includes('autenticación') || 
-          (error as Error).message?.includes('sesión') ||
+      // If error from getAuthTokenAndVerifyUser function, keep original message
+      if ((error as Error).message?.includes('authentication') || 
+          (error as Error).message?.includes('session') ||
           (error as Error).message?.includes('meAPI')) {
         throw error;
       }
       
-      throw new Error('Error al subir el documento. Por favor, inténtalo nuevamente.');
+      throw new Error('Error uploading document. Please try again.');
     }
   },
 
   /**
-   * Descargar un documento usando su ID
+   * Download a document using its ID
    */
   async getDownloadUrl(documentId: string): Promise<string> {
     try {
@@ -256,7 +256,7 @@ export const documentService = {
   },
 
   /**
-   * Descargar y guardar documento usando su ID
+   * Download and save document using its ID
    */
   async downloadAndSaveDocument(documentId: string, originalName: string): Promise<void> {
     try {
@@ -267,7 +267,7 @@ export const documentService = {
       // Usar fetch() para MinIO ya que axios puede interferir con las URLs firmadas
       const response = await fetch(downloadUrl);
       if (!response.ok) {
-        throw new Error(`Error al descargar: ${response.status} ${response.statusText}`);
+        throw new Error(`Download error: ${response.status} ${response.statusText}`);
       }
       
       const blob = await response.blob();
@@ -289,24 +289,24 @@ export const documentService = {
       window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
       console.error('Error downloading document:', error);
-      throw new Error('Error al descargar el documento');
+      throw new Error('Error downloading document');
     }
   },
 
   /**
-   * Eliminar un documento
+   * Delete a document
    */
   async deleteDocument(documentId: string): Promise<void> {
     try {
       await apiClient.delete<DeleteBackendResponse>(`/api/documents/${documentId}`);
     } catch (error) {
       console.error('Error deleting document:', error);
-      throw new Error('Error al eliminar el documento');
+      throw new Error('Error deleting document');
     }
   },
 
   /**
-   * Procesar chunks de un documento
+   * Process document chunks
    */
   async processDocumentChunks(
     documentId: string,
@@ -328,7 +328,7 @@ export const documentService = {
       return response.data;
     } catch (error) {
       console.error('Error processing document chunks:', error);
-      throw new Error('Error al procesar los chunks del documento');
+      throw new Error('Error processing document chunks');
     }
   },
 
@@ -346,7 +346,7 @@ export const documentService = {
   },
 
   /**
-   * Generar embeddings para un documento
+   * Generate embeddings for a document
    */
   async generateDocumentEmbeddings(
     documentId: string,
@@ -390,12 +390,12 @@ export const documentService = {
       return response.data;
     } catch (error) {
       console.error('Error generating embeddings:', error);
-      throw new Error('Error al generar embeddings');
+      throw new Error('Error generating embeddings');
     }
   },
 
   /**
-   * Procesar texto de un documento
+   * Process document text
    */
   async processDocumentText(documentId: string): Promise<{ success: boolean; message: string }> {
     try {
@@ -403,7 +403,7 @@ export const documentService = {
       return response.data;
     } catch (error) {
       console.error('Error processing document text:', error);
-      throw new Error('Error al procesar el texto del documento');
+      throw new Error('Error processing document text');
     }
   },
 
@@ -428,18 +428,18 @@ export const documentService = {
       const uploadResult = await this.uploadDocument(file);
       
       if (!uploadResult.data.id) {
-        throw new Error('No se obtuvo ID del documento subido');
+        throw new Error('Document ID not obtained from upload');
       }
 
-      // Paso 2: Procesar texto
-      onProgress?.('text', 50, 'Procesando texto...');
+      // Step 2: Process text
+      onProgress?.('text', 50, 'Processing text...');
       await this.processDocumentText(uploadResult.data.id);
 
-      // Paso 3: Procesar chunks
-      onProgress?.('chunks', 75, 'Generando chunks...');
+      // Step 3: Process chunks
+      onProgress?.('chunks', 75, 'Generating chunks...');
       const chunksResult = await this.processDocumentChunks(uploadResult.data.id);
 
-      onProgress?.('complete', 100, 'Proceso completado');
+      onProgress?.('complete', 100, 'Process completed');
 
       return {
         success: true,
