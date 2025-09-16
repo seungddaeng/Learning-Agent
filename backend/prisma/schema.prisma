@@ -97,7 +97,7 @@ model TeacherProfile {
 
   // relation 1:N
   courses      Course[]
-  
+
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
@@ -110,6 +110,7 @@ model StudentProfile {
   admissionYear Int?
   // relation 1:N
   enrollment    Enrollment[]
+  attendance    Attendance[]
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -146,19 +147,20 @@ model Document {
   textHash         String?                   @unique // Hash SHA-256 del texto normalizado
   extractedText    String?                   @db.Text // Texto extraído
   status           DocumentStatus            @default(UPLOADED)
-  
+
   // Metadata del documento
   uploadedBy       String
   uploader         User                      @relation(fields: [uploadedBy], references: [id])
-  
+
   // Relación opcional con Course/Materia para el contrato de documentos
   courseId         String?
   course           Course?                   @relation(fields: [courseId], references: [id])
-  
+
   // Relations para RAG
   chunks           DocumentChunk[]
   categories       DocumentCategoryMapping[]
   processingJobs   ProcessingJob[]
+  documentIndex    DocumentIndex?
   
   // Información adicional extraída
   pageCount        Int?                      // Número de páginas (PDFs)
@@ -168,7 +170,7 @@ model Document {
 
   uploadedAt   DateTime @default(now())
   updatedAt        DateTime                  @updatedAt
-  
+
   @@index([status])
   @@index([uploadedBy])
   @@index([fileHash])
@@ -181,29 +183,33 @@ model DocumentChunk {
   id              String    @id @default(uuid())
   documentId      String
   document        Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  
+
   content         String    @db.Text         // Contenido del chunk
   chunkIndex      Int                        // Índice del chunk en el documento
   startPosition   Int                        // Posición de inicio en el texto original
   endPosition     Int                        // Posición de fin en el texto original
   pageNumber      Int?                       // Página de origen (si aplica)
   type            String    @default("text") // Tipo de chunk (text, heading, list, etc.)
-  
+
   // Metadata estadística
   wordCount       Int       @default(0)      // Número de palabras
   charCount       Int       @default(0)      // Número de caracteres
-  
+
   // pgvector para embeddings
   embedding       Unsupported("public.vector(1536)")? // OpenAI embeddings (1536 dimensiones)
-  
+
   // Metadata adicional del chunk
   metadata        Json?                      // Información contextual adicional
-  
+
+  // Campo para soft delete 
+  isActive        Boolean   @default(true)
+
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
-  
+
   @@unique([documentId, chunkIndex])
   @@index([documentId])
+  @@index([isActive])
   @@index([type])
   @@index([wordCount])
   // Índice HNSW para búsqueda vectorial eficiente
@@ -217,9 +223,9 @@ model DocumentCategory {
   description String?
   color       String?                     // Color para UI
   icon        String?                     // Icono para UI
-  
+
   documents   DocumentCategoryMapping[]
-  
+
   createdAt   DateTime                    @default(now())
   updatedAt   DateTime                    @updatedAt
 }
@@ -229,9 +235,9 @@ model DocumentCategoryMapping {
   categoryId   String
   document     Document         @relation(fields: [documentId], references: [id], onDelete: Cascade)
   category     DocumentCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  
+
   createdAt    DateTime         @default(now())
-  
+
   @@id([documentId, categoryId])
 }
 
@@ -239,23 +245,116 @@ model ProcessingJob {
   id           String           @id @default(uuid())
   documentId   String
   document     Document         @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  
+
   jobType      ProcessingType
   status       ProcessingStatus @default(PENDING)
   errorMessage String?          @db.Text
   progress     Int              @default(0)     // Progreso 0-100
-  
+
   // Detalles específicos del job
   jobDetails   Json?            // Configuración específica del job
   result       Json?            // Resultado del procesamiento
-  
+
   startedAt    DateTime?
   completedAt  DateTime?
   createdAt    DateTime         @default(now())
-  
+
   @@index([documentId, jobType])
   @@index([status])
   @@index([createdAt])
+}
+
+/**
+ * ===========================
+ * Document Index Models
+ * ===========================
+ */
+
+model DocumentIndex {
+  id          String    @id @default(uuid())
+  documentId  String    @unique
+  document    Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  
+  title       String
+  status      IndexStatus @default(GENERATED)
+  
+  // Metadatos de generación
+  generatedAt DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Configuración usada para generar el índice
+  config      Json?     // Configuración de generación (idioma, nivel de detalle, etc.)
+  
+  // Relaciones con capítulos
+  chapters    IndexChapter[]
+  
+  @@index([documentId])
+  @@index([status])
+  @@map("document_indexes")
+}
+
+model IndexChapter {
+  id          String    @id @default(uuid())
+  indexId     String
+  index       DocumentIndex @relation(fields: [indexId], references: [id], onDelete: Cascade)
+  
+  title       String
+  description String?   @db.Text
+  order       Int       // Orden del capítulo en el índice
+  
+  // Relaciones
+  subtopics   IndexSubtopic[]
+  exercises   IndexExercise[]
+  
+  createdAt   DateTime  @default(now())
+  
+  @@index([indexId, order])
+  @@map("index_chapters")
+}
+
+model IndexSubtopic {
+  id          String    @id @default(uuid())
+  chapterId   String
+  chapter     IndexChapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  
+  title       String
+  description String?   @db.Text
+  order       Int       // Orden del subtema en el capítulo
+  
+  // Relaciones
+  exercises   IndexExercise[]
+  
+  createdAt   DateTime  @default(now())
+  
+  @@index([chapterId, order])
+  @@map("index_subtopics")
+}
+
+model IndexExercise {
+  id            String    @id @default(uuid())
+  
+  // Puede pertenecer a un capítulo o a un subtema
+  chapterId     String?
+  subtopicId    String?
+  chapter       IndexChapter? @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  subtopic      IndexSubtopic? @relation(fields: [subtopicId], references: [id], onDelete: Cascade)
+  
+  type          ExerciseType
+  title         String
+  description   String    @db.Text
+  difficulty    ExerciseDifficulty
+  estimatedTime String?   // Ej: "15 minutos"
+  keywords      String[]  // Array de palabras clave
+  
+  order         Int       // Orden del ejercicio
+  
+  createdAt     DateTime  @default(now())
+  
+  @@index([chapterId])
+  @@index([subtopicId])
+  @@index([type])
+  @@index([difficulty])
+  @@map("index_exercises")
 }
 
 /**
@@ -293,10 +392,28 @@ enum ChunkType {
   TEXT         // Chunk de texto normal
   TITLE        // Título o encabezado
   TABLE        // Contenido de tabla
-  LIST         // Lista o enumeración
-  CODE         // Código o texto técnico
-  FORMULA      // Fórmula matemática
-  METADATA     // Metadatos del documento
+}
+
+enum IndexStatus {
+  GENERATING   // Índice en proceso de generación
+  GENERATED    // Índice generado exitosamente
+  ERROR        // Error en la generación
+  OUTDATED     // Índice desactualizado (documento modificado)
+}
+
+enum ExerciseType {
+  CONCEPTUAL      // Preguntas conceptuales
+  PRACTICAL       // Ejercicios prácticos
+  ANALYSIS        // Análisis de casos
+  SYNTHESIS       // Síntesis de información
+  APPLICATION     // Aplicación de conceptos
+  PROBLEM_SOLVING // Resolución de problemas
+}
+
+enum ExerciseDifficulty {
+  BASIC           // Nivel básico
+  INTERMEDIATE    // Nivel intermedio
+  ADVANCED        // Nivel avanzado
 }
 
 /**
@@ -423,7 +540,7 @@ model Course {
   teacherId     String
   teacher       TeacherProfile    @relation(fields: [teacherId], references: [userId])
   classes       Classes[]
-  
+
   // Relación con documentos para el contrato
   documents     Document[]
 
@@ -441,8 +558,13 @@ model Classes {
 
   // relation 1:N
   enrollment    Enrollment[]
+  attendance Attendance[]
 
-  courseId      String            
+  quizQuestions    QuizQuestion[]
+  interviewQuestions InterviewQuestion[]
+
+
+  courseId      String
   course        Course            @relation(fields: [courseId], references: [id])
 
   // relation 1:N
@@ -464,4 +586,55 @@ model Enrollment {
   updatedAt     DateTime          @updatedAt
 
   @@id([studentId, classId])
+}
+
+
+/* ===========================
+   Reinforcement (entrevistas y examenes )
+   =========================== */
+   model QuizQuestion {
+    id         String   @id @default(uuid())
+    classId    String
+    text       String   @db.Text
+    type       String
+    options    Json?
+    createdAt  DateTime @default(now())
+    lastUsedAt DateTime?
+
+    // Relación con Classes
+    class      Classes  @relation(fields: [classId], references: [id], onDelete: Cascade)
+    @@index([classId])
+    @@index([createdAt])
+    @@index([lastUsedAt])
+    @@map("quiz_questions")
+  }
+
+  model InterviewQuestion {
+    id         String   @id @default(uuid())
+    classId    String
+    text       String   @db.Text
+    createdAt  DateTime @default(now())
+    lastUsedAt DateTime?
+
+    // Relación con Classes
+    class      Classes  @relation(fields: [classId], references: [id], onDelete: Cascade)
+    @@index([classId])
+    @@index([createdAt])
+    @@index([lastUsedAt])
+    @@map("interview_questions")
+  }
+// relation N:N - StudentProfile-Classes by Dates
+model Attendance {
+  id            String            @id @default(uuid())
+
+  studentId     String
+  student       StudentProfile    @relation(fields: [studentId], references: [userId])
+  classId       String
+  class         Classes           @relation(fields: [classId], references: [id])
+
+  date          DateTime          @default(now())
+  isPresent     Boolean           @default(false)
+
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
 }

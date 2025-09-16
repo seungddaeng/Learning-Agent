@@ -196,7 +196,20 @@ export const DocumentDataSidebar: React.FC<DocumentDataSidebarProps> = ({ docume
           </Button>
         </Tooltip>
 
-        <Tooltip title="Exportar como archivo de texto">
+        <Tooltip 
+          title="Exportar texto"
+          placement={isMobile ? "topLeft" : "top"}
+          getPopupContainer={(trigger) => trigger?.parentElement || window.document.body}
+          overlayStyle={{ 
+            maxWidth: isMobile ? '100px' : '140px',
+            fontSize: isMobile ? '12px' : '14px',
+            whiteSpace: 'nowrap'
+          }}
+          overlayInnerStyle={{
+            textAlign: 'center',
+            padding: isMobile ? '4px 8px' : '6px 12px'
+          }}
+        >
           <Button
             type="default"
             icon={<DownloadOutlined />}
@@ -208,7 +221,15 @@ export const DocumentDataSidebar: React.FC<DocumentDataSidebarProps> = ({ docume
           </Button>
         </Tooltip>
 
-        <Tooltip title="Generar embeddings para búsqueda semántica">
+        <Tooltip 
+          title="Generar embeddings para búsqueda semántica"
+          placement={isMobile ? "topRight" : "top"}
+          getPopupContainer={(trigger) => trigger?.parentElement || window.document.body}
+          overlayStyle={{ 
+            maxWidth: isMobile ? '200px' : '300px',
+            fontSize: isMobile ? '12px' : '14px'
+          }}
+        >
           <Button
             type="primary"
             icon={<SyncOutlined spin={isLoading} />}
@@ -434,8 +455,28 @@ export const DocumentDataSidebar: React.FC<DocumentDataSidebarProps> = ({ docume
                       ))}
 
                       {filteredChunks.length > pageSize && (
-                        <Card size="small" style={{ textAlign: 'center' }}>
-                          <Pagination current={currentPage} total={filteredChunks.length} pageSize={pageSize} onChange={setCurrentPage} onShowSizeChange={(_, size) => { setPageSize(size); setCurrentPage(1); }} showSizeChanger={!isMobile} showQuickJumper={!isMobile} showTotal={!isMobile ? (total, range) => `${range[0]}-${range[1]} de ${total} chunks` : undefined} pageSizeOptions={['5','10','20','50']} size={isMobile ? "small" : "default"} simple={!screens.sm} />
+
+                        <Card size="small" style={{ textAlign: 'center', overflow: 'hidden' }}>
+                          <Pagination 
+                            current={currentPage} 
+                            total={filteredChunks.length} 
+                            pageSize={pageSize} 
+                            onChange={setCurrentPage} 
+                            onShowSizeChange={(_, size) => { setPageSize(size); setCurrentPage(1); }} 
+                            showSizeChanger={!isMobile} 
+                            showQuickJumper={!isMobile} 
+                            showTotal={(total, range) => `${range[0]}-${range[1]} de ${total}`}
+                            pageSizeOptions={['5','10','20','50']} 
+                            size={isMobile ? "small" : "default"} 
+                            simple={isMobile}
+                            style={{ 
+                              display: 'flex',
+                              flexWrap: 'wrap',
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                              gap: '8px'
+                            }}
+                          />
                         </Card>
                       )}
                     </>

@@ -5,7 +5,6 @@ import {
   EditOutlined,
   DeleteOutlined,
   FileTextOutlined,
-  InboxOutlined,
   UserOutlined,
   FolderOutlined,
   BookOutlined,
@@ -13,28 +12,31 @@ import {
   UserAddOutlined,
   CheckSquareOutlined,
 } from "@ant-design/icons";
+import dayjs from "dayjs";
+
 import useClasses from "../../hooks/useClasses";
 import useTeacher from "../../hooks/useTeacher";
+import useStudents from "../../hooks/useStudents";
+import useCourses from "../../hooks/useCourses";
+import useEnrollment from "../../hooks/useEnrollment";
+import useAttendance from "../../hooks/useAttendance";
+
+import type { Clase } from "../../interfaces/claseInterface";
+import type { StudentInfo } from "../../interfaces/studentInterface";
+import type { createEnrollmentInterface, EnrollGroupRow } from "../../interfaces/enrollmentInterface";
+
 import PageTemplate from "../../components/PageTemplate";
-import { CursosForm } from "../../components/cursosForm";
+import PeriodForm from "../../components/PeriodForm";
 import { SafetyModal } from "../../components/safetyModal";
 import { SingleStudentForm } from "../../components/singleStudentForm";
 import StudentPreviewModal from "../../components/StudentPreviewModal";
-import type { Clase } from "../../interfaces/claseInterface";
-import type {
-  createEnrollmentInterface,
-  EnrollGroupRow,
-} from "../../interfaces/enrollmentInterface";
-import useEnrollment from "../../hooks/useEnrollment";
-import dayjs from "dayjs";
-import useStudents from "../../hooks/useStudents";
-import { useUserStore } from "../../store/userStore";
-import useCourses from "../../hooks/useCourses";
 import UploadButton from "../../components/shared/UploadButton";
-import { processFile } from "../../utils/enrollGroupByFile";
-import type { StudentInfo } from "../../interfaces/studentInterface";
-import CourseExamsPanel from "../courses/CourseExamsPanel";
 import AttendanceModal from "../../components/AttendanceModal";
+import GlobalScrollbar from "../../components/GlobalScrollbar";
+import AbsencesModal from "../../components/AbsencesModal";
+import CourseExamsPanel from "../courses/CourseExamsPanel";
+import { processFile } from "../../utils/enrollGroupByFile";
+import { useUserStore } from "../../store/userStore";
 
 const { Text } = Typography;
 const { TabPane } = Tabs;
@@ -45,8 +47,7 @@ export function CourseDetailPage() {
   const navigate = useNavigate();
   const user = useUserStore((s) => s.user);
 
-  const { fetchClassById, actualClass, updateClass, softDeleteClass } =
-    useClasses();
+  const { fetchClassById, actualClass, updateClass, softDeleteClass } = useClasses();
   const { students, fetchStudentsByClass } = useStudents();
   const {
     enrollSingleStudent,
@@ -55,6 +56,7 @@ export function CourseDetailPage() {
   } = useEnrollment();
   const { actualCourse, getCourseByID } = useCourses();
   const { teacherInfo, fetchTeacherInfoById } = useTeacher();
+  const { absencesMap, getStudentAbsencesByClass } = useAttendance();
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [safetyModalOpen, setSafetyModalOpen] = useState(false);
@@ -63,7 +65,7 @@ export function CourseDetailPage() {
   const [safetyModalConfig, setSafetyModalConfig] = useState({
     title: "",
     message: "",
-    onConfirm: () => {},
+    onConfirm: () => { },
   });
 
   const [parsedStudents, setParsedStudents] = useState<
@@ -81,6 +83,9 @@ export function CourseDetailPage() {
   const [loading, setLoading] = useState(true);
 
   const [attendanceModalOpen, setAttendanceModalOpen] = useState(false);
+
+  const [absencesModalOpen, setAbsencesModalOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<StudentInfo>();
 
   const fetchPeriod = async () => {
     if (!id) return;
@@ -113,11 +118,20 @@ export function CourseDetailPage() {
   const fetchStudents = useCallback(async () => {
     if (!id) return;
 
-    const res = await fetchStudentsByClass(id);
-    if (res.state === "error") {
-      message.error(res.message);
+    const studentRes = await fetchStudentsByClass(id);
+    if (studentRes.state === "error") {
+      message.error(studentRes.message);
     }
   }, [id, fetchStudentsByClass]);
+
+  const fetchAbsences = useCallback(async () => {
+    if (!id) return;
+
+    const absencesRes = await getStudentAbsencesByClass(id);
+    if (absencesRes.state === "error") {
+      message.error(absencesRes.message);
+    }
+  }, [id, getStudentAbsencesByClass])
 
   useEffect(() => {
     const preparePeriods = async () => {
@@ -147,10 +161,11 @@ export function CourseDetailPage() {
 
   useEffect(() => {
     fetchStudents();
+    fetchAbsences();
   }, [fetchStudents]);
 
   const handleEditClass = async (values: Clase) => {
-    const data = await updateClass(values);
+    const data = await updateClass(values as Clase);
     if (data.state == "success") {
       message.success(data.message);
     } else if (data.state == "info") {
@@ -299,10 +314,6 @@ export function CourseDetailPage() {
     setSafetyModalOpen(false);
   };
 
-  const goToExams = () => {
-    navigate(`/exams`);
-  };
-
   const studentsColumns = [
     {
       title: "Código",
@@ -321,11 +332,22 @@ export function CourseDetailPage() {
     },
 
     {
-      title: "Asistencia",
-      dataIndex: "asistencia",
-      key: "asistencia",
-      render: () => "-",
+      title: "Ausencias",
+      dataIndex: "absences",
+      key: "absences",
+      render: (_: any, record: StudentInfo) => (
+        <Button
+          type="link"
+          onClick={async () => {
+            setSelectedStudent(record);
+            setAbsencesModalOpen(true);
+          }}
+        >
+          {absencesMap.get(record.userId) || "-"}
+        </Button>
+      ),
     },
+
     {
       title: "Acciones",
       key: "actions",
@@ -361,7 +383,11 @@ export function CourseDetailPage() {
       <PageTemplate
         title="Cargando..."
         subtitle="Cargando información del curso"
-        breadcrumbs={[{ label: "Home", href: "/" }, { label: "Clases" }]}
+        breadcrumbs={[
+          { label: "Home", href: "/" },
+          { label: "Materias", href: "/professor/courses" },
+          { label: "Cargando..." }
+        ]}
       >
         <div style={{ padding: "2rem", textAlign: "center" }}>
           <Text>Cargando datos del curso...</Text>
@@ -377,13 +403,14 @@ export function CourseDetailPage() {
         subtitle="El curso solicitado no existe"
         breadcrumbs={[
           { label: "Home", href: "/" },
-          { label: "Clases", href: "/classes" },
+          { label: "Materias", href: "/professor/courses" },
+          { label: "Curso no encontrado" },
         ]}
       >
         <div style={{ padding: "2rem", textAlign: "center" }}>
           <Empty description="Curso no encontrado" />
-          <Button type="primary" onClick={() => navigate("/classes")}>
-            Volver a Clases
+          <Button type="primary" onClick={() => navigate("/professor/courses")}>
+            Volver a Materias
           </Button>
         </div>
       </PageTemplate>
@@ -398,11 +425,8 @@ export function CourseDetailPage() {
       subtitle={dayjs().format("DD [de] MMMM [de] YYYY")}
       breadcrumbs={[
         { label: "Home", href: "/" },
-        { label: "Materias", href: "/courses" },
-        {
-          label: actualCourse?.name || "Materia",
-          href: `/courses/${courseId}/periods`,
-        },
+        { label: "Materias", href: "/professor/courses" },
+        { label: actualCourse?.name || "Materia", href: `/professor/courses/${courseId}/periods` },
         { label: actualClass.name },
       ]}
       actions={
@@ -410,7 +434,7 @@ export function CourseDetailPage() {
           <Button
             type="primary"
             icon={<FolderOutlined />}
-            onClick={() => navigate(`/curso/${id}/documents`)}
+            onClick={() => navigate(`documents`)}
           >
             Documentos
           </Button>
@@ -419,7 +443,7 @@ export function CourseDetailPage() {
             icon={<EditOutlined />}
             onClick={() => setEditModalOpen(true)}
           >
-            Editar Curso
+            Editar Período
           </Button>
           <Button
             danger
@@ -432,6 +456,7 @@ export function CourseDetailPage() {
         </>
       }
     >
+      <GlobalScrollbar />
       <div style={{ padding: "1rem" }}>
         <div
           style={{
@@ -522,8 +547,8 @@ export function CourseDetailPage() {
                         {teacherInfo
                           ? `${teacherInfo.name} ${teacherInfo.lastname}`
                           : actualClass.teacherId
-                          ? "Cargando..."
-                          : "No asignado"}
+                            ? "Cargando..."
+                            : "No asignado"}
                       </Text>
                     </div>
                   </div>
@@ -573,6 +598,7 @@ export function CourseDetailPage() {
                         pageSize: 10,
                       }}
                       size="middle"
+                      scroll={{ x: "max-content" }}
                     />
                     <div style={{ marginTop: 24 }}>
                       <div className="flex gap-3">
@@ -721,36 +747,6 @@ export function CourseDetailPage() {
                     padding: "0 4px",
                   }}
                 >
-                  <InboxOutlined
-                    style={{ marginRight: "6px", fontSize: "14px" }}
-                  />
-                  <span>Materiales</span>
-                </span>
-              }
-              key="materials"
-            >
-              <div style={{ textAlign: "center", padding: "64px" }}>
-                <Empty description="Funcionalidad de materiales en desarrollo">
-                  <Button
-                    type="primary"
-                    onClick={() => navigate(`/curso/${id}/documents`)}
-                    style={{ marginTop: "16px" }}
-                  >
-                    Ir a Documentos
-                  </Button>
-                </Empty>
-              </div>
-            </TabPane>
-
-            <TabPane
-              tab={
-                <span
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    padding: "0 4px",
-                  }}
-                >
                   <BookOutlined
                     style={{ marginRight: "6px", fontSize: "14px" }}
                   />
@@ -796,11 +792,12 @@ export function CourseDetailPage() {
         </div>
 
         {/* Modals */}
-        <CursosForm
+        <PeriodForm
           open={editModalOpen}
           onClose={() => setEditModalOpen(false)}
           onSubmit={handleEditClass}
-          clase={actualClass}
+          period={actualClass!}
+          course={actualCourse!}
         />
 
         <SafetyModal
@@ -842,7 +839,16 @@ export function CourseDetailPage() {
         <AttendanceModal
           open={attendanceModalOpen}
           onClose={() => setAttendanceModalOpen(false)}
+          onSubmit={() => fetchAbsences()}
           students={students ? students : []}
+          classId={id || ""}
+        />
+
+        <AbsencesModal
+          open={absencesModalOpen}
+          onClose={() => setAbsencesModalOpen(false)}
+          student={selectedStudent}
+          classId={id || ""}
         />
       </div>
     </PageTemplate>
