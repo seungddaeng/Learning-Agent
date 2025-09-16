@@ -228,7 +228,7 @@ export class PrismaDocumentChunkRepositoryAdapter
         `Error marcando chunks como eliminados del documento ${documentId}:`,
         error,
       );
-      throw new Error(`Error en soft delete de chunks: ${error}`);
+      throw new Error(`Error marcando chunks como eliminados del documento: ${error}`);
     }
   }
 
