@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import {
@@ -19,6 +19,7 @@ import { DocumentChunk } from '../../domain/entities/document-chunk.entity';
 @Injectable()
 export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
   private readonly genAI: GoogleGenerativeAI;
+  private readonly logger = new Logger(GeminiIndexGeneratorAdapter.name);
   private readonly defaultConfig: IndexGenerationConfig = {
     model: 'gemini-1.5-flash',
     temperature: 0.7,
@@ -37,7 +38,7 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
   constructor(private readonly configService: ConfigService) {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
     if (!apiKey) {
-      throw new Error('GEMINI_API_KEY no está configurada');
+      throw new Error('GEMINI_API_KEY is not configured');
     }
     this.genAI = new GoogleGenerativeAI(apiKey);
   }
@@ -51,24 +52,24 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
     try {
       const finalConfig = { ...this.defaultConfig, ...config };
 
-      console.log(`Generando índice para documento: ${documentTitle}`);
-      console.log(`Procesando todos los ${chunks.length} chunks en lotes`);
+      this.logger.log(`Generating index for document: ${documentTitle}`);
+      this.logger.log(`Processing all ${chunks.length} chunks in batches`);
 
-      // Procesar todos los chunks en lotes pequeños
-      const batchSize = 50; // Tamaño de lote para evitar límites de tokens
+      // Process all chunks in small batches
+      const batchSize = 50; // Batch size to avoid token limits
       const allChapters: IndexChapter[] = [];
 
-      // Ordenar chunks por índice
+      // Sort chunks by index
       const sortedChunks = chunks.sort((a, b) => a.chunkIndex - b.chunkIndex);
 
-      // Procesar en lotes
+      // Process in batches
       for (let i = 0; i < sortedChunks.length; i += batchSize) {
         const batch = sortedChunks.slice(i, i + batchSize);
         const batchNumber = Math.floor(i / batchSize) + 1;
         const totalBatches = Math.ceil(sortedChunks.length / batchSize);
 
-        console.log(
-          `Procesando lote ${batchNumber}/${totalBatches} (${batch.length} chunks)`,
+        this.logger.log(
+          `Processing batch ${batchNumber}/${totalBatches} (${batch.length} chunks)`,
         );
 
         try {
@@ -82,17 +83,17 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
 
           allChapters.push(...batchChapters);
 
-          // Pequeña pausa entre lotes para evitar rate limits
+          // Small pause between batches to avoid rate limits
           if (i + batchSize < sortedChunks.length) {
             await new Promise((resolve) => setTimeout(resolve, 1000));
           }
         } catch (batchError) {
-          console.warn(
-            `Error en lote ${batchNumber}, usando fallback:`,
+          this.logger.warn(
+            `Error in batch ${batchNumber}, using fallback:`,
             batchError,
           );
 
-          // Generar capítulos básicos para este lote
+          // Generate basic chapters for this batch
           const fallbackChapters = this.generateFallbackChaptersForBatch(
             batch,
             batchNumber,
@@ -101,7 +102,7 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
         }
       }
 
-      // Crear el índice final
+      // Create the final index
       const documentIndex = new DocumentIndex(
         this.generateId(),
         documentId,
@@ -111,21 +112,21 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
         IndexStatus.GENERATED,
       );
 
-      console.log(
-        `Índice generado con ${documentIndex.chapters.length} capítulos de ${chunks.length} chunks`,
+      this.logger.log(
+        `Index generated with ${documentIndex.chapters.length} chapters from ${chunks.length} chunks`,
       );
 
       return documentIndex;
     } catch (error) {
-      console.error('Error generando índice con Gemini:', error);
+      this.logger.error('Error generating index with Gemini:', error);
 
-      // Fallback: generar índice básico sin AI
+      // Fallback: generate basic index without AI
       return this.generateFallbackIndex(documentId, documentTitle, chunks);
     }
   }
 
   /**
-   * Procesa un lote de chunks con Gemini AI
+   * Process a batch of chunks with Gemini AI
    */
   private async processBatch(
     batch: DocumentChunk[],
@@ -166,7 +167,7 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
   }
 
   /**
-   * Genera capítulos básicos para un lote cuando falla la AI
+   * Generate basic chapters for a batch when AI fails
    */
   private generateFallbackChaptersForBatch(
     batch: DocumentChunk[],
@@ -179,7 +180,7 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
       const chapterChunks = batch.slice(i, i + chunksPerChapter);
       const chapterNumber = Math.floor(i / chunksPerChapter) + 1;
 
-      // Extraer palabras clave del primer chunk
+      // Extract keywords from the first chunk
       const firstChunkContent: string = chapterChunks[0]?.content || '';
       const words: string[] = firstChunkContent
         .split(' ')
@@ -188,47 +189,47 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
 
       const chapterTitle: string =
         words.length > 0
-          ? `Lote ${batchNumber} - Sección ${chapterNumber}: ${words.join(', ')}`
-          : `Lote ${batchNumber} - Sección ${chapterNumber}`;
+          ? `Batch ${batchNumber} - Section ${chapterNumber}: ${words.join(', ')}`
+          : `Batch ${batchNumber} - Section ${chapterNumber}`;
 
-      // Crear subtemas básicos con ejercicios
+      // Create basic subtopics with exercises
       const subtopics: IndexSubtopic[] = chapterChunks
         .slice(0, 3)
         .map((chunk, idx) => {
           const content: string = chunk.content || '';
           const firstWords: string = content.split(' ').slice(0, 4).join(' ');
 
-          // Crear ejercicio básico para el subtema
+          // Create basic exercise for the subtopic
           const exercise = new Exercise(
             ExerciseType.CONCEPTUAL,
-            `Analizar: ${firstWords || 'Contenido'}`,
-            `Explica los conceptos principales presentados en esta sección.`,
+            `Analyze: ${firstWords || 'Content'}`,
+            `Explain the main concepts presented in this section.`,
             ExerciseDifficulty.INTERMEDIATE,
-            '15 minutos',
+            '15 minutes',
             words.slice(0, 2),
           );
 
           return new IndexSubtopic(
-            `${batchNumber}.${chapterNumber}.${idx + 1} ${firstWords || 'Contenido'}`,
-            'Sección generada automáticamente',
+            `${batchNumber}.${chapterNumber}.${idx + 1} ${firstWords || 'Content'}`,
+            'Automatically generated section',
             [exercise],
           );
         });
 
-      // Crear ejercicio para el capítulo
+      // Create exercise for the chapter
       const chapterExercise = new Exercise(
         ExerciseType.ANALYSIS,
-        `Análisis del Lote ${batchNumber} - Sección ${chapterNumber}`,
-        `Realiza un análisis comprensivo de los temas tratados en esta sección.`,
+        `Analysis of Batch ${batchNumber} - Section ${chapterNumber}`,
+        `Perform a comprehensive analysis of the topics covered in this section.`,
         ExerciseDifficulty.INTERMEDIATE,
-        '30 minutos',
+        '30 minutes',
         words,
       );
 
       chapters.push(
         new IndexChapter(
           chapterTitle,
-          'Capítulo generado automáticamente',
+          'Automatically generated chapter',
           subtopics,
           [chapterExercise],
         ),
@@ -239,25 +240,25 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
   }
 
   /**
-   * Genera un índice básico cuando AI no está disponible
+   * Generate a basic index when AI is not available
    */
   private generateFallbackIndex(
     documentId: string,
     documentTitle: string,
     chunks: DocumentChunk[],
   ): DocumentIndex {
-    console.log('Generando índice de fallback sin AI');
+    this.logger.log('Generating fallback index without AI');
 
-    // Crear capítulos básicos basados en el contenido
+    // Create basic chapters based on content
     const chapters: IndexChapter[] = [];
-    const chunkGroups = Math.ceil(chunks.length / 10); // Agrupar cada 10 chunks
+    const chunkGroups = Math.ceil(chunks.length / 10); // Group every 10 chunks
 
     for (let i = 0; i < chunkGroups; i++) {
       const startChunk = i * 10;
       const endChunk = Math.min((i + 1) * 10, chunks.length);
       const groupChunks = chunks.slice(startChunk, endChunk);
 
-      // Extraer palabras clave del primer chunk del grupo
+      // Extract keywords from the first chunk of the group
       const firstChunkContent: string = groupChunks[0]?.content || '';
       const words: string[] = firstChunkContent
         .split(' ')
@@ -265,47 +266,47 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
         .slice(0, 3);
       const chapterTitle: string =
         words.length > 0
-          ? `Sección ${i + 1}: ${words.join(', ')}`
-          : `Sección ${i + 1}`;
+          ? `Section ${i + 1}: ${words.join(', ')}`
+          : `Section ${i + 1}`;
 
-      // Crear subtemas básicos con ejercicios
+      // Create basic subtopics with exercises
       const subtopics: IndexSubtopic[] = groupChunks
         .slice(0, 3)
         .map((chunk, idx) => {
           const content: string = chunk.content || '';
           const firstWords: string = content.split(' ').slice(0, 4).join(' ');
 
-          // Crear ejercicio básico
+          // Create basic exercise
           const exercise = new Exercise(
             ExerciseType.CONCEPTUAL,
-            `Revisar: ${firstWords || 'Contenido'}`,
-            `Revisa y explica los conceptos clave de esta sección.`,
+            `Review: ${firstWords || 'Content'}`,
+            `Review and explain the key concepts of this section.`,
             ExerciseDifficulty.BASIC,
-            '10 minutos',
+            '10 minutes',
             words.slice(0, 2),
           );
 
           return new IndexSubtopic(
-            `${i + 1}.${idx + 1} ${firstWords || 'Contenido'}`,
-            'Subtema generado automáticamente',
+            `${i + 1}.${idx + 1} ${firstWords || 'Content'}`,
+            'Automatically generated subtopic',
             [exercise],
           );
         });
 
-      // Crear ejercicio para el capítulo
+      // Create exercise for the chapter
       const chapterExercise = new Exercise(
         ExerciseType.APPLICATION,
-        `Aplicación práctica - ${chapterTitle}`,
-        `Aplica los conceptos aprendidos en esta sección a un caso práctico.`,
+        `Practical application - ${chapterTitle}`,
+        `Apply the concepts learned in this section to a practical case.`,
         ExerciseDifficulty.INTERMEDIATE,
-        '25 minutos',
+        '25 minutes',
         words,
       );
 
       chapters.push(
         new IndexChapter(
           chapterTitle,
-          'Capítulo generado automáticamente',
+          'Automatically generated chapter',
           subtopics,
           [chapterExercise],
         ),
@@ -463,10 +464,10 @@ IMPORTANTE:
 
   private parseGeminiResponse(response: string): any {
     try {
-      // Limpiar la respuesta de posibles caracteres extra
+      // Clean the response of possible extra characters
       let cleanResponse = response.trim();
 
-      // Remover markdown code blocks si existen
+      // Remove markdown code blocks if they exist
       if (cleanResponse.startsWith('```json')) {
         cleanResponse = cleanResponse.replace(/^```json\s*/, '');
       }
@@ -474,51 +475,54 @@ IMPORTANTE:
         cleanResponse = cleanResponse.replace(/\s*```$/, '');
       }
 
-      // Remover otros tipos de markdown
+      // Remove other types of markdown
       cleanResponse = cleanResponse
         .replace(/^```\s*/, '')
         .replace(/\s*```$/, '');
 
-      // Buscar el JSON en la respuesta
+      // Find the JSON in the response
       const jsonStart = cleanResponse.indexOf('{');
       const jsonEnd = cleanResponse.lastIndexOf('}') + 1;
 
       if (jsonStart === -1 || jsonEnd === 0) {
-        throw new Error('No se encontró JSON válido en la respuesta');
+        throw new Error('No valid JSON found in response');
       }
 
       cleanResponse = cleanResponse.substring(jsonStart, jsonEnd);
 
-      // Intentar corregir errores comunes de JSON
+      // Try to fix common JSON errors
       cleanResponse = this.fixCommonJsonErrors(cleanResponse);
 
       return JSON.parse(cleanResponse);
     } catch (error) {
-      console.error('Error parseando respuesta de Gemini:', error);
-      console.error('Respuesta recibida:', response.substring(0, 1000) + '...');
-      throw new Error('La respuesta de Gemini no es un JSON válido');
+      this.logger.error('Error parsing Gemini response:', error);
+      this.logger.error(
+        'Response received:',
+        response.substring(0, 1000) + '...',
+      );
+      throw new Error('Gemini response is not valid JSON');
     }
   }
 
   /**
-   * Corrige errores comunes en el JSON generado por Gemini
+   * Fix common errors in JSON generated by Gemini
    */
   private fixCommonJsonErrors(jsonString: string): string {
     let fixed = jsonString;
 
-    // Corregir comas faltantes entre objetos del array
+    // Fix missing commas between array objects
     fixed = fixed.replace(/}\s*\n\s*{/g, '},\n  {');
 
-    // Corregir arrays mal formateados
+    // Fix malformed arrays
     fixed = fixed.replace(/]\s*,\s*{/g, '],\n  {');
 
-    // Asegurar que los arrays estén bien cerrados
+    // Ensure arrays are properly closed
     fixed = fixed.replace(/}\s*\n\s*]/g, '}\n  ]');
 
-    // Corregir propiedades sin comillas
+    // Fix properties without quotes
     fixed = fixed.replace(/(\w+):/g, '"$1":');
 
-    // Corregir comillas simples por dobles
+    // Fix single quotes to double quotes
     fixed = fixed.replace(/'/g, '"');
 
     return fixed;
@@ -597,6 +601,6 @@ IMPORTANTE:
   }
 
   private generateId(): string {
-    return `idx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `idx_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
   }
 }
