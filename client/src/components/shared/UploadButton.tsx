@@ -495,6 +495,7 @@ const UploadButton: React.FC<UploadButtonProps> = ({
         destroyOnClose={false}
         styles={{
           header: {
+            backgroundColor: isDark ? token.colorBgElevated : '#ffffffff',
             borderBottom: `1px solid ${isDark ? token.colorBorder : '#e8eaed'}`
           },
           body: {
