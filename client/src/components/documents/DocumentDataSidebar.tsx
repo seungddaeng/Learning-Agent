@@ -454,9 +454,29 @@ export const DocumentDataSidebar: React.FC<DocumentDataSidebarProps> = ({ docume
                         </Card>
                       ))}
 
-                      {filteredChunks.length > 0 && (
-                        <Card size="small" style={{ textAlign: 'center' }}>
-                          <Pagination current={currentPage} total={filteredChunks.length} pageSize={pageSize} onChange={setCurrentPage} onShowSizeChange={(_, size) => { setPageSize(size); setCurrentPage(1); }} showSizeChanger={!isMobile} showQuickJumper={!isMobile} showTotal={!isMobile ? (total, range) => `${range[0]}-${range[1]} de ${total} chunks` : undefined} pageSizeOptions={['5','10','20','50']} size={isMobile ? "small" : "default"} simple={!screens.sm} />
+                      {filteredChunks.length > pageSize && (
+
+                        <Card size="small" style={{ textAlign: 'center', overflow: 'hidden' }}>
+                          <Pagination 
+                            current={currentPage} 
+                            total={filteredChunks.length} 
+                            pageSize={pageSize} 
+                            onChange={setCurrentPage} 
+                            onShowSizeChange={(_, size) => { setPageSize(size); setCurrentPage(1); }} 
+                            showSizeChanger={!isMobile} 
+                            showQuickJumper={!isMobile} 
+                            showTotal={(total, range) => `${range[0]}-${range[1]} de ${total}`}
+                            pageSizeOptions={['5','10','20','50']} 
+                            size={isMobile ? "small" : "default"} 
+                            simple={isMobile}
+                            style={{ 
+                              display: 'flex',
+                              flexWrap: 'wrap',
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                              gap: '8px'
+                            }}
+                          />
                         </Card>
                       )}
                     </>
