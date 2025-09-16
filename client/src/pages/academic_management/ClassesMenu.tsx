@@ -52,7 +52,7 @@ export function ClassMenu() {
   }, [searchTerm, classes]);
 
   const goToReinforcement = (id: string) => {
-    navigate(`/reinforcement/${id}`)
+    navigate(`/student/classes/${id}/reinforcement`)
   }
 
   return (
@@ -80,7 +80,7 @@ export function ClassMenu() {
             >
               <Space>
                 <Input
-                  placeholder="Buscar curso"
+                  placeholder="Search course"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   allowClear
