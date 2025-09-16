@@ -59,7 +59,6 @@ export class DeleteDocumentUseCase {
       this.logger.log(`Iniciando soft delete en storage...`);
       await this.storageAdapter.softDeleteDocument(document.fileName);
       this.logger.log(`Soft delete en storage completado`);
-
       // Realizar soft delete de los chunks asociados PRIMERO
       this.logger.log(`Marcando chunks como eliminados...`);
       await this.chunkRepository.softDeleteByDocumentId(documentId);
@@ -67,6 +66,7 @@ export class DeleteDocumentUseCase {
 
       // Cambiar status del documento a DELETED (soft delete)
       this.logger.log(`Marcando documento como eliminado en base de datos...`);
+
       await this.documentRepository.updateStatus(
         documentId,
         DocumentStatus.DELETED,
