@@ -7,7 +7,7 @@ type Props = {
 
 export default function TimerDisplay({ timeLeft, totalTime }: Props) {
   const { token } = theme.useToken();
-  const isDanger = timeLeft <= 10 && timeLeft > 0;
+  const isDanger = timeLeft <= 30 && timeLeft > 0; 
   const timeUsed = totalTime - timeLeft;
   const displayTime = timeLeft > 0 ? timeLeft : timeUsed;
   const minutes = String(Math.floor(displayTime / 60)).padStart(2, "0");
@@ -51,3 +51,4 @@ export default function TimerDisplay({ timeLeft, totalTime }: Props) {
     </div>
   );
 }
+
