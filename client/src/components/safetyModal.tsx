@@ -42,11 +42,11 @@ interface ButtonConfig {
   /** Alto del botón en píxeles */
   height?: number;
   /** Estilo del botón */
-  variant?: 'fill' | 'ghost' | 'text' | 'link';
+  variant?: "fill" | "ghost" | "text" | "link";
   /** Tamaño del botón */
-  size?: 'small' | 'middle' | 'large';
+  size?: "small" | "middle" | "large";
   /** Forma del botón */
-  shape?: 'default' | 'circle' | 'round';
+  shape?: "default" | "circle" | "round";
   /** Si el botón está deshabilitado */
   disabled?: boolean;
   /** Clases CSS adicionales */
@@ -108,13 +108,7 @@ export const SafetyModal = ({
         <Button key="cancel" onClick={onCancel}>
           {cancelText}
         </Button>,
-        <Button
-          key="confirm"
-          type={danger ? "primary" : "default"}
-          danger={danger}
-          onClick={onConfirm}
-          style={{ backgroundColor: "#bb1717ff" }}
-        >
+        <Button key="confirm" danger type="primary" onClick={onConfirm}>
           {confirmText}
         </Button>,
       ]}
@@ -127,17 +121,17 @@ export const SafetyModal = ({
 
 /**
  * DeleteButton - Componente reutilizable para eliminación con confirmación
- * 
+ *
  * Este componente encapsula un botón de eliminación junto con un modal de confirmación.
  * Maneja internamente todos los estados necesarios (loading, modal abierto, etc.)
  * y proporciona callbacks para diferentes eventos del flujo de eliminación.
- * 
+ *
  * Características:
  * - Color fijo: #bb1717ff
  * - Ícono fijo: DeleteOutlined
  * - Modal de confirmación con estilos predefinidos
  * - Manejo automático de estados de carga y errores
- * 
+ *
  * @example
  * ```tsx
  * // Botón simple con texto
@@ -151,7 +145,7 @@ export const SafetyModal = ({
  *   buttonConfig={{ showText: true }}
  *   onDeleteSuccess={() => message.success("Eliminado")}
  * />
- * 
+ *
  * // Botón solo con ícono
  * <DeleteButton
  *   onDelete={() => deleteUser(user.id)}
@@ -159,10 +153,10 @@ export const SafetyModal = ({
  *     name: user.name,
  *     type: "Usuario"
  *   }}
- *   buttonConfig={{ 
- *     showText: false, 
+ *   buttonConfig={{
+ *     showText: false,
  *     variant: "ghost",
- *     shape: "circle" 
+ *     shape: "circle"
  *   }}
  * />
  * ```
@@ -176,7 +170,7 @@ const DeleteButton: React.FC<DeleteButtonProps> = ({
   onDeleteSuccess,
   onDeleteError,
   onCancel,
-  disabled = false
+  disabled = false,
 }) => {
   // Estados internos
   const [modalOpen, setModalOpen] = useState<boolean>(false);
@@ -192,22 +186,23 @@ const DeleteButton: React.FC<DeleteButtonProps> = ({
     showText = true,
     width,
     height,
-    variant = 'fill',
-    size = 'middle',
-    shape = 'default',
+    variant = "fill",
+    size = "middle",
+    shape = "default",
     disabled: buttonDisabled = false,
-    className = ''
+    className = "",
   } = buttonConfig;
 
   // Configuración por defecto del modal
   const {
-    message: modalMessage = '¿Estás seguro de que deseas eliminar este elemento?',
-    confirmText = 'Eliminar',
-    cancelText = 'Cancelar'
+    message:
+      modalMessage = "¿Estás seguro de que deseas eliminar este elemento?",
+    confirmText = "Eliminar",
+    cancelText = "Cancelar",
   } = modalConfig;
 
   // Color fijo del componente
-  const FIXED_COLOR = '#bb1717ff';
+  const FIXED_COLOR = "#bb1717ff";
 
   // Mapeo de variantes a props de Ant Design
   const getButtonProps = (): ButtonProps => {
@@ -220,26 +215,26 @@ const DeleteButton: React.FC<DeleteButtonProps> = ({
       style: {
         width,
         height,
-        color: variant === 'fill' ? '#ffffff' : FIXED_COLOR,
-        backgroundColor: variant === 'fill' ? FIXED_COLOR : 'transparent',
+        color: variant === "fill" ? "#ffffff" : FIXED_COLOR,
+        backgroundColor: variant === "fill" ? FIXED_COLOR : "transparent",
         borderColor: FIXED_COLOR,
-        ...(['ghost', 'text', 'link'].includes(variant) && {
-          backgroundColor: 'transparent'
-        })
-      }
+        ...(["ghost", "text", "link"].includes(variant) && {
+          backgroundColor: "transparent",
+        }),
+      },
     };
 
     switch (variant) {
-      case 'fill':
-        return { ...baseProps, type: 'primary' };
-      case 'ghost':
+      case "fill":
+        return { ...baseProps, type: "primary" };
+      case "ghost":
         return { ...baseProps, ghost: true };
-      case 'text':
-        return { ...baseProps, type: 'text' };
-      case 'link':
-        return { ...baseProps, type: 'link' };
+      case "text":
+        return { ...baseProps, type: "text" };
+      case "link":
+        return { ...baseProps, type: "link" };
       default:
-        return { ...baseProps, type: 'default' };
+        return { ...baseProps, type: "default" };
     }
   };
 
@@ -257,7 +252,8 @@ const DeleteButton: React.FC<DeleteButtonProps> = ({
       setModalOpen(false);
       onDeleteSuccess?.();
     } catch (error) {
-      const errorInstance = error instanceof Error ? error : new Error('Error desconocido');
+      const errorInstance =
+        error instanceof Error ? error : new Error("Error desconocido");
       onDeleteError?.(errorInstance);
     } finally {
       setDeleting(false);
@@ -273,11 +269,8 @@ const DeleteButton: React.FC<DeleteButtonProps> = ({
   return (
     <>
       {/* Botón de eliminación */}
-      <Button
-        {...getButtonProps()}
-        onClick={handleButtonClick}
-      >
-        {showText && 'Eliminar'}
+      <Button {...getButtonProps()} onClick={handleButtonClick}>
+        {showText && "Eliminar"}
       </Button>
 
       {/* Modal de confirmación */}
@@ -308,7 +301,7 @@ const DeleteButton: React.FC<DeleteButtonProps> = ({
         }}
         okButtonProps={{
           danger: true,
-          size: 'large',
+          size: "large",
           style: {
             backgroundColor: isDark ? token.colorErrorActive : '#d32f2f',
             borderColor: isDark ? token.colorErrorBorder : '#d32f2f',
@@ -316,15 +309,16 @@ const DeleteButton: React.FC<DeleteButtonProps> = ({
           }
         }}
         cancelButtonProps={{
-          size: 'large',
+          size: "large",
           style: {
+
             borderColor: isDark ? token.colorBorder : '#7A85C1',
             color: isDark ? token.colorText : '#3B38A0',
             fontWeight: '500'
           }
         }}
       >
-        <div style={{ textAlign: 'center' }}>
+        <div style={{ textAlign: "center" }}>
           {/* Ícono principal de eliminación */}
           <div style={{
             fontSize: '48px',
@@ -348,6 +342,7 @@ const DeleteButton: React.FC<DeleteButtonProps> = ({
           </p>
 
           {/* Información del recurso */}
+
           <div style={{
             backgroundColor: isDark ? token.colorWarningBg : '#fff2e8',
             border: `1px solid ${isDark ? token.colorWarningBorder : '#ffcc7a'}`,
@@ -376,6 +371,7 @@ const DeleteButton: React.FC<DeleteButtonProps> = ({
                   marginLeft: token.marginXS,
                   color: isDark ? token.colorWarningText : '#fa8c16'
                 }}>
+
                   ({resourceInfo.type})
                 </Text>
               )}
@@ -404,7 +400,6 @@ const DeleteButton: React.FC<DeleteButtonProps> = ({
                 fontStyle: 'italic',
                 color: isDark ? token.colorWarningText : '#d48806'
               }}>
-                Esta acción no se puede deshacer
               </Text>
             </div>
           </div>
