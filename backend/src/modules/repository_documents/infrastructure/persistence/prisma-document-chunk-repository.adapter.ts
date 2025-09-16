@@ -256,7 +256,7 @@ export class PrismaDocumentChunkRepositoryAdapter
         `Error restaurando chunks del documento ${documentId}:`,
         error,
       );
-      throw new Error(`Error restaurando chunks: ${error}`);
+      throw new Error(`Error restoring chunks: ${error}`);
     }
   }
 
