@@ -208,7 +208,20 @@ export const DocumentDataSidebar: React.FC<DocumentDataSidebarProps> = ({ docume
           </Button>
         </Tooltip>
 
-        <Tooltip title="Generar embeddings para búsqueda semántica">
+        <Tooltip 
+          title="Generar embeddings"
+          placement={isMobile ? "topLeft" : "top"}
+          getPopupContainer={(trigger) => trigger?.parentElement || window.document.body}
+          overlayStyle={{ 
+            maxWidth: isMobile ? '120px' : '180px',
+            fontSize: isMobile ? '12px' : '14px',
+            whiteSpace: 'nowrap'
+          }}
+          overlayInnerStyle={{
+            textAlign: 'center',
+            padding: isMobile ? '4px 8px' : '6px 12px'
+          }}
+        >
           <Button
             type="primary"
             icon={<SyncOutlined spin={isLoading} />}
