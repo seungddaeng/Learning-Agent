@@ -118,7 +118,7 @@ jobs:
         uses: cypress-io/github-action@v6
         with:
           working-directory: client
-          start: npm start:e2e
+          start: npm run start:e2e
           wait-on: http://localhost:5173
           wait-on-timeout: 120
           command: npm run cypress:run -- --spec cypress/e2e/login.cy.js
