@@ -58,6 +58,26 @@ export const MODEL_TOKEN_LIMITS = {
 } as const;
 
 /**
+ * Constantes de configuración para el procesamiento de embeddings
+ */
+const EMBEDDING_PROCESSING_CONFIG = {
+  /** Tamaño máximo de lote para OpenAI (inputs por request) */
+  MAX_BATCH_SIZE: 2048,
+
+  /** Límite conservador de tokens para procesamiento por lotes */
+  MAX_TOKENS_PER_BATCH: 250000,
+
+  /** Delay entre lotes para evitar rate limiting (ms) */
+  BATCH_DELAY_MS: 150,
+
+  /** Caracteres por token para estimación aproximada */
+  CHARS_PER_TOKEN: 4,
+
+  /** Límite máximo de caracteres antes de tokenización */
+  MAX_TEXT_LENGTH: 50000,
+} as const;
+
+/**
  * Adaptador para generación de embeddings usando OpenAI
  *
  * Implementa la interfaz EmbeddingGeneratorPort utilizando
@@ -152,13 +172,16 @@ export class OpenAIEmbeddingAdapter implements EmbeddingGeneratorPort {
 
       // 3. Estimate tokens to avoid exceeding the limit
       const estimatedTokens = this.estimateTokens(texts);
-      const maxTokens = 250000; // Conservative limit for OpenAI
 
-      if (estimatedTokens > maxTokens) {
+      if (estimatedTokens > EMBEDDING_PROCESSING_CONFIG.MAX_TOKENS_PER_BATCH) {
         this.logger.log(
-          `Estimated tokens (${estimatedTokens}) exceed limit (${maxTokens}). Processing in smaller batches.`,
+          `Tokens estimados (${estimatedTokens}) exceden límite (${EMBEDDING_PROCESSING_CONFIG.MAX_TOKENS_PER_BATCH}). Processing in smaller batches.`,
         );
-        return await this.processBatchesByTokenLimit(texts, maxTokens, config);
+        return await this.processBatchesByTokenLimit(
+          texts,
+          EMBEDDING_PROCESSING_CONFIG.MAX_TOKENS_PER_BATCH,
+          config,
+        );
       }
 
       // Validar cada texto
@@ -173,6 +196,7 @@ export class OpenAIEmbeddingAdapter implements EmbeddingGeneratorPort {
       });
 
       // 4. Prepare configuration
+
       const finalConfig = this.mergeConfig(config);
 
       // 5. Llamar a OpenAI
@@ -231,7 +255,7 @@ export class OpenAIEmbeddingAdapter implements EmbeddingGeneratorPort {
       throw new Error('El texto no puede estar vacío');
     }
 
-    if (trimmed.length > 50000) {
+    if (trimmed.length > EMBEDDING_PROCESSING_CONFIG.MAX_TEXT_LENGTH) {
       // Approximate limit before tokenization
       throw new Error('Text is too long to process');
     }
@@ -375,21 +399,38 @@ export class OpenAIEmbeddingAdapter implements EmbeddingGeneratorPort {
 
   /**
    * Estima el número de tokens para un array de textos
+   *
+   * Nota: Esta es una estimación aproximada. Para conteo preciso
+   * se recomendaría usar tiktoken u otra librería de tokenización.
    */
   private estimateTokens(texts: string[]): number {
-    // Approximate estimation: 1 token ≈ 4 characters for Spanish/English text
-    const totalChars = texts.reduce((sum, text) => sum + text.length, 0);
-    return Math.ceil(totalChars / 4);
+    const totalChars = texts.reduce((sum, text) => {
+      const trimmedText = text.trim();
+
+      const spaceRatio = (text.match(/\s/g) || []).length / text.length;
+      const spaceFactor = 1 + spaceRatio * 0.5;
+
+      const punctuationRatio =
+        (text.match(/[.,;:!?()[\]{}"'-]/g) || []).length / text.length;
+      const punctuationFactor = 1 + punctuationRatio * 0.3;
+
+      const adjustedLength =
+        trimmedText.length * spaceFactor * punctuationFactor;
+
+      return sum + adjustedLength;
+    }, 0);
+
+    return Math.ceil(totalChars / EMBEDDING_PROCESSING_CONFIG.CHARS_PER_TOKEN);
   }
 
   /**
-   * Procesa textos en lotes secuenciales respetando el límite de 2048 inputs
+   * Procesa textos en lotes secuenciales respetando el límite de MAX_BATCH_SIZE inputs
    */
   private async processBatchesSequentially(
     texts: string[],
     config?: Partial<EmbeddingConfig>,
   ): Promise<BatchEmbeddingResult> {
-    const batchSize = 2048;
+    const batchSize = EMBEDDING_PROCESSING_CONFIG.MAX_BATCH_SIZE;
     const batches: string[][] = [];
 
     // Dividir en lotes
