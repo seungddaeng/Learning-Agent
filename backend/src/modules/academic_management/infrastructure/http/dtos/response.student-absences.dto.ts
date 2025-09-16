@@ -7,4 +7,3 @@ export class StudentAbsenceInfo {
         public totalAbsences: number,
     ) {}
 }
-            

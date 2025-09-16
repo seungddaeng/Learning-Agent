@@ -19,12 +19,12 @@ export const attendanceService = {
     async getStudentAbsencesInfo(classId: string, teacherId: string, studentId: string){
         try {
             const response = await apiClient.get(
-                `academic/students/${studentId}/absences/dates`,
+                `/academic/students/${studentId}/absences/dates`,
                 {params: {teacherId, classId}}
             );
             return response.data
         } catch (error) {
-            console.error(`Failed to get absences info for studend ${studentId}`, error);
+            console.error(`Failed to get absences info for student ${studentId}`, error);
             throw error;
         }
     },

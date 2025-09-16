@@ -50,7 +50,6 @@ export class GetAbsencesByClass {
         const enrollments: Enrollment[] = await this.enrollmentRepo.findByClassId(input.classId);
 
         const result: StudentAbsenceInfo[] = [];
-        // const result = [];
         for (const enrollment of enrollments) {
             if (!enrollment.isActive)continue
             const totalAbsences = await this.attendanceRepo.countAbsenceByStudentAndClass(

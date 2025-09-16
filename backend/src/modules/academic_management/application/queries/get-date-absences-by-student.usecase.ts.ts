@@ -25,7 +25,7 @@ export class getDateAbsencesBystudentUseCase {
     }) {
         const student = await this.studentRepo.findByUserId(input.studentId);
         if (!student) {
-          this.logger.error(`Student not found with Id ${input.teacherId}`);
+          this.logger.error(`Student not found with Id ${input.studentId}`);
           throw new NotFoundError("No se encontró el estudiante");
         }
         const teacher = await this.teacherRepo.findByUserId(input.teacherId);
