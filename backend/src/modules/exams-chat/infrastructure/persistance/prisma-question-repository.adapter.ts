@@ -18,7 +18,7 @@ export class PrismaQuestionRepositoryAdapter implements QuestionRepositoryPort {
 
   private get fkField(): string {
     if (!this.prisma) return 'examId';
-    return (this.prisma as any).generatedQuestion ? 'examId' : (this.prisma as any).quizQuestion ? 'classId' : 'examId';
+    return (this.prisma as any).generatedQuestion ? 'examId' : (this.prisma as any).quizQuestion ? 'courseId' : 'examId';
   }
 
   private mapToEntity(record: any): Question {
@@ -29,7 +29,7 @@ export class PrismaQuestionRepositoryAdapter implements QuestionRepositoryPort {
       options: record.options ?? null,
       status: (record.status as any) ?? 'generated',
       signature: record.signature ?? '',
-      examId: record.classId ?? record.examId ?? null,
+      examId: record.courseId ?? record.examId ?? null,
       topic: record.topic ?? null,
       tokensGenerated: record.tokensGenerated ?? 0,
       createdAt: record.createdAt ?? new Date(),
@@ -58,6 +58,7 @@ export class PrismaQuestionRepositoryAdapter implements QuestionRepositoryPort {
           topic: question.topic ?? undefined,
           tokensGenerated: question.tokensGenerated ?? undefined,
           uses: question.uses ?? undefined,
+          status: question.status ?? undefined,
         },
         create: {
           id: question.id,
@@ -72,6 +73,7 @@ export class PrismaQuestionRepositoryAdapter implements QuestionRepositoryPort {
           createdAt: question.createdAt ?? new Date(),
           lastUsedAt: question.lastUsedAt ?? undefined,
           uses: question.uses ?? 0,
+          status: question.status ?? undefined,
         },
       });
       return this.mapToEntity(record);
@@ -87,12 +89,15 @@ export class PrismaQuestionRepositoryAdapter implements QuestionRepositoryPort {
           lastUsedAt: new Date(),
           uses: (this.memory[existingIndex].uses ?? 0) + 1,
           difficulty: question.difficulty ?? null,
+          status: question.status ?? 'generated',
+          signature: question.signature ?? createSignature({ text: question.text, options: question.options, type: question.type }),
         });
         this.memory[existingIndex] = updated;
         return updated;
       }
       const created = Question.rehydrate({
         ...question,
+        signature: question.signature ?? createSignature({ text: question.text, options: question.options, type: question.type }),
         createdAt: question.createdAt ?? new Date(),
         uses: question.uses ?? 0,
       });
@@ -152,7 +157,6 @@ export class PrismaQuestionRepositoryAdapter implements QuestionRepositoryPort {
 
   async incrementUsage(id: string, _tokensUsed = 0): Promise<void> {
     const tbl = this.table;
-    const fk = this.fkField;
     if (this.prisma && tbl) {
       const data: any = { lastUsedAt: new Date() };
       if (_tokensUsed) data.tokensGenerated = { increment: _tokensUsed };

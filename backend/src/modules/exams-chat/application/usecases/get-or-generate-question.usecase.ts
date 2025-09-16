@@ -38,6 +38,7 @@ export class GetOrGenerateQuestionUseCase {
     if (!input.prompt || !input.prompt.trim()) throw new Error('Prompt requerido');
     const now = new Date();
     const signature = createSignature({ text: input.prompt });
+
     const existing = await this.repo.findBySignature(signature);
     if (existing && existing.lastUsedAt && (now.getTime() - existing.lastUsedAt.getTime()) <= this.ttlMs) {
       existing.lastUsedAt = now;
@@ -68,7 +69,7 @@ export class GetOrGenerateQuestionUseCase {
         timestamp: now,
         userId: input.userId,
         examId: input.examId,
-        signature: pick.signature,
+        signature: pick.signature ?? signature,
         source: 'cached',
         tokensUsed: pick.tokensGenerated,
       });
@@ -86,7 +87,7 @@ export class GetOrGenerateQuestionUseCase {
           timestamp: now,
           userId: input.userId,
           examId: input.examId,
-          signature: pick.signature,
+          signature: pick.signature ?? signature,
           source: 'cached',
           tokensUsed: pick.tokensGenerated,
         });
