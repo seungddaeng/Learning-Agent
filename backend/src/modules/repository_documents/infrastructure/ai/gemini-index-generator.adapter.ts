@@ -142,7 +142,7 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
       model: config.model!,
       generationConfig: {
         temperature: config.temperature,
-        maxOutputTokens: 2048, // Reducido significativamente para mejorar rendimiento frontend
+        maxOutputTokens: 2048,
       },
     });
 
