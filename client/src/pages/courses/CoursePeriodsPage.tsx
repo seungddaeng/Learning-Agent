@@ -111,7 +111,7 @@ export default function CoursePeriodsPage() {
         title="Períodos"
         subtitle="Cargando información..."
         breadcrumbs={[
-          { label: "Home", href: "/" },
+          { label: "Inicio", href: "/" },
           { label: "Materias", href: "/professor/courses" },
           { label: "Cargando..." }
         ]}
@@ -130,7 +130,7 @@ export default function CoursePeriodsPage() {
         title="Curso no encontrado"
         subtitle="No se pudo cargar la información del curso"
         breadcrumbs={[
-          { label: "Home", href: "/" },
+          { label: "Inicio", href: "/" },
           { label: "Materias", href: "/professor/courses" },
           { label: "Error" }
         ]}
@@ -153,7 +153,7 @@ export default function CoursePeriodsPage() {
           title={actualCourse.name}
           subtitle="Períodos en los que se dictó esta materia"
           breadcrumbs={[
-            { label: "Home", href: "/" },
+            { label: "Inicio", href: "/" },
             { label: "Materias", href: "/professor/courses" },
             { label: actualCourse.name }
           ]}

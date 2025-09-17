@@ -96,7 +96,7 @@ export default function CoursesPage() {
         <PageTemplate
           title="Materias"
           subtitle="Revisa a detalle las materias que dictaste en algún momento."
-          breadcrumbs={[{ label: "Home", href: "/" }, { label: "Materias" }]}
+          breadcrumbs={[{ label: "Inicio", href: "/" }, { label: "Materias" }]}
         >
           <GlobalScrollbar />
           <div
