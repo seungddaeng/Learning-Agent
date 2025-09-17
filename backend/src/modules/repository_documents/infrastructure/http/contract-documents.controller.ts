@@ -60,6 +60,10 @@ export class ContractDocumentsController {
     this.genAI = new GoogleGenerativeAI(apiKey);
   }
 
+  private getMaxOutputTokens(): number {
+    return this.configService.get<number>('GEMINI_MAX_OUTPUT_TOKENS') || 512;
+  }
+
   @Get('subject/:subjectId/documents')
   async getDocumentsBySubject(
     @Param('subjectId') subjectId: string,
@@ -396,7 +400,7 @@ export class ContractDocumentsController {
       model: 'gemini-1.5-flash',
       generationConfig: {
         temperature: 0.7,
-        maxOutputTokens: 512, // Drastically reduced to prevent hanging
+        maxOutputTokens: this.getMaxOutputTokens(), // Made configurable via GEMINI_MAX_OUTPUT_TOKENS env var
       },
     });
 

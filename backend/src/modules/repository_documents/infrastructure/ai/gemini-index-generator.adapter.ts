@@ -43,6 +43,10 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
     this.genAI = new GoogleGenerativeAI(apiKey);
   }
 
+  private getMaxOutputTokens(): number {
+    return this.configService.get<number>('GEMINI_MAX_OUTPUT_TOKENS') || 256;
+  }
+
   async generateDocumentIndex(
     documentId: string,
     documentTitle: string,
@@ -213,7 +217,7 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
       model: config.model!,
       generationConfig: {
         temperature: config.temperature,
-        maxOutputTokens: 256, // Even more reduced to minimize quota usage
+        maxOutputTokens: this.getMaxOutputTokens(), // Made configurable via GEMINI_MAX_OUTPUT_TOKENS env var
       },
     });
 

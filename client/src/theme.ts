@@ -6,7 +6,6 @@ export const palette = {
   P1: "#3B38A0",
   P2: "#7A85C1",
   P3: "#B2B0E8",
-  // Colores adicionales para el sistema
   white: "#FFFFFF",
   neutral50: "#fafafa",
   neutral100: "#f8f9ff",
@@ -18,18 +17,14 @@ export const palette = {
   neutral700: "#666",
   neutral800: "#999999",
   neutral900: "#999",
-  // Colores de estado para modo claro
   successLight: "#52C41A",
   successAntd: "#52c41a",
   warningLight: "#fa8c16",
   infoLight: "#1890ff",
   errorLight: "#ff4d4f",
-  // Colores de tema oscuro
   darkPrimary: "#5b6ef0",
   darkText: "#ffffff",
   darkTextSecondary: "#bfc7ff",
-  
-  // Status colors
   green: "#52C41A",
   red: "#ff4d4f",
   blue: "#1890ff",
