@@ -12,33 +12,42 @@ type Props = {
   classId: string;  // period
 };
 
-function extractIdCandidates(r: any, courseId: string): string[] {
+/**
+ * Extrae posibles IDs desde una fila con estructura variable, evitando `any`.
+ * Se permite indexación dinámica localmente con Record<string, unknown>.
+ */
+function extractIdCandidates(r: CourseExamRow, courseId: string): string[] {
   const vals = new Set<string>();
-  const push = (v: any) => {
+  const rec = r as unknown as Record<string, unknown>;
+
+  const push = (v: unknown) => {
     if (v === undefined || v === null) return;
     const s = String(v).trim();
-    if (!s) return;
-    if (s === courseId) return; 
+    if (!s || s === courseId) return;
     vals.add(s);
   };
 
-  [
+  // Campos planos típicos
+  ([
     'id', 'uuid',
     'examId', 'exam_id', 'examUuid', 'exam_uuid',
     'approvedExamId', 'approved_exam_id',
     'approvedId', 'approved_id',
     'publicExamId', 'public_exam_id',
-  ].forEach(k => push(r?.[k]));
+  ] as const).forEach((k) => push(rec[k]));
 
-  ['exam', 'approvedExam', 'approved', 'examen', 'aprobado'].forEach(k => {
-    const o = r?.[k];
+  // Campos anidados comunes
+  (['exam', 'approvedExam', 'approved', 'examen', 'aprobado'] as const).forEach((k) => {
+    const o = rec[k];
     if (o && typeof o === 'object') {
-      ['id', 'uuid', 'examId', 'approvedExamId'].forEach(kk => push(o?.[kk]));
+      const obj = o as Record<string, unknown>;
+      (['id', 'uuid', 'examId', 'approvedExamId'] as const).forEach((kk) => push(obj[kk]));
     }
   });
 
-  Object.keys(r || {}).forEach(k => {
-    if (/id$/i.test(k) || /_id$/i.test(k)) push(r[k]);
+  // Heurística: cualquier clave que termine en id/_id
+  Object.keys(rec).forEach((k) => {
+    if (/id$/i.test(k) || /_id$/i.test(k)) push(rec[k]);
   });
 
   return Array.from(vals);
@@ -55,8 +64,8 @@ export default function CourseExamsPanel({ courseId, classId }: Props) {
     listClassExams(classId)
       .then((rows: CourseExamRow[]) => {
         const mapped: ExamSummary[] = (rows || []).map((r) => {
-          const candidates = extractIdCandidates(r as any, courseId);
-          const primary = candidates[0] ?? String(r.id);
+          const candidates = extractIdCandidates(r, courseId);
+          const primary = candidates[0] ?? String((r as unknown as { id?: unknown }).id ?? '');
 
           return {
             id: primary,
@@ -68,10 +77,9 @@ export default function CourseExamsPanel({ courseId, classId }: Props) {
               r.status === 'Publicado'
                 ? (r.updatedAt ?? r.createdAt ?? new Date().toISOString())
                 : undefined,
-            totalQuestions: Number((r as any)?.questionsCount ?? 0),
+            totalQuestions: Number((r as unknown as { questionsCount?: unknown }).questionsCount ?? 0),
             counts: { multiple_choice: 0, true_false: 0, open_analysis: 0, open_exercise: 0 },
-            __candidates: candidates,
-          } as any;
+          };
         });
         setTableData(mapped);
       })
@@ -103,11 +111,11 @@ export default function CourseExamsPanel({ courseId, classId }: Props) {
               disableStatusControls
               onEdit={() => navigate(`/exams/create?classId=${classId}&courseId=${courseId}`)}
               onDelete={async (id) => {
-                await deleteExamAny(id);               
+                await deleteExamAny(id);
                 const rows = await listClassExams(classId);
-                const mapped: ExamSummary[] = (rows || []).map((r: any) => {
+                const mapped: ExamSummary[] = (rows || []).map((r) => {
                   const candidates = extractIdCandidates(r, courseId);
-                  const primary = candidates[0] ?? String(r.id);
+                  const primary = candidates[0] ?? String((r as unknown as { id?: unknown }).id ?? '');
                   return {
                     id: primary,
                     title: r.title || 'Examen',
@@ -118,10 +126,9 @@ export default function CourseExamsPanel({ courseId, classId }: Props) {
                       r.status === 'Publicado'
                         ? (r.updatedAt ?? r.createdAt ?? new Date().toISOString())
                         : undefined,
-                    totalQuestions: Number(r?.questionsCount ?? 0),
+                    totalQuestions: Number((r as unknown as { questionsCount?: unknown }).questionsCount ?? 0),
                     counts: { multiple_choice: 0, true_false: 0, open_analysis: 0, open_exercise: 0 },
-                    __candidates: candidates,
-                  } as any;
+                  };
                 });
                 setTableData(mapped);
               }}

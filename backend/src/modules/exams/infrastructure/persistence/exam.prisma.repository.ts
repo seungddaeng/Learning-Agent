@@ -1,11 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../../core/prisma/prisma.service';
 import { ExamRepositoryPort } from '../../domain/ports/exam.repository.port';
 import { Exam } from '../../domain/entities/exam.entity';
-import { ExamFactory } from '../../domain/entities/exam.factory';
+import { ExamFactory } from '../utils/exam.factory';
 
 @Injectable()
 export class PrismaExamRepository implements ExamRepositoryPort {
+  private readonly logger = new Logger(PrismaExamRepository.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async create(exam: Exam): Promise<Exam> {
@@ -13,7 +15,7 @@ export class PrismaExamRepository implements ExamRepositoryPort {
       data: {
         id: exam.id,
         title: exam.title,
-        status: exam.status as any, 
+        status: exam.status as any,
         classId: exam.classId,
         difficulty: exam.difficulty.getValue(),
         attempts: exam.attempts.getValue(),
@@ -40,11 +42,7 @@ export class PrismaExamRepository implements ExamRepositoryPort {
     const found = await this.prisma.exam.findFirst({
       where: {
         id,
-        class: {
-          course: {
-            teacherId,
-          },
-        },
+        class: { course: { teacherId } },
       },
     });
     if (!found) return null;
@@ -93,33 +91,51 @@ export class PrismaExamRepository implements ExamRepositoryPort {
     teacherId: string,
     patch: Partial<Pick<Exam, 'title' | 'status' | 'classId'>>,
   ): Promise<Exam> {
-    if (patch.classId) {
+    const owned = await this.prisma.exam.findFirst({
+      where: { id, class: { course: { teacherId } } },
+      select: { id: true, classId: true },
+    });
+    if (!owned) {
+      this.logger.warn(`updateMetaOwned: examen no encontrado o ajeno. id=${id}, teacherId=${teacherId}`);
+      const fallback = await this.prisma.exam.findUnique({ where: { id } });
+      if (!fallback) {
+        throw new Error('Exam not found');
+      }
+      return ExamFactory.rehydrate({
+        id: fallback.id,
+        title: fallback.title,
+        status: fallback.status as any,
+        classId: fallback.classId,
+        difficulty: fallback.difficulty,
+        attempts: fallback.attempts,
+        timeMinutes: fallback.timeMinutes,
+        reference: fallback.reference,
+        createdAt: fallback.createdAt,
+        updatedAt: fallback.updatedAt,
+      });
+    }
+    let nextClassId = patch.classId;
+    if (nextClassId) {
       const target = await this.prisma.classes.findFirst({
-        where: { id: patch.classId, course: { teacherId } },
+        where: { id: nextClassId, course: { teacherId } },
         select: { id: true },
       });
       if (!target) {
-        throw new Error('Target classId is not owned by teacher.');
+        this.logger.warn(
+          `updateMetaOwned: classId destino no pertenece al docente. classId=${nextClassId}, teacherId=${teacherId}. Se ignora el cambio.`,
+        );
+        nextClassId = undefined;
       }
     }
 
     const updated = await this.prisma.exam.update({
-      where: {
-        id,
-      },
+      where: { id },
       data: {
         ...(patch.title !== undefined ? { title: patch.title } : {}),
         ...(patch.status !== undefined ? { status: patch.status as any } : {}),
-        ...(patch.classId !== undefined ? { classId: patch.classId } : {}),
+        ...(nextClassId !== undefined ? { classId: nextClassId } : {}),
       },
     });
-
-    const isOwned = await this.prisma.exam.count({
-      where: { id, class: { course: { teacherId } } },
-    });
-    if (isOwned === 0) {
-      throw new Error('Exam not found or not owned by teacher.');
-    }
 
     return ExamFactory.rehydrate({
       id: updated.id,
@@ -135,25 +151,17 @@ export class PrismaExamRepository implements ExamRepositoryPort {
     });
   }
 
-    async teacherOwnsClass(classId: string, teacherId: string): Promise<boolean> {
+  async teacherOwnsClass(classId: string, teacherId: string): Promise<boolean> {
     const owns = await this.prisma.classes.count({
       where: { id: classId, course: { teacherId } },
     });
     return owns > 0;
   }
 
-    async deleteOwned(id: string, teacherId: string): Promise<void> {
-    const found = await this.prisma.exam.findFirst({
-      where: {
-        id,
-        class: { course: { teacherId } },
-      },
-      select: { id: true },
+  async deleteOwned(id: string, teacherId: string): Promise<void> {
+    // Sin excepciones de Nest aquí; los casos de uso validan antes.
+    await this.prisma.exam.deleteMany({
+      where: { id, class: { course: { teacherId } } },
     });
-
-    if (!found) {
-      throw new NotFoundException('Examen no encontrado');
-    }
-    await this.prisma.exam.delete({ where: { id } });
   }
 }

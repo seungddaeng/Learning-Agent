@@ -3,10 +3,10 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../core/prisma/prisma.service';
 import {
   DerivedCounts,
-  ExamQuestionRepositoryPort,
   InsertPosition,
   UpdateExamQuestionPatch,
-} from '../../domain/ports/exam-question.repository.port';
+} from '../../domain/models/exam-question.models';
+import { ExamQuestionRepositoryPort } from '../../domain/ports/exam-question.repository.port';
 import { ExamQuestion } from '../../domain/entities/exam-question.entity';
 
 type Kind = 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'OPEN_ANALYSIS' | 'OPEN_EXERCISE';

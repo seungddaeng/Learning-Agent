@@ -1,11 +1,12 @@
 import { randomUUID } from 'crypto';
-import { Exam } from './exam.entity';
-import { Difficulty } from './difficulty.vo';
-import { PositiveInt } from './positive-int.vo';
+import { Exam } from '../../domain/entities/exam.entity';
+import { Difficulty } from '../../domain/entities/difficulty.vo';
+import { PositiveInt } from '../../domain/entities/positive-int.vo';
+import { EXAM_STATUS, type ExamStatus } from '../../domain/constants/exam.constants';
 
 export type ExamProps = {
   title: string;
-  status?: 'Guardado' | 'Publicado';
+  status?: ExamStatus;
   classId: string;
   difficulty: string;
   attempts: number;
@@ -16,7 +17,8 @@ export type ExamProps = {
 export class ExamFactory {
   static create(p: ExamProps): Exam {
     const id = randomUUID();
-    const status = (p.status ?? 'Guardado') as 'Guardado' | 'Publicado';
+    const status: ExamStatus = p.status ?? EXAM_STATUS.GUARDADO;
+
     const difficulty = Difficulty.create(p.difficulty);
     const attempts = PositiveInt.create('attempts', p.attempts);
     const time = PositiveInt.create('timeMinutes', p.timeMinutes);
@@ -35,18 +37,19 @@ export class ExamFactory {
       new Date(),
     );
   }
+
   static rehydrate(raw: {
-      id: string;
-      title: string;
-      status: 'Guardado' | 'Publicado';
-      classId: string;
-      difficulty: string;
-      attempts: number;
-      timeMinutes: number;
-      reference: string | null;
-      createdAt: Date;
-      updatedAt: Date;
-    }): Exam {
-      return Exam.rehydrate(raw);
+    id: string;
+    title: string;
+    status: ExamStatus;
+    classId: string;
+    difficulty: string;
+    attempts: number;
+    timeMinutes: number;
+    reference: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+  }): Exam {
+    return Exam.rehydrate(raw);
   }
 }

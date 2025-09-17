@@ -1,40 +1,61 @@
-import {Body, Controller, Get, Delete, HttpCode, Logger, Param, Post, Put, Req, UseGuards, UseFilters, UsePipes, ValidationPipe, } from '@nestjs/common';
-import { QuestionKind, NewExamQuestion } from '../../domain/entities/exam-question.entity';
+import {
+  Body,
+  Controller,
+  Get,
+  Delete,
+  HttpCode,
+  Logger,
+  Param,
+  Post,
+  Put,
+  Req,
+  UseGuards,
+  UseFilters,
+  UsePipes,
+  ValidationPipe,
+} from '@nestjs/common';
 import type { Request } from 'express';
 import { randomUUID } from 'crypto';
-
 import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
-import { responseSuccess, } from 'src/shared/handler/http.handler';
-import { BadRequestError, UnauthorizedError, } from 'src/shared/handler/errors';
-
+import { responseSuccess } from 'src/shared/handler/http.handler';
+import { BadRequestError, UnauthorizedError } from 'src/shared/handler/errors';
 import { ExamsErrorFilter } from './filters/exams-error.filter';
 import { CreateExamDto } from './dtos/create-exam.dto';
 import { GenerateQuestionsDto } from './dtos/generate-questions.dto';
 import { AddExamQuestionDto } from './dtos/add-exam-question.dto';
 import { UpdateExamQuestionDto } from './dtos/update-exam-question.dto';
-
 import { CreateExamCommand } from '../../application/commands/create-exam.command';
 import { CreateExamCommandHandler } from '../../application/commands/create-exam.handler';
-
 import { AddExamQuestionCommand } from '../../application/commands/add-exam-question.command';
 import { AddExamQuestionCommandHandler } from '../../application/commands/add-exam-question.handler';
-
 import { UpdateExamQuestionCommand } from '../../application/commands/update-exam-question.command';
 import { UpdateExamQuestionCommandHandler } from '../../application/commands/update-exam-question.handler';
-
 import { DeleteExamCommand } from '../../application/commands/delete-exam.command';
 import { DeleteExamCommandHandler } from '../../application/commands/delete-exam.handler';
-
 import { GenerateQuestionsUseCase } from '../../application/commands/generate-questions.usecase';
 import { ListClassExamsUseCase } from '../../application/queries/list-class-exams.usecase';
 import { GetExamByIdUseCase } from '../../application/queries/get-exam-by-id.usecase';
-
+import { EXAM_STATUS } from '../../domain/constants/exam.constants';
+import { QUESTION_KIND } from '../../domain/constants/question-kind.constants';
+import { QUESTION_TYPE } from '../../domain/constants/exam.constants'; // si lo dejaste junto a DIFFICULTY/QUESTION_TYPE
+import type { InsertPosition } from '../../domain/models/exam-question.models';
 
 const cid = (req: Request) => req.header('x-correlation-id') ?? randomUUID();
 const pathOf = (req: Request) => (req as any).originalUrl || req.url || '';
 
+type Lang = 'es' | 'en';
+const readLanguage = (raw: unknown, fallback: Lang = 'es'): Lang =>
+  raw === 'es' || raw === 'en' ? raw : fallback;
+
+const readStrict = (raw: unknown, fallback = true): boolean =>
+  typeof raw === 'boolean' ? raw : fallback;
+
 function normalizeFromCorrectAnswerForCreate(dto: {
-  kind: 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'OPEN_ANALYSIS' | 'OPEN_EXERCISE';
+  kind:
+    | typeof QUESTION_KIND.MULTIPLE_CHOICE
+    | typeof QUESTION_KIND.TRUE_FALSE
+    | typeof QUESTION_KIND.OPEN_ANALYSIS
+    | typeof QUESTION_KIND.OPEN_EXERCISE;
   options?: string[];
   correctAnswer?: number | boolean | null;
   correctOptionIndex?: number;
@@ -43,21 +64,21 @@ function normalizeFromCorrectAnswerForCreate(dto: {
 }) {
   if ('correctAnswer' in dto && dto.correctAnswer !== undefined) {
     switch (dto.kind) {
-      case 'MULTIPLE_CHOICE':
+      case QUESTION_KIND.MULTIPLE_CHOICE:
         return {
           options: dto.options,
           correctOptionIndex: dto.correctAnswer as number,
           correctBoolean: undefined,
           expectedAnswer: undefined,
         };
-      case 'TRUE_FALSE':
+      case QUESTION_KIND.TRUE_FALSE:
         return {
           options: undefined,
           correctOptionIndex: undefined,
           correctBoolean: dto.correctAnswer as boolean,
           expectedAnswer: undefined,
         };
-      default: 
+      default:
         return {
           options: undefined,
           correctOptionIndex: undefined,
@@ -75,7 +96,11 @@ function normalizeFromCorrectAnswerForCreate(dto: {
 }
 
 type AiQuestion = {
-  type: 'multiple_choice' | 'true_false' | 'open_analysis' | 'open_exercise';
+  type:
+    | typeof QUESTION_TYPE.MULTIPLE_CHOICE
+    | typeof QUESTION_TYPE.TRUE_FALSE
+    | typeof QUESTION_TYPE.OPEN_ANALYSIS
+    | typeof QUESTION_TYPE.OPEN_EXERCISE;
   text: string;
   options?: string[] | null;
 
@@ -88,53 +113,58 @@ type AiQuestion = {
 
 function readExpectedFrom(q: AiQuestion): string {
   const raw =
-    (q.expectedAnswer ??
-     (q as any).expected_answer ??
-     (q as any).expected ??
-     '') + '';
+    ((q.expectedAnswer ??
+      (q as any).expected_answer ??
+      (q as any).expected ??
+      '') as string) + '';
   const val = raw.trim();
   return val || 'Completar en corrección';
 }
 
-function toNewExamQuestionFromAi(q: AiQuestion): NewExamQuestion {
+function toNewExamQuestionFromAi(q: AiQuestion) {
   switch (q.type) {
-    case 'multiple_choice': {
+    case QUESTION_TYPE.MULTIPLE_CHOICE: {
       const opts = Array.isArray(q.options) ? q.options : [];
       let idx =
-        typeof q.correctOptionIndex === 'number' ? q.correctOptionIndex :
-        typeof q.answer === 'number' ? (q.answer as number) :
-        typeof (q as any).correct === 'number' ? ((q as any).correct as number) :
-        0;
+        typeof q.correctOptionIndex === 'number'
+          ? q.correctOptionIndex
+          : typeof q.answer === 'number'
+          ? (q.answer as number)
+          : typeof (q as any).correct === 'number'
+          ? ((q as any).correct as number)
+          : 0;
       if (idx < 0 || idx >= opts.length) idx = 0;
       return {
-        kind: 'MULTIPLE_CHOICE' as QuestionKind,
+        kind: QUESTION_KIND.MULTIPLE_CHOICE,
         text: q.text,
         options: opts,
         correctOptionIndex: idx,
       };
     }
-    case 'true_false': {
+    case QUESTION_TYPE.TRUE_FALSE: {
       const tf =
-        typeof q.correctBoolean === 'boolean' ? q.correctBoolean :
-        typeof q.answer === 'boolean' ? (q.answer as boolean) :
-        typeof (q as any).correct === 'boolean' ? ((q as any).correct as boolean) :
-        false;
-
+        typeof q.correctBoolean === 'boolean'
+          ? q.correctBoolean
+          : typeof q.answer === 'boolean'
+          ? (q.answer as boolean)
+          : typeof (q as any).correct === 'boolean'
+          ? ((q as any).correct as boolean)
+          : false;
       return {
-        kind: 'TRUE_FALSE' as QuestionKind,
+        kind: QUESTION_KIND.TRUE_FALSE,
         text: q.text,
         correctBoolean: tf,
       };
     }
-    case 'open_analysis':
+    case QUESTION_TYPE.OPEN_ANALYSIS:
       return {
-        kind: 'OPEN_ANALYSIS' as QuestionKind,
+        kind: QUESTION_KIND.OPEN_ANALYSIS,
         text: q.text,
         expectedAnswer: readExpectedFrom(q),
       };
-    case 'open_exercise':
+    case QUESTION_TYPE.OPEN_EXERCISE:
       return {
-        kind: 'OPEN_EXERCISE' as QuestionKind,
+        kind: QUESTION_KIND.OPEN_EXERCISE,
         text: q.text,
         expectedAnswer: readExpectedFrom(q),
       };
@@ -142,7 +172,11 @@ function toNewExamQuestionFromAi(q: AiQuestion): NewExamQuestion {
 }
 
 function normalizeFromCorrectAnswerForUpdate(dto: {
-  kind: 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'OPEN_ANALYSIS' | 'OPEN_EXERCISE';
+  kind:
+    | typeof QUESTION_KIND.MULTIPLE_CHOICE
+    | typeof QUESTION_KIND.TRUE_FALSE
+    | typeof QUESTION_KIND.OPEN_ANALYSIS
+    | typeof QUESTION_KIND.OPEN_EXERCISE;
   options?: string[];
   correctAnswer?: number | boolean | null;
   correctOptionIndex?: number;
@@ -151,21 +185,21 @@ function normalizeFromCorrectAnswerForUpdate(dto: {
 }) {
   if ('correctAnswer' in dto && dto.correctAnswer !== undefined) {
     switch (dto.kind) {
-      case 'MULTIPLE_CHOICE':
+      case QUESTION_KIND.MULTIPLE_CHOICE:
         return {
           options: dto.options,
           correctOptionIndex: dto.correctAnswer as number,
           correctBoolean: undefined,
           expectedAnswer: undefined,
         };
-      case 'TRUE_FALSE':
+      case QUESTION_KIND.TRUE_FALSE:
         return {
           options: undefined,
           correctOptionIndex: undefined,
           correctBoolean: dto.correctAnswer as boolean,
           expectedAnswer: undefined,
         };
-      default: 
+      default:
         return {
           options: undefined,
           correctOptionIndex: undefined,
@@ -206,10 +240,10 @@ export class ExamsController {
       `[${cid(req)}] createExam -> title=${dto.title}, classId=${dto.classId}, difficulty=${dto.difficulty}, attempts=${dto.attempts}, time=${dto.timeMinutes}`,
     );
 
-    if (!dto.title?.trim()) throw new BadRequestError('title es obligatorio.');
-    if (!dto.classId?.trim()) throw new BadRequestError('classId es obligatorio.');
+    if (!dto.title?.trim()) throw new BadRequestError('El campo "title" es obligatorio.');
+    if (!dto.classId?.trim()) throw new BadRequestError('El campo "classId" es obligatorio.');
 
-    const userId = (req as any).user?.sub as string;
+    const userId = (req as any).user?.sub as string | undefined;
     if (!userId) throw new UnauthorizedError('Acceso no autorizado');
 
     const cmd = new CreateExamCommand(
@@ -220,24 +254,27 @@ export class ExamsController {
       dto.timeMinutes,
       userId,
       dto.reference || '',
-      dto.status ?? 'Guardado',
+      dto.status ?? EXAM_STATUS.GUARDADO,
     );
 
     const exam = await this.createExamHandler.execute(cmd);
-    const shouldGenerate = Number(dto.totalQuestions ?? 0) > 0 || !!dto.distribution;
 
+    const shouldGenerate = Number(dto.totalQuestions ?? 0) > 0 || !!dto.distribution;
     if (shouldGenerate) {
+      const language = readLanguage((dto as unknown as { language?: unknown })?.language, 'es');
+      const strict = readStrict((dto as unknown as { strict?: unknown })?.strict, true);
+
       const output: any = await this.generateQuestionsUseCase.execute({
         teacherId: userId,
-        subject: dto.subject,
+        subject: (dto as any).subject, 
         difficulty: dto.difficulty as any,
         totalQuestions: dto.totalQuestions,
         distribution: dto.distribution ?? undefined,
         reference: dto.reference ?? null,
         examId: exam.id,
         classId: dto.classId,
-        language: (dto as any).language ?? 'es',
-        strict: (dto as any).strict ?? true,
+        language,
+        strict,
       });
 
       let flat: AiQuestion[] = [];
@@ -258,12 +295,7 @@ export class ExamsController {
       for (const q of flat) {
         const mapped = toNewExamQuestionFromAi(q);
         await this.addExamQuestionHandler.execute(
-          new AddExamQuestionCommand(
-            exam.id,
-            userId,
-            'end', 
-            mapped,
-          ),
+          new AddExamQuestionCommand(exam.id, userId, 'end', mapped as any),
         );
         added++;
       }
@@ -275,13 +307,13 @@ export class ExamsController {
       return responseSuccess(
         cid(req),
         { exam, persistedQuestions: added },
-        'Examen creado y preguntas persistidas',
+        'Examen creado y preguntas persistidas.',
         pathOf(req),
       );
     }
 
     this.logger?.log?.(`[${cid(req)}] createExam <- created exam id=${exam.id}`);
-    return responseSuccess(cid(req), exam, 'Examen creado exitosamente', pathOf(req));
+    return responseSuccess(cid(req), exam, 'Examen creado exitosamente.', pathOf(req));
   }
 
   @Post('exams/questions')
@@ -291,13 +323,16 @@ export class ExamsController {
       `[${cid(req)}] generateQuestions -> subject=${dto.subject}, difficulty=${dto.difficulty}, total=${dto.totalQuestions}`,
     );
 
-    if (!dto.subject?.trim()) throw new BadRequestError('subject es obligatorio.');
+    if (!dto.subject?.trim()) throw new BadRequestError('El campo "subject" es obligatorio.');
     if (dto.totalQuestions == null || dto.totalQuestions <= 0) {
-      throw new BadRequestError('totalQuestions debe ser > 0.');
+      throw new BadRequestError('El campo "totalQuestions" debe ser mayor a 0.');
     }
 
-    const teacherId = (req as any).user?.sub as string;
+    const teacherId = (req as any).user?.sub as string | undefined;
     if (!teacherId) throw new UnauthorizedError('Acceso no autorizado');
+
+    const language = readLanguage((dto as unknown as { language?: unknown })?.language, 'es');
+    const strict = readStrict((dto as unknown as { strict?: unknown })?.strict, true);
 
     const output = await this.generateQuestionsUseCase.execute({
       teacherId,
@@ -308,44 +343,61 @@ export class ExamsController {
       reference: dto.reference ?? null,
       examId: dto.examId,
       classId: dto.classId,
-      language: (dto as any).language ?? 'es',
-      strict: (dto as any).strict ?? true,
+      language,
+      strict,
     });
 
-    return responseSuccess(cid(req), output, 'Preguntas generadas', pathOf(req));
+    return responseSuccess(cid(req), output, 'Preguntas generadas.', pathOf(req));
   }
 
   @Post('exams/:examId/questions')
   @HttpCode(200)
-  async addQuestion(@Param('examId') examId: string, @Body() dto: AddExamQuestionDto, @Req() req: Request) {
-    this.logger.log(`[${cid(req)}] addQuestion -> examId=${examId}, kind=${dto.kind}, position=${dto.position}`);
+  async addQuestion(
+    @Param('examId') examId: string,
+    @Body() dto: AddExamQuestionDto,
+    @Req() req: Request,
+  ) {
+    this.logger.log(
+      `[${cid(req)}] addQuestion -> examId=${examId}, kind=${dto.kind}, position=${dto.position}`,
+    );
 
-    const userId = (req as any).user?.sub as string;
+    const userId = (req as any).user?.sub as string | undefined;
     if (!userId) throw new UnauthorizedError('Acceso no autorizado');
 
-    const bad = (msg: string) => { throw new BadRequestError(msg); };
-    if (!dto.text?.trim()) bad('text es obligatorio.');
-    if (!['start', 'middle', 'end'].includes(dto.position)) bad("position debe ser uno de: 'start' | 'middle' | 'end'.");
+    const validPositions: InsertPosition[] = ['start', 'middle', 'end'];
+    if (!dto.text?.trim()) throw new BadRequestError('El campo "text" es obligatorio.');
+    if (!validPositions.includes(dto.position as InsertPosition)) {
+      throw new BadRequestError(`El campo "position" debe ser uno de: ${validPositions.join(' | ')}.`);
+    }
 
-    const norm = normalizeFromCorrectAnswerForCreate(dto);
+    const norm = normalizeFromCorrectAnswerForCreate(dto as any);
 
     const cmd = new AddExamQuestionCommand(examId, userId, dto.position, {
       kind: dto.kind,
       text: dto.text,
-      options: dto.kind === 'MULTIPLE_CHOICE' ? ((norm.options ?? dto.options) as string[]) : undefined,
+      options:
+        dto.kind === QUESTION_KIND.MULTIPLE_CHOICE
+          ? ((norm.options ?? dto.options) as string[])
+          : undefined,
       correctOptionIndex: norm.correctOptionIndex,
       correctBoolean: norm.correctBoolean,
       expectedAnswer: norm.expectedAnswer,
     });
 
     const created = await this.addExamQuestionHandler.execute(cmd);
-    this.logger.log(`[${cid(req)}] addQuestion <- created question id=${created.id} order=${created.order}`);
-    return responseSuccess(cid(req), created, 'Pregunta añadida con éxito', pathOf(req));
+    this.logger.log(
+      `[${cid(req)}] addQuestion <- created question id=${created.id} order=${created.order}`,
+    );
+    return responseSuccess(cid(req), created, 'Pregunta añadida con éxito.', pathOf(req));
   }
 
   @Put('exams/questions/:questionId')
   @HttpCode(200)
-  async updateQuestion(@Param('questionId') questionId: string, @Body() dto: UpdateExamQuestionDto, @Req() req: Request) {
+  async updateQuestion(
+    @Param('questionId') questionId: string,
+    @Body() dto: UpdateExamQuestionDto,
+    @Req() req: Request,
+  ) {
     this.logger.log(`[${cid(req)}] updateQuestion -> questionId=${questionId}`);
 
     if (
@@ -359,10 +411,10 @@ export class ExamsController {
       throw new BadRequestError('Debe enviar al menos un campo para actualizar.');
     }
 
-    const teacherId = (req as any).user?.sub as string;
+    const teacherId = (req as any).user?.sub as string | undefined;
     if (!teacherId) throw new UnauthorizedError('Acceso no autorizado');
 
-    const norm = normalizeFromCorrectAnswerForUpdate(dto);
+    const norm = normalizeFromCorrectAnswerForUpdate(dto as any);
 
     const cmd = new UpdateExamQuestionCommand(questionId, teacherId, {
       text: dto.text,
@@ -374,7 +426,7 @@ export class ExamsController {
 
     const updated = await this.updateExamQuestionHandler.execute(cmd);
     this.logger.log(`[${cid(req)}] updateQuestion <- id=${updated.id}`);
-    return responseSuccess(cid(req), updated, 'Pregunta editada correctamente', pathOf(req));
+    return responseSuccess(cid(req), updated, 'Pregunta editada correctamente.', pathOf(req));
   }
 
   @Get('exams/:examId')
@@ -384,11 +436,11 @@ export class ExamsController {
 
     const user = (req as any).user as { sub: string } | undefined;
     if (!user?.sub) throw new UnauthorizedError('Acceso no autorizado');
-    if (!examId?.trim()) throw new BadRequestError('examId es obligatorio.');
+    if (!examId?.trim()) throw new BadRequestError('El campo "examId" es obligatorio.');
 
     const data = await this.getByIdUseCase.execute({ examId, teacherId: user.sub });
     this.logger.log(`[${cid(req)}] getExamById <- id=${data.exam.id}`);
-    return responseSuccess(cid(req), data, 'Examen recuperado', pathOf(req));
+    return responseSuccess(cid(req), data, 'Examen recuperado.', pathOf(req));
   }
 
   @Get('classes/:classId/exams')
@@ -396,10 +448,10 @@ export class ExamsController {
   async byClass(@Param('classId') classId: string, @Req() req: Request) {
     const user = (req as any).user as { sub: string } | undefined;
     if (!user?.sub) throw new UnauthorizedError('Acceso no autorizado');
-    if (!classId?.trim()) throw new BadRequestError('classId es obligatorio.');
+    if (!classId?.trim()) throw new BadRequestError('El campo "classId" es obligatorio.');
 
     const data = await this.listClassExams.execute({ classId, teacherId: user.sub });
-    return responseSuccess(cid(req), data, 'Exámenes de la clase', pathOf(req));
+    return responseSuccess(cid(req), data, 'Exámenes de la clase.', pathOf(req));
   }
 
   @Delete('exams/:examId')
@@ -407,11 +459,10 @@ export class ExamsController {
   async deleteExam(@Param('examId') examId: string, @Req() req: Request) {
     const user = (req as any).user as { sub: string } | undefined;
     if (!user?.sub) throw new UnauthorizedError('Acceso no autorizado');
-    if (!examId?.trim()) throw new BadRequestError('examId es obligatorio.');
+    if (!examId?.trim()) throw new BadRequestError('El campo "examId" es obligatorio.');
 
     const cmd = new DeleteExamCommand(examId, user.sub);
     await this.deleteExamHandler.execute(cmd);
-
     return;
   }
 }

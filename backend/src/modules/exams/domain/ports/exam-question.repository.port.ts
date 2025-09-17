@@ -1,22 +1,4 @@
-import { ExamQuestion, NewExamQuestion } from '../entities/exam-question.entity';
-
-export type InsertPosition = 'start' | 'middle' | 'end';
-
-export type UpdateExamQuestionPatch = {
-  text?: string;
-  options?: any[] | null;
-  correctOptionIndex?: number | null;
-  correctBoolean?: boolean | null;
-  expectedAnswer?: string | null;
-};
-
-export type DerivedCounts = {
-  totalQuestions: number;
-  mcqCount: number;
-  trueFalseCount: number;
-  openAnalysisCount: number;
-  openExerciseCount: number;
-};
+import type { ExamQuestion, NewExamQuestion, InsertPosition, UpdateExamQuestionPatch, DerivedCounts, } from '../models/exam-question.models';
 
 export interface ExamQuestionRepositoryPort {
   existsExamOwned(examId: string, teacherId: string): Promise<boolean>;
