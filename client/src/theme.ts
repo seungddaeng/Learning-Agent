@@ -29,6 +29,7 @@ export const palette = {
   red: "#ff4d4f",
   blue: "#1890ff",
   purple: "#3B38A0",
+  lightBlue: "#E8F4FD",
 };
 const borderWidth = 1;
 

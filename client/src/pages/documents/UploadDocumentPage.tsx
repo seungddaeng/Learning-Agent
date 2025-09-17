@@ -12,6 +12,7 @@ import { useChunkedDocumentUpload } from "../../hooks/useChunkedDocumentUpload";
 import { useUser } from "../../context/UserContext";
 import { useUserStore } from "../../store/userStore";
 import { useThemeStore } from "../../store/themeStore";
+import { palette } from "../../theme";
 import type { Document } from "../../interfaces/documentInterface";
 import useCourses from "../../hooks/useCourses";
 import useClasses from "../../hooks/useClasses";
@@ -226,7 +227,7 @@ const UploadDocumentPage: React.FC = () => {
                     display: "flex", 
                     alignItems: "center",
                     justifyContent: "space-between",
-                    color: isDark ? token.colorText : "#1A2A80",
+                    color: isDark ? token.colorText : palette.P0,
                     width: "100%",
                     minWidth: 0,
                     gap: isSmallScreen ? "12px" : "16px",
@@ -256,11 +257,11 @@ const UploadDocumentPage: React.FC = () => {
                       <div style={{
                         marginLeft: "12px",
                         backgroundColor: documents.length > 0 
-                          ? (isDark ? token.colorPrimaryBg : "#E8F4FD") 
-                          : (isDark ? token.colorBgTextHover : "#F0F0F0"),
+                          ? (isDark ? token.colorPrimaryBg : palette.lightBlue) 
+                          : (isDark ? token.colorBgTextHover : palette.neutral100),
                         color: documents.length > 0 
-                          ? (isDark ? token.colorPrimary : "#3B38A0") 
-                          : (isDark ? token.colorTextSecondary : "#666"),
+                          ? (isDark ? token.colorPrimary : palette.purple) 
+                          : (isDark ? token.colorTextSecondary : palette.neutral600),
                         padding: isSmallScreen ? "2px 8px" : "4px 10px",
                         borderRadius: isSmallScreen ? "10px" : "16px",
                         fontSize: isSmallScreen ? "10px" : "12px",
@@ -306,8 +307,8 @@ const UploadDocumentPage: React.FC = () => {
                   boxShadow: isDark 
                     ? "0 4px 16px rgba(91, 110, 240, 0.1)" 
                     : "0 4px 16px rgba(26, 42, 128, 0.1)",
-                  border: `1px solid ${isDark ? token.colorBorder : "#e8eaed"}`,
-                  backgroundColor: isDark ? token.colorBgContainer : "#FFFFFF",
+                  border: `1px solid ${isDark ? token.colorBorder : palette.neutral200}`,
+                  backgroundColor: isDark ? token.colorBgContainer : palette.white,
                   width: "100%",
                   minWidth: 0,
                   overflow: "hidden"
