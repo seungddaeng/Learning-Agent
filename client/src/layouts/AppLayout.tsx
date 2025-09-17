@@ -7,7 +7,6 @@ import {
   SunOutlined,
   MoonOutlined,
   BookOutlined,
-  FileAddOutlined,
   SolutionOutlined,
   MenuFoldOutlined,
   MenuOutlined,
@@ -42,11 +41,7 @@ function buildNavItems(roles: string[] | undefined): NavItem[] {
       icon: <SolutionOutlined />,
       label: <Link to="/professor/courses">Materias</Link>,
     },
-    {
-      key: "/professor/exams/create",
-      icon: <FileAddOutlined />,
-      label: <Link to="/professor/exams/create">Crear Examen</Link>,
-    },
+
   ];
 
   const studentOnly: NavItem[] = [

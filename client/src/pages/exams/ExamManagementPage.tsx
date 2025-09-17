@@ -73,12 +73,7 @@ export default function ExamManagementPage() {
       </div>
 
       <div id="tabla-examenes" style={{ marginTop: 24 }}>
-        <ExamTable
-          data={exams}
-          onEdit={() => {
-            window.location.href = "/exams/create";
-          }}
-        />
+        <ExamTable data={exams} />
       </div>
 
         <div id="tabla-examenes">
