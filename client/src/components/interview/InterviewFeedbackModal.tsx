@@ -1,3 +1,6 @@
+import React from "react";
+import {usePdfGenerator} from "../../hooks/usePdfGenerator";
+import type { InterviewQuestion } from "../../interfaces/interviewInt";
 import { Button, Space, Typography, theme } from "antd";
 import { FileTextOutlined, CloseOutlined } from "@ant-design/icons";
 import CustomModal from "../reinforcement/CustomModal";
@@ -8,14 +11,30 @@ interface InterviewFeedbackModalProps {
   open: boolean;
   onClose: () => void;
   onDownload: () => void;
+  multipleSelectionData: InterviewQuestion[]; // Datos de preguntas múltiples
+  doubleOptionData: InterviewQuestion[];
 }
 
 export default function InterviewFeedbackModal({
   open,
   onClose,
   onDownload,
-}: InterviewFeedbackModalProps) {
+  multipleSelectionData,
+  doubleOptionData,
+}:InterviewFeedbackModalProps) {
+  const { generatePDF } = usePdfGenerator();
   const { token } = theme.useToken();
+  const handleDownload = async () => {
+    try {
+      const allData = [...multipleSelectionData, ...doubleOptionData];
+      await generatePDF(allData);
+      onDownload();
+    } catch (error) {
+      console.error('Error al descargar el PDF:', error);
+    }
+  };
+
+
 
   return (
     <CustomModal
@@ -104,7 +123,7 @@ export default function InterviewFeedbackModal({
               onMouseLeave={(e) =>
                 (e.currentTarget.style.boxShadow = `0 4px 12px ${token.colorPrimary}40`)
               }
-              onClick={onDownload}
+              onClick={handleDownload}
             >
               Descargar feedback
             </Button>
