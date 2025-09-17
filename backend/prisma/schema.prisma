@@ -111,6 +111,7 @@ model StudentProfile {
   // relation 1:N
   enrollment    Enrollment[]
   attendance    Attendance[]
+  chatHistory   ChatHistory[]
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -164,6 +165,9 @@ model Document {
   chunks           DocumentChunk[]
   categories       DocumentCategoryMapping[]
   processingJobs   ProcessingJob[]
+  quizQuestions    QuizQuestion[]
+  interviewQuestions  InterviewQuestion[]
+  chatHistory   ChatHistory[]
   documentIndex    DocumentIndex?
   
   // Información adicional extraída
@@ -547,6 +551,8 @@ model Course {
 
   // Relación con documentos para el contrato
   documents     Document[]
+  quizQuestions    QuizQuestion[]
+  interviewQuestions  InterviewQuestion[]
 
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
@@ -564,9 +570,6 @@ model Classes {
   enrollment    Enrollment[]
   attendance Attendance[]
   documents     Document[]        // Documentos específicos para este período/clase
-
-  quizQuestions    QuizQuestion[]
-  interviewQuestions InterviewQuestion[]
 
 
   courseId      String
@@ -599,16 +602,18 @@ model Enrollment {
    =========================== */
    model QuizQuestion {
     id         String   @id @default(uuid())
-    classId    String
+    courseId    String
+    docId       String
     text       String   @db.Text
     type       String
     options    Json?
     createdAt  DateTime @default(now())
     lastUsedAt DateTime?
 
-    // Relación con Classes
-    class      Classes  @relation(fields: [classId], references: [id], onDelete: Cascade)
-    @@index([classId])
+    // Relación con Course
+    course      Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+    document    Document @relation(fields: [docId], references: [id], onDelete: Cascade)
+    @@index([courseId, docId])
     @@index([createdAt])
     @@index([lastUsedAt])
     @@map("quiz_questions")
@@ -616,14 +621,15 @@ model Enrollment {
 
   model InterviewQuestion {
     id         String   @id @default(uuid())
-    classId    String
-    text       String   @db.Text
+    courseId      String            
+    course        Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+    docId      String
+    document        Document  @relation(fields: [docId], references: [id], onDelete: Cascade)
+    json       Json?   
+    type      String
     createdAt  DateTime @default(now())
     lastUsedAt DateTime?
-
-    // Relación con Classes
-    class      Classes  @relation(fields: [classId], references: [id], onDelete: Cascade)
-    @@index([classId])
+    @@index([courseId, docId])
     @@index([createdAt])
     @@index([lastUsedAt])
     @@map("interview_questions")
@@ -643,3 +649,25 @@ model Attendance {
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
 }
+
+model ChatHistory {
+    id         String   @id @default(uuid())
+    studentId      String            
+    docId      String
+    question    String
+    response  String
+    uses  Int     @default(0)
+
+    document        Document  @relation(fields: [docId], references: [id], onDelete: Cascade)
+    student     StudentProfile @relation(fields: [studentId], references: [userId], onDelete: Cascade)
+
+    createdAt  DateTime @default(now())
+    lastUsedAt DateTime?
+    @@index([studentId, docId])
+    @@index([createdAt])
+    @@index([lastUsedAt])
+    @@index([docId, question])
+    @@map("chat_history")
+  }
+
+

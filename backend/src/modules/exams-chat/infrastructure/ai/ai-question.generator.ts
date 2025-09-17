@@ -26,6 +26,7 @@ export class AIQuestionGenerator {
       };
     const resp = await this.dsIntService?.generateQuestion(
       'Genera una pregunta sobre algoritmos de programación, de opción múltiple',
+      '1',
     );
     const text =
       resp?.question ??
@@ -40,6 +41,7 @@ export class AIQuestionGenerator {
       };
     const resp = await this.dsIntService?.generateQuestion(
       'Genera una pregunta de verdadero o falso sobre algoritmos de programación',
+      '1',
     );
     const text =
       resp?.question ??
@@ -85,13 +87,21 @@ export class AIQuestionGenerator {
 
       const lines = candidate
         .split(/\r?\n/)
-        .map(l => l.trim())
+        .map((l) => l.trim())
         .filter(Boolean)
         .map(this.normalizeLine);
 
-      if (lines.length >= 4) return { options: lines.slice(0, 4), correctIndex: null, confidence: null };
+      if (lines.length >= 4)
+        return {
+          options: lines.slice(0, 4),
+          correctIndex: null,
+          confidence: null,
+        };
 
-      const pieces = candidate.split(/;|\/|\||\t/).map(p => p.trim()).filter(Boolean);
+      const pieces = candidate
+        .split(/;|\/|\||\t/)
+        .map((p) => p.trim())
+        .filter(Boolean);
       if (pieces.length >= 4)
         return {
           options: pieces.slice(0, 4),
