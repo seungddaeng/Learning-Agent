@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { Typography, Radio, Button, theme } from 'antd';
 import { RightOutlined, CodeOutlined } from '@ant-design/icons';
 import apiClient from '../../api/apiClient';
+import type { DoubleOptionResponse } from '../../interfaces/interviewInt';
 
 const { Paragraph, Text } = Typography;
 
@@ -11,22 +12,20 @@ const TOP_OFFSET = '5vh';
 
 interface MultipleQuestionProps {
   onNext: () => void;
-}
-interface TitleAndOption {
-  label: string;
-  answer: string;
-}
-interface DoubleOptionResponse {
-  question: string;
-  options: TitleAndOption[];
-  correctAnswer: number;
-  explanation: string;
+  selectedValues: DoubleOptionResponse[];
+  setSelectedValues: React.Dispatch<React.SetStateAction<DoubleOptionResponse[]>>;
 }
 
-export default function MultipleQuestion({ onNext }: MultipleQuestionProps) {
+
+export default function MultipleQuestion({ onNext, selectedValues, setSelectedValues }: MultipleQuestionProps) {
   const { token } = theme.useToken();
-  const [selectedValue, setSelectedValue] = useState<string>('');
-  const [doubleOption, setDoubleOption] = useState<DoubleOptionResponse>();
+  const [doubleOption , setDoubleOption] = useState<DoubleOptionResponse>();
+
+  const onClick = () => {
+    setSelectedValues( sel => [...sel, doubleOption!]);
+    console.log(selectedValues);
+    onNext();
+  }
   const [loading, setLoading] = useState(true);
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
   const hasFetched = useRef(false);
@@ -38,10 +37,6 @@ export default function MultipleQuestion({ onNext }: MultipleQuestionProps) {
     "Inicializando lógica...",
     "Verificando dificultad..."
   ];
-
-  const handleRadioChange = (e: any) => {
-    setSelectedValue(e.target.value);
-  };
 
   useEffect(() => {
     if (!loading) return;
@@ -55,10 +50,10 @@ export default function MultipleQuestion({ onNext }: MultipleQuestionProps) {
     if (hasFetched.current) return;
     hasFetched.current = true;
     fetchQuestion();
-  }, []);
-
+  }, [selectedValues]);
   async function fetchQuestion() {
-    try {
+     try {
+      setDoubleOption(undefined);
       const response = await apiClient.get("/chatint/doubleOption?topico=programacion");
       const obj = response.data as DoubleOptionResponse;
       setDoubleOption(obj);
@@ -203,8 +198,8 @@ export default function MultipleQuestion({ onNext }: MultipleQuestionProps) {
           </Paragraph>
 
           <Radio.Group
-            onChange={handleRadioChange}
-            value={selectedValue}
+            onChange={(e) => setDoubleOption(old => old !=undefined? {...old,givenAnswer:e.target.value}:undefined)}
+            value={doubleOption?.givenAnswer}
             style={{
               width: '100%',
               display: 'flex',
@@ -215,9 +210,9 @@ export default function MultipleQuestion({ onNext }: MultipleQuestionProps) {
             }}
           >
             {doubleOption.options.map((opt, i) => {
-              const selected = selectedValue === opt.answer;
+              const selected = doubleOption.givenAnswer === i;
               return (
-                <Radio key={i} value={opt.answer} style={{ margin: 0 }}>
+                <Radio key={i} value={i} style={{ margin: 0 }}>
                   <div
                     style={{
                       width: 320,
@@ -270,7 +265,7 @@ export default function MultipleQuestion({ onNext }: MultipleQuestionProps) {
         </div>
       </div>
 
-      {selectedValue && (
+      {doubleOption.givenAnswer != undefined && (
         <div
           style={{
             width: WIDTH,
@@ -283,7 +278,7 @@ export default function MultipleQuestion({ onNext }: MultipleQuestionProps) {
           <Button
             type="primary"
             size="large"
-            onClick={onNext}
+            onClick={onClick}
             style={{
               borderRadius: token.borderRadiusLG,
               height: 48,
