@@ -7,9 +7,17 @@ import { DeepseekAdapter } from '../llm/infrastructure/adapters/ds.adapter';
 import { LLM_PORT } from '../llm/tokens';
 import { DsService } from './infrastructure/ds.service';
 import { PromptTemplateModule } from '../prompt-template/prompt-template.module';
+import { DocumentsModule } from '../repository_documents/documents.module';
+import { InterviewExamDbModule } from '../interview-exam-db/interview-exam-db.module';
 
 @Module({
-  imports: [PrismaModule, LlmModule, PromptTemplateModule],
+  imports: [
+    PrismaModule,
+    LlmModule,
+    PromptTemplateModule,
+    DocumentsModule,
+    InterviewExamDbModule,
+  ],
   controllers: [ChatController],
   providers: [
     DeepseekAdapter,

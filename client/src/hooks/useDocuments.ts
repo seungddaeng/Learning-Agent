@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { 
   Document, 
   DocumentMetadata, 
@@ -8,10 +8,13 @@ import type {
 } from '../interfaces/documentInterface';
 import { documentService } from '../services/documents.service';
 
-export const useDocuments = () => {
+export const useDocuments = (filters?: { courseId?: string; classId?: string }) => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Estabilizar filtros para evitar re-renders innecesarios
+  const stableFilters = useMemo(() => filters, [filters?.courseId, filters?.classId]);
   
   // Estados para datos extraídos
   const [extractedDataCache, setExtractedDataCache] = useState<Record<string, DocumentExtractedData>>({});
@@ -22,7 +25,7 @@ export const useDocuments = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await documentService.getDocuments();
+      const response = await documentService.getDocuments(stableFilters);
       setDocuments(response.data.documents);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error loading documents';
@@ -31,7 +34,7 @@ export const useDocuments = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [stableFilters]);
 
   const uploadDocument = useCallback(async (file: File): Promise<Document> => {
     setLoading(true);
@@ -349,7 +352,7 @@ export const useDocuments = () => {
 
   useEffect(() => {
     loadDocuments();
-  }, [loadDocuments]);
+  }, [stableFilters]); // Usar stableFilters para evitar bucle infinito
 
   return {
     // Estados básicos

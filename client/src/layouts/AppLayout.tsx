@@ -7,7 +7,6 @@ import {
   SunOutlined,
   MoonOutlined,
   BookOutlined,
-  FileAddOutlined,
   SolutionOutlined,
   MenuFoldOutlined,
   MenuOutlined,
@@ -25,11 +24,11 @@ type NavItem = { key: string; icon: React.ReactNode; label: React.ReactNode };
 
 function buildNavItems(roles: string[] | undefined): NavItem[] {
   const common: NavItem[] = [
-    { key: "/", icon: <HomeOutlined />, label: <Link to="/">Home</Link> },
+    { key: "/", icon: <HomeOutlined />, label: <Link to="/">Inicio</Link> },
     {
       key: "/settings",
       icon: <SettingOutlined />,
-      label: <Link to="/settings">Settings</Link>,
+      label: <Link to="/settings">Configuración</Link>,
     },
   ];
 
@@ -42,11 +41,7 @@ function buildNavItems(roles: string[] | undefined): NavItem[] {
       icon: <SolutionOutlined />,
       label: <Link to="/professor/courses">Materias</Link>,
     },
-    {
-      key: "/professor/exams/create",
-      icon: <FileAddOutlined />,
-      label: <Link to="/professor/exams/create">Crear Examen</Link>,
-    },
+
   ];
 
   const studentOnly: NavItem[] = [

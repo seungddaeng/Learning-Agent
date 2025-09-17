@@ -20,24 +20,34 @@ export class AIQuestionGenerator {
     return l.replace(/^[\d\)\.\-\s]+/, '').trim();
   }
 
-  private parseCandidate(candidate: string): string[] | null {
-    try {
-      const parsed = JSON.parse(candidate);
-      if (Array.isArray(parsed) && parsed.length >= 4) return parsed.slice(0, 4).map(String);
-      if (parsed && Array.isArray((parsed as any).options)) return (parsed as any).options.slice(0, 4).map(String);
-    } catch (_) {}
-    const lines = candidate.split(/\r?\n/).map(l => l.trim()).filter(Boolean).map(this.normalizeLine);
-    if (lines.length >= 4) return lines.slice(0, 4);
-    const pieces = candidate.split(/;|\/|\||\t/).map(p => p.trim()).filter(Boolean);
-    if (pieces.length >= 4) return pieces.slice(0, 4);
-    return null;
+  async generateQuestion(): Promise<GeneratedQuestion> {
+    if (!this.dsIntService)
+      return {
+        text: 'Genera una pregunta sobre algoritmos de programación, de opción múltiple',
+      };
+    const resp = await this.dsIntService?.generateQuestion(
+      'Genera una pregunta sobre algoritmos de programación, de opción múltiple',
+      '1',
+    );
+    const text =
+      resp?.question ??
+      'Pregunta sobre algoritmos de programación, de opción múltiple';
+    return { text };
   }
 
-  async generateQuestion(prompt?: string): Promise<GeneratedQuestion> {
-    const textPrompt = prompt ?? 'Genera una pregunta sobre algoritmos de programación, de opción múltiple';
-    if (!this.deepseek) return { text: textPrompt };
-    const resp = await this.deepseek.complete(textPrompt, { model: { provider: 'deepseek', name: 'deepseek-chat' } });
-    return { text: resp?.text ?? textPrompt };
+  async generateTrueFalseQuestion(): Promise<GeneratedQuestion> {
+    if (!this.dsIntService)
+      return {
+        text: 'El algoritmo de Quicksort siempre es estable. (Verdadero o Falso)',
+      };
+    const resp = await this.dsIntService?.generateQuestion(
+      'Genera una pregunta de verdadero o falso sobre algoritmos de programación',
+      '1',
+    );
+    const text =
+      resp?.question ??
+      'Pregunta de verdadero o falso sobre algoritmos de programación';
+    return { text };
   }
 
   async generateOptions(questionText: string): Promise<GeneratedOptions> {
@@ -65,6 +75,34 @@ export class AIQuestionGenerator {
         const parsed = this.parseCandidate(candidate);
         if (parsed && parsed.length >= 4) return { options: parsed.slice(0, 4), correctIndex: null, confidence: null };
       } catch (_) {}
+
+      const lines = candidate
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter(Boolean)
+        .map(this.normalizeLine);
+
+      if (lines.length >= 4)
+        return {
+          options: lines.slice(0, 4),
+          correctIndex: null,
+          confidence: null,
+        };
+
+      const pieces = candidate
+        .split(/;|\/|\||\t/)
+        .map((p) => p.trim())
+        .filter(Boolean);
+      if (pieces.length >= 4)
+        return {
+          options: pieces.slice(0, 4),
+          correctIndex: null,
+          confidence: null,
+        };
+
+      return fallback;
+    } catch (err) {
+      return fallback;
     }
     return fallback;
   }

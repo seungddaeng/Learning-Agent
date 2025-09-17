@@ -32,13 +32,13 @@ export default function ExamManagementPage() {
   // Breadcrumbs dinámicos basados en contexto
   const breadcrumbs = courseId 
     ? [
-        { label: 'Home', href: '/' },
+        { label: 'Inicio', href: '/' },
         { label: 'Materias', href: '/professor/courses' },
         { label: actualCourse?.name || 'Curso', href: `/professor/courses/${courseId}/periods` },
         { label: 'Exámenes' }
       ]
     : [
-        { label: 'Home', href: '/' },
+        { label: 'Inicio', href: '/' },
         { label: 'Materias', href: '/professor/courses' },
         { label: 'Gestión de Exámenes'}
       ];
@@ -73,12 +73,7 @@ export default function ExamManagementPage() {
       </div>
 
       <div id="tabla-examenes" style={{ marginTop: 24 }}>
-        <ExamTable
-          data={exams}
-          onEdit={() => {
-            window.location.href = "/exams/create";
-          }}
-        />
+        <ExamTable data={exams} />
       </div>
 
         <div id="tabla-examenes">
