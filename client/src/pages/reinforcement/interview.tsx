@@ -1,46 +1,41 @@
 import { useState } from "react";
-import { Button, Modal } from 'antd';
-import { CloseOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
-import PageTemplate from '../../components/PageTemplate';
-import useInterviewFlow from '../../hooks/usInterviewFlow';
-import OpenQuestion from '../../components/interview/OpenQuestion';
-import TeoricQuestion from '../../components/interview/TeoricQuestion';
-import MultipleQuestion from '../../components/interview/MultipleQuestion';
-import { useThemeStore } from '../../store/themeStore';
-import InterviewFeedbackModal from '../../components/interview/InterviewFeedbackModal';
+import { useNavigate, useParams, generatePath } from "react-router-dom";
+import { Button, theme } from "antd";
+import PageTemplate from "../../components/PageTemplate";
+import InterviewModal from "../../components/interview/InterviewModal";
+import InterviewSummaryModal from "../../components/interview/InterviewFeedbackModal";
+import OpenQuestion from "../../components/interview/OpenQuestion";
+import TeoricQuestion from "../../components/interview/TeoricQuestion";
+import MultipleQuestion from "../../components/interview/MultipleQuestion";
+import useInterview from "../../hooks/useInterview";
 import type { DoubleOptionResponse, MultipleSelectionResponse } from '../../interfaces/interviewInt';
 import { usePdfGenerator } from '../../hooks/usePdfGenerator';
-import InterviewModal from "../../components/interview/InterviewModal";
-import { useStudentInterview } from "../../hooks/useStudentInterview";
-
-const InterviewPage: React.FC = () => {
+export default function InterviewPage() {
   const navigate = useNavigate();
-  const { theme } = useThemeStore();
-  const { currentType, isModalOpen, next, finish, confirmFinish, setIsModalOpen } = useInterviewFlow(['open', 'teoric', 'multiple', 'open']);
-   const [selectedValues, setSelectedValues] = useState<DoubleOptionResponse[]>([]);
+  const { id } = useParams();
+  const { token } = theme.useToken();
+
+  const [isInterviewStarted, setIsInterviewStarted] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
+  const [selectedValues, setSelectedValues] = useState<DoubleOptionResponse[]>([]);
    const [mulSelectedValues, setMulSelectedValues] = useState<MultipleSelectionResponse[]>([]);
   const {
-    isInterviewModalOpen,
-    closeInterviewModal,
-    startExam,
-    questionType,
-    currentQuestion,
+    isModalOpen,
     questionCount,
+    currentQuestion,
+    currentType,
+    startExam,
     nextQuestion,
-  } = useStudentInterview();
+  } = useInterview(["multiple", "teoric", "open"], () => setShowSummary(true));
 
-  const [isFinishModalOpen, setIsFinishModalOpen] = useState(false);
-  const [showFeedback, setShowFeedback] = useState(false);
-  const { generatePDF } = usePdfGenerator();
-
-  const handleFinish = () => {
-    setIsFinishModalOpen(true);
+  const goToReinforcement = () => {
+    if (!id) return;
+    navigate(generatePath("/student/classes/:id/reinforcement", { id }));
   };
-
-  const handleConfirmFinish = () => {
-    setIsFinishModalOpen(false);
-    setShowFeedback(true);
+  const { generatePDF } = usePdfGenerator();
+  const handleStartInterview = (count: number) => {
+    startExam(count);
+    setIsInterviewStarted(true);
   };
 
   const handleDownloadFeedback = async () => {
@@ -52,93 +47,66 @@ const InterviewPage: React.FC = () => {
     } catch (error) {
       console.error('Error al descargar el PDF:', error);
     }
+  }
+  const handleNextQuestion = () => {
+    if (currentQuestion < questionCount) nextQuestion();
+    else setShowSummary(true);
   };
 
   const renderQuestion = () => {
-    switch (questionType) {
+    switch (currentType) {
       case "multiple":
         return <MultipleQuestion onNext={nextQuestion} selectedValues={selectedValues} setSelectedValues={setSelectedValues}  />;
-      case "truefalse":
+      case "teoric":
         return <TeoricQuestion onNext={nextQuestion}selectedValues={mulSelectedValues} setSelectedValues={setMulSelectedValues}/>;
+      case "open":
       default:
-        return <OpenQuestion onNext={nextQuestion} />;
+        return <OpenQuestion onNext={handleNextQuestion} />;
     }
   };
 
   return (
-    <>
-      <PageTemplate
-        breadcrumbs={[
-          { label: "Reforzamiento", href: "/reinforcement" },
-          { label: "Entrevista" },
-        ]}
-        title={
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <span>Entrevista</span>
-            {questionCount > 0 && (
-              <span
-                style={{
-                  fontSize: 14,
-                  color:
-                    theme === "dark"
-                      ? "rgba(255,255,255,0.65)"
-                      : "rgba(0,0,0,0.65)",
-                  fontWeight: 500,
-                  marginTop: 4,
-                }}
-              >
-                Pregunta {currentQuestion} de {questionCount}
-              </span>
-            )}
-          </div>
-        }
-        actions={
-          questionCount > 0 && (
-            <Button
-              icon={<CloseOutlined />}
-              onClick={handleFinish}
-              type="primary"
-              className={
-                theme === "dark"
-                  ? "bg-primary text-white hover:bg-primary/90"
-                  : "bg-primary text-white hover:bg-primary/90"
-              }
-            >
-              Finalizar
-            </Button>
-          )
-        }
-      >
-        {questionCount > 0 && renderQuestion()}
-      </PageTemplate>
+    <PageTemplate
+      title="Interview"
+      subtitle={
+        isInterviewStarted && questionCount
+          ? `Question ${currentQuestion} of ${questionCount}`
+          : "Soon you will find interview practice"
+      }
+      breadcrumbs={[
+        { label: "Home", href: "/" },
+        { label: "Classes", href: "/classes" },
+        { label: "Reinforcement", href: id ? generatePath("/classes/:id/reinforcement", { id }) : "#" },
+        { label: "Interview" },
+      ]}
+      actions={
+        isInterviewStarted && (
+          <Button
+            style={{ backgroundColor: token.colorPrimary, color: token.colorTextLightSolid }}
+            onClick={() => setShowSummary(true)}
+          >
+            Finalizar
+          </Button>
+        )
+      }
+    >
+      {!isInterviewStarted && (
+        <InterviewModal
+          open={isModalOpen}
+          onClose={goToReinforcement}
+          onSelectDifficulty={handleStartInterview}
+        />
+      )}
 
-      <InterviewModal
-        open={isInterviewModalOpen}
-        onClose={closeInterviewModal}
-        onSelectDifficulty={startExam}
-      />
+      {isInterviewStarted && renderQuestion()}
 
-      <Modal
-        title="Finalizar Entrevista"
-        open={isFinishModalOpen}
-        onOk={handleConfirmFinish}
-        onCancel={() => setIsFinishModalOpen(false)}
-        okText="Sí, finalizar"
-        cancelText="No, continuar"
-      >
-        <p>¿Estás seguro de que quieres finalizar la entrevista?</p>
-        <p>Perderás el progreso actual.</p>
-      </Modal>
-
-      <InterviewFeedbackModal
-        open={showFeedback}
-        onClose={() => setShowFeedback(false)}
+      <InterviewSummaryModal
+        open={showSummary}
+        onClose={goToReinforcement}
         onDownload={handleDownloadFeedback}
         multipleSelectionData={mulSelectedValues} // Tus preguntas teóricas
         doubleOptionData={selectedValues}
       />
-    </>
+    </PageTemplate>
   );
-};
-
-export default InterviewPage;
+}
