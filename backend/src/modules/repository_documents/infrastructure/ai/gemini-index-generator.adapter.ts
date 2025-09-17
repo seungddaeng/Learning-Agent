@@ -56,7 +56,8 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
       this.logger.log(`Processing all ${chunks.length} chunks in batches`);
 
       // Process all chunks in small batches
-      const batchSize = 50; // Batch size to avoid token limits
+      const batchSize = 25; // Very small batch size for large files to prevent quota issues
+      const maxChaptersPerBatch = 1; // Limit to 1 chapter per batch for stability
       const allChapters: IndexChapter[] = [];
 
       // Sort chunks by index
@@ -79,13 +80,14 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
             batchNumber,
             totalBatches,
             finalConfig,
+            maxChaptersPerBatch,
           );
 
           allChapters.push(...batchChapters);
 
-          // Small pause between batches to avoid rate limits
+          // Longer pause between batches to avoid rate limits and reduce load
           if (i + batchSize < sortedChunks.length) {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+            await new Promise((resolve) => setTimeout(resolve, 3000)); // Increased to 3 seconds
           }
         } catch (batchError) {
           this.logger.warn(
@@ -134,12 +136,13 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
     batchNumber: number,
     totalBatches: number,
     config: IndexGenerationConfig,
+    maxChaptersPerBatch: number = 2,
   ): Promise<IndexChapter[]> {
     const model = this.genAI.getGenerativeModel({
       model: config.model!,
       generationConfig: {
         temperature: config.temperature,
-        maxOutputTokens: 4096, // Reducido para lotes más pequeños
+        maxOutputTokens: 2048, // Reducido significativamente para mejorar rendimiento frontend
       },
     });
 
@@ -152,6 +155,7 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
       batchNumber,
       totalBatches,
       config,
+      maxChaptersPerBatch,
     );
 
     const result = await model.generateContent(prompt);
@@ -161,9 +165,11 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
     // Parsear la respuesta JSON del lote
     const batchData = this.parseGeminiResponse(text);
 
-    return (
-      batchData.chapters?.map((chapter: any) => this.mapChapter(chapter)) || []
-    );
+    const chapters = 
+      batchData.chapters?.map((chapter: any) => this.mapChapter(chapter)) || [];
+
+    // Limitar el contenido para optimizar tamaño
+    return this.limitChapterContent(chapters, maxChaptersPerBatch);
   }
 
   /**
@@ -332,6 +338,7 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
     batchNumber: number,
     totalBatches: number,
     config: IndexGenerationConfig,
+    maxChaptersPerBatch: number = 2,
   ): string {
     return `
 Eres un experto en análisis de documentos académicos y generación de contenido educativo.
@@ -342,12 +349,59 @@ LOTE: ${batchNumber} de ${totalBatches}
 CONTENIDO DEL LOTE:
 ${batchText}
 
-INSTRUCCIONES:
+INSTRUCCIONES CRÍTICAS:
 1. Analiza SOLO el contenido de este lote
-2. Genera capítulos y subtemas basados en el contenido real
-3. Los títulos deben ser descriptivos y específicos del contenido
-4. Incluye entre 2-5 capítulos por lote dependiendo del contenido
-5. Cada capítulo debe tener 2-4 subtemas relevantes
+2. Si el documento YA TIENE un índice de contenidos, respétalo tal como está
+3. Si hay capítulos o secciones ya definidas, úsalas EXACTAMENTE como aparecen
+4. NO modifiques títulos existentes del documento original
+5. Los títulos deben ser DESCRIPTIVOS, COHERENTES y PROFESIONALES
+6. NO uses numeraciones aleatorias ni fragmentos sin sentido
+7. NO uses fragmentos de texto literal como títulos (ej: "1−cos휃, ].(22), gradient")
+8. NO uses símbolos matemáticos o fórmulas como títulos
+9. NO uses referencias bibliográficas como títulos (ej: "Cignoni,, Roberto, Scopigno")
+10. Si no hay índice previo, crea títulos que expliquen claramente el tema del contenido
+11. Los títulos deben ser en español y tener sentido completo
+12. Genera MÁXIMO ${maxChaptersPerBatch} capítulos por lote para optimizar tamaño
+13. Cada capítulo debe tener máximo 2 subtemas relevantes
+14. Crea máximo 1 ejercicio por subtema y 1 por capítulo
+15. Los ejercicios NO deben ser de opción múltiple
+16. Incluye diferentes tipos: CONCEPTUAL, PRACTICAL, ANALYSIS, APPLICATION, PROBLEM_SOLVING
+17. Asigna dificultad: BASIC, INTERMEDIATE, ADVANCED
+18. MANTÉN las descripciones concisas (máximo 200 caracteres cada una)
+19. PRIORIZA la calidad sobre la cantidad de contenido
+
+EJEMPLOS DE TÍTULOS CORRECTOS:
+✅ "Introducción al algoritmo X-SLAM"
+✅ "Metodología de procesamiento"
+✅ "Análisis de resultados experimentales"
+✅ "Comparación con métodos existentes"
+
+EJEMPLOS DE TÍTULOS INCORRECTOS (NO USAR):
+❌ "1.1.1 X-SLAM: Scalable Dense SLAM" 
+❌ "1−cos휃, ].(22), gradient"
+❌ "Paolo Cignoni, Roberto Scopigno"
+❌ "푟 ,T 푔,푞 ,퐷"
+
+LÍMITES ESTRICTOS PARA OPTIMIZACIÓN:
+- MÁXIMO ${maxChaptersPerBatch} capítulos en total
+- MÁXIMO 2 subtemas por capítulo
+- MÁXIMO 1 ejercicio por subtema
+- MÁXIMO 1 ejercicio por capítulo
+- Descripciones: máximo 100 caracteres
+- Títulos: máximo 60 caracteres
+- Respuesta total: máximo 800 tokens
+- RESPUESTA JSON: máximo 80 líneas totales (incluye llaves, corchetes, etc.)
+
+FORMATO DE TÍTULOS REQUERIDO:
+- Capítulos: "Tema Principal del Contenido"
+- Subtemas: "Aspecto Específico del Tema"
+- Ejercicios: "Título Claro del Ejercicio"
+
+NO USES:
+- Numeraciones sin contexto (1.5.3, etc.)
+- Fragmentos de texto random
+- Títulos confusos o sin sentido
+- JSON excesivamente largo o anidado
 6. Crea ejercicios educativos específicos para cada tema
 7. Los ejercicios NO deben ser de opción múltiple
 8. Incluye diferentes tipos: CONCEPTUAL, PRACTICAL, ANALYSIS, APPLICATION, PROBLEM_SOLVING
@@ -510,6 +564,9 @@ IMPORTANTE:
   private fixCommonJsonErrors(jsonString: string): string {
     let fixed = jsonString;
 
+    // Remove HTML tags that break JSON
+    fixed = fixed.replace(/<[^>]*>/g, '');
+    
     // Fix missing commas between array objects
     fixed = fixed.replace(/}\s*\n\s*{/g, '},\n  {');
 
@@ -524,6 +581,9 @@ IMPORTANTE:
 
     // Fix single quotes to double quotes
     fixed = fixed.replace(/'/g, '"');
+
+    // Remove trailing commas
+    fixed = fixed.replace(/,(\s*[}\]])/g, '$1');
 
     return fixed;
   }
@@ -598,6 +658,42 @@ IMPORTANTE:
       default:
         return ExerciseDifficulty.INTERMEDIATE;
     }
+  }
+
+  /**
+   * Limita el contenido de los capítulos para optimizar el tamaño del JSON
+   */
+  private limitChapterContent(
+    chapters: IndexChapter[],
+    maxChapters: number,
+  ): IndexChapter[] {
+    // Limitar número de capítulos
+    const limitedChapters = chapters.slice(0, maxChapters);
+
+    return limitedChapters.map((chapter) => {
+      // Limitar subtemas a máximo 2
+      const limitedSubtopics = chapter.subtopics
+        .slice(0, 2)
+        .map((subtopic) => ({
+          ...subtopic,
+          // Limitar ejercicios por subtema a máximo 1
+          exercises: subtopic.exercises.slice(0, 1),
+        }));
+
+      // Limitar ejercicios del capítulo a máximo 1
+      const limitedChapterExercises = chapter.exercises.slice(0, 1);
+
+      return new IndexChapter(
+        chapter.title.length > 60
+          ? chapter.title.substring(0, 57) + '...'
+          : chapter.title,
+        chapter.description.length > 100
+          ? chapter.description.substring(0, 97) + '...'
+          : chapter.description,
+        limitedSubtopics,
+        limitedChapterExercises,
+      );
+    });
   }
 
   private generateId(): string {
