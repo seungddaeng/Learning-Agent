@@ -104,7 +104,7 @@ interface ProgressData {
 }
 
 const fallbackData: ProgressData = {
-  subjectName: "Materia de prueba",
+  subjectName: "MATERIA DE PRUEBA",
   lastExamDate: "14/08/2025",
   successRate: 80,
   lastExamScore: 80,
@@ -126,7 +126,7 @@ export function useProgressData(): ProgressData {
   useEffect(() => {
     if (!loading && actualClass?.name?.trim()) {
       setData({
-        subjectName: actualClass.name.trim(),
+        subjectName: actualClass.name.trim().toUpperCase(),
         lastExamDate: "14/08/2025",
         successRate: 80,
         lastExamScore: 80,

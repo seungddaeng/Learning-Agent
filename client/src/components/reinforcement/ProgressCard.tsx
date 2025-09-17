@@ -51,7 +51,7 @@ export const ProgressCard: React.FC = () => {
               strong
               style={{
                 color: token.colorPrimary,
-                fontSize: token.fontSizeLG,
+                fontSize: token.fontSizeLG * 1.2,
               }}
             >
               {subjectName}
