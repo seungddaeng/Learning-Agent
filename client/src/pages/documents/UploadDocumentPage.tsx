@@ -72,10 +72,10 @@ const UploadDocumentPage: React.FC = () => {
   const getBreadcrumbs = () => {
     if (isInReinforcementContext && id) {
       return [
-        { label: "Inicio", href: "/" },
-        { label: "Clases", href: "/student/classes" },
-        { label: "Refuerzo", href: `/student/classes/${id}/reinforcement` },
-        { label: "Documentos" }
+        { label: "Home", href: "/" },
+        { label: "Classes", href: "/student/classes" },
+        { label: "Reinforcement", href: `/student/classes/${id}/reinforcement` },
+        { label: "Documents" }
       ];
     }
     

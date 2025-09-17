@@ -55,13 +55,35 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
       this.logger.log(`Generating index for document: ${documentTitle}`);
       this.logger.log(`Processing all ${chunks.length} chunks in batches`);
 
-      // Process all chunks in small batches
-      const batchSize = 25; // Very small batch size for large files to prevent quota issues
-      const maxChaptersPerBatch = 1; // Limit to 1 chapter per batch for stability
+      // for large documents
+      const totalContentSize = chunks.reduce(
+        (total, chunk) => total + chunk.content.length,
+        0,
+      );
+      const isLargeDocument = totalContentSize > 50000 || chunks.length > 50;
+
+      if (isLargeDocument) {
+        this.logger.warn(
+          `Large document detected (${totalContentSize} chars, ${chunks.length} chunks). Using ultra-conservative processing.`,
+        );
+      }
+
+      // ULTRA conservative batch processing for quota limits
+      let batchSize = isLargeDocument ? 3 : 5; // Start with very small batches
+      const maxChaptersPerBatch = 1;
       const allChapters: IndexChapter[] = [];
 
-      // Sort chunks by index
+      // Sort chunks by index first
       const sortedChunks = chunks.sort((a, b) => a.chunkIndex - b.chunkIndex);
+
+      // Check if we have too many chunks for free tier (50 requests/day)
+      const estimatedBatches = Math.ceil(sortedChunks.length / batchSize);
+      if (estimatedBatches > 40) {
+        this.logger.warn(
+          `Document requires ${estimatedBatches} batches, reducing to minimal processing to stay within quota`,
+        );
+        batchSize = Math.ceil(sortedChunks.length / 35); // Limit to 35 requests max
+      }
 
       // Process in batches
       for (let i = 0; i < sortedChunks.length; i += batchSize) {
@@ -85,22 +107,71 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
 
           allChapters.push(...batchChapters);
 
-          // Longer pause between batches to avoid rate limits and reduce load
+          // Much longer pause between batches to prevent API quota issues
+          const delayTime = isLargeDocument ? 20000 : 15000; // Very long delays for quota
           if (i + batchSize < sortedChunks.length) {
-            await new Promise((resolve) => setTimeout(resolve, 3000)); // Increased to 3 seconds
+            this.logger.log(
+              `Waiting ${delayTime / 1000}s before next batch to respect rate limits...`,
+            );
+            await new Promise((resolve) => setTimeout(resolve, delayTime));
           }
         } catch (batchError) {
           this.logger.warn(
-            `Error in batch ${batchNumber}, using fallback:`,
-            batchError,
+            `Error in batch ${batchNumber}:`,
+            batchError instanceof Error
+              ? batchError.message
+              : String(batchError),
           );
 
-          // Generate basic chapters for this batch
-          const fallbackChapters = this.generateFallbackChaptersForBatch(
-            batch,
-            batchNumber,
-          );
-          allChapters.push(...fallbackChapters);
+          // Check if it's a quota/rate limit error
+          const errorMessage =
+            batchError instanceof Error
+              ? batchError.message
+              : String(batchError);
+          const isQuotaError =
+            errorMessage.includes('quota') ||
+            errorMessage.includes('Too Many Requests') ||
+            errorMessage.includes('429');
+
+          if (isQuotaError) {
+            this.logger.error(
+              `QUOTA EXCEEDED: Gemini API quota reached. Switching to fallback mode for remaining batches.`,
+            );
+
+            // Generate fallback chapters for this batch and all remaining batches
+            const fallbackChapters = this.generateFallbackChaptersForBatch(
+              batch,
+              batchNumber,
+            );
+            allChapters.push(...fallbackChapters);
+
+            // Generate fallback for all remaining batches
+            for (
+              let j = i + batchSize;
+              j < sortedChunks.length;
+              j += batchSize
+            ) {
+              const remainingBatch = sortedChunks.slice(j, j + batchSize);
+              const remainingBatchNumber = Math.floor(j / batchSize) + 1;
+              const remainingFallback = this.generateFallbackChaptersForBatch(
+                remainingBatch,
+                remainingBatchNumber,
+              );
+              allChapters.push(...remainingFallback);
+            }
+
+            this.logger.warn(
+              `Generated fallback content for ${Math.ceil((sortedChunks.length - i) / batchSize)} remaining batches due to quota limits.`,
+            );
+            break; // Exit the loop since we've handled all remaining batches
+          } else {
+            // Generate basic chapters for this batch only
+            const fallbackChapters = this.generateFallbackChaptersForBatch(
+              batch,
+              batchNumber,
+            );
+            allChapters.push(...fallbackChapters);
+          }
         }
       }
 
@@ -142,7 +213,7 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
       model: config.model!,
       generationConfig: {
         temperature: config.temperature,
-        maxOutputTokens: 2048,
+        maxOutputTokens: 256, // Even more reduced to minimize quota usage
       },
     });
 
@@ -158,18 +229,67 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
       maxChaptersPerBatch,
     );
 
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    const text = response.text();
+    // explicit timeout
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(
+        () => reject(new Error('Timeout: El modelo tomó demasiado tiempo')),
+        45000,
+      ),
+    );
 
-    // Parse batch JSON response
-    const batchData = this.parseGeminiResponse(text);
+    const generation = model.generateContent(prompt);
 
-    const chapters =
-      batchData.chapters?.map((chapter: any) => this.mapChapter(chapter)) || [];
+    try {
+      const result = await Promise.race([generation, timeout]);
+      const response = result.response;
+      const text = response.text();
 
-    // Limit content to optimize size
-    return this.limitChapterContent(chapters, maxChaptersPerBatch);
+      // Validate response is not too long
+      if (text.length > 25000) {
+        this.logger.warn(
+          `Response too long (${text.length} chars), truncating...`,
+        );
+        const truncatedText = text.substring(0, 25000);
+        // Ensure valid JSON ending
+        const lastBrace = truncatedText.lastIndexOf('}');
+        if (lastBrace > 0) {
+          const validJson = truncatedText.substring(0, lastBrace + 1);
+          const batchData = this.parseGeminiResponse(validJson);
+          const chapters =
+            batchData.chapters?.map((chapter: any) =>
+              this.mapChapter(chapter),
+            ) || [];
+          return chapters;
+        }
+      }
+
+      // Parse batch JSON response
+      const batchData = this.parseGeminiResponse(text);
+      const chapters =
+        batchData.chapters?.map((chapter: any) => this.mapChapter(chapter)) ||
+        [];
+
+      return chapters;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
+      // Check for quota/rate limit errors and provide specific error details
+      if (
+        errorMessage.includes('quota') ||
+        errorMessage.includes('Too Many Requests') ||
+        errorMessage.includes('429')
+      ) {
+        this.logger.error(
+          `QUOTA ERROR in batch ${batchNumber}: Gemini API quota exceeded`,
+        );
+        throw error; // Re-throw quota errors to be handled by the main loop
+      }
+
+      this.logger.error(`General error in batch ${batchNumber}:`, errorMessage);
+      // Return empty array for non-quota errors
+      return [];
+    }
   }
 
   /**
@@ -341,105 +461,34 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
     maxChaptersPerBatch: number = 2,
   ): string {
     return `
-Eres un experto en análisis de documentos académicos y generación de contenido educativo.
+Analiza el contenido y genera UN ÍNDICE MUY SIMPLE.
 
 DOCUMENTO: "${documentTitle}"
 LOTE: ${batchNumber} de ${totalBatches}
 
-CONTENIDO DEL LOTE:
+CONTENIDO:
 ${batchText}
 
-INSTRUCCIONES CRÍTICAS:
-1. Analiza SOLO el contenido de este lote
-2. Si el documento YA TIENE un índice de contenidos, respétalo tal como está
-3. Si hay capítulos o secciones ya definidas, úsalas EXACTAMENTE como aparecen
-4. NO modifiques títulos existentes del documento original
-5. Los títulos deben ser DESCRIPTIVOS, COHERENTES y PROFESIONALES
-6. NO uses numeraciones aleatorias ni fragmentos sin sentido
-7. NO uses fragmentos de texto literal como títulos (ej: "1−cos휃, ].(22), gradient")
-8. NO uses símbolos matemáticos o fórmulas como títulos
-9. NO uses referencias bibliográficas como títulos (ej: "Cignoni,, Roberto, Scopigno")
-10. Si no hay índice previo, crea títulos que expliquen claramente el tema del contenido
-11. Los títulos deben ser en español y tener sentido completo
-12. Genera MÁXIMO ${maxChaptersPerBatch} capítulos por lote para optimizar tamaño
-13. Cada capítulo debe tener máximo 2 subtemas relevantes
-14. Crea máximo 1 ejercicio por subtema y 1 por capítulo
-15. Los ejercicios NO deben ser de opción múltiple
-16. Incluye diferentes tipos: CONCEPTUAL, PRACTICAL, ANALYSIS, APPLICATION, PROBLEM_SOLVING
-17. Asigna dificultad: BASIC, INTERMEDIATE, ADVANCED
-18. MANTÉN las descripciones concisas (máximo 200 caracteres cada una)
-19. PRIORIZA la calidad sobre la cantidad de contenido
+REGLAS ESTRICTAS:
+1. MÁXIMO 1 capítulo por lote
+2. MÁXIMO 1 subtema por capítulo
+3. Títulos MUY breves (máximo 20 caracteres)
+4. SIN descripciones largas
+5. JSON máximo 12 líneas TOTAL
+6. SI el documento es grande, crear índice MUY básico
+7. NUNCA exceder 12 líneas de JSON
 
-EJEMPLOS DE TÍTULOS CORRECTOS:
-"Introducción al algoritmo X-SLAM"
-"Metodología de procesamiento"
-"Análisis de resultados experimentales"
-"Comparación con métodos existentes"
-
-EJEMPLOS DE TÍTULOS INCORRECTOS (NO USAR):
-"1.1.1 X-SLAM: Scalable Dense SLAM" 
-"1−cos휃, ].(22), gradient"
-"Paolo Cignoni, Roberto Scopigno"
-"푟 ,T 푔,푞 ,퐷"
-
-LÍMITES ESTRICTOS PARA OPTIMIZACIÓN:
-- MÁXIMO ${maxChaptersPerBatch} capítulos en total
-- MÁXIMO 2 subtemas por capítulo
-- MÁXIMO 1 ejercicio por subtema
-- MÁXIMO 1 ejercicio por capítulo
-- Descripciones: máximo 100 caracteres
-- Títulos: máximo 60 caracteres
-- Respuesta total: máximo 800 tokens
-- RESPUESTA JSON: máximo 80 líneas totales (incluye llaves, corchetes, etc.)
-
-FORMATO DE TÍTULOS REQUERIDO:
-- Capítulos: "Tema Principal del Contenido"
-- Subtemas: "Aspecto Específico del Tema"
-- Ejercicios: "Título Claro del Ejercicio"
-
-NO USES:
-- Numeraciones sin contexto (1.5.3, etc.)
-- Fragmentos de texto random
-- Títulos confusos o sin sentido
-- JSON excesivamente largo o anidado
-6. Crea ejercicios educativos específicos para cada tema
-7. Los ejercicios NO deben ser de opción múltiple
-8. Incluye diferentes tipos: CONCEPTUAL, PRACTICAL, ANALYSIS, APPLICATION, PROBLEM_SOLVING
-9. Asigna dificultad: BASIC, INTERMEDIATE, ADVANCED
-
-Responde ÚNICAMENTE con un JSON válido en este formato:
+Responde SOLO con este JSON compacto:
 {
-  "title": "Título descriptivo del lote",
+  "title": "Breve",
   "chapters": [
     {
-      "title": "Título del capítulo basado en contenido real",
-      "description": "Breve descripción",
+      "title": "Cap1",
+      "description": "",
       "subtopics": [
-        {
-          "title": "Subtema específico del contenido",
-          "description": "Descripción del subtema",
-          "exercises": [
-            {
-              "type": "CONCEPTUAL|PRACTICAL|ANALYSIS|APPLICATION|PROBLEM_SOLVING",
-              "title": "Título del ejercicio",
-              "description": "Descripción detallada del ejercicio",
-              "difficulty": "BASIC|INTERMEDIATE|ADVANCED",
-              "estimatedTime": "15 minutos",
-              "keywords": ["palabra1", "palabra2"]
-            }
-          ]
-        }
+        {"title": "Sub1", "description": "", "exercises": []}
       ],
-      "exercises": [
-        {
-          "type": "CONCEPTUAL|PRACTICAL|ANALYSIS|APPLICATION|PROBLEM_SOLVING",
-          "title": "Título del ejercicio del capítulo",
-          "description": "Descripción detallada",
-          "difficulty": "BASIC|INTERMEDIATE|ADVANCED",
-          "estimatedTime": "30 minutos",
-          "keywords": ["palabra1", "palabra2"]
-        }
-      ]
+      "exercises": []
     }
   ]
 }
@@ -667,29 +716,27 @@ IMPORTANTE:
     chapters: IndexChapter[],
     maxChapters: number,
   ): IndexChapter[] {
-    // Limit the number of chapters
+    // Limit the number of chapters more strictly
     const limitedChapters = chapters.slice(0, maxChapters);
 
     return limitedChapters.map((chapter) => {
-      // Limit subtopics to a maximum of 2
+      // Limit subtopics to a maximum of 1 for optimization
       const limitedSubtopics = chapter.subtopics
-        .slice(0, 2)
+        .slice(0, 1)
         .map((subtopic) => ({
           ...subtopic,
-          // Limit exercises per subtopic to a maximum of 1
-          exercises: subtopic.exercises.slice(0, 1),
+          // No exercises for optimization
+          exercises: [],
         }));
 
-      // Limit chapter exercises to a maximum of 1
-      const limitedChapterExercises = chapter.exercises.slice(0, 1);
+      // No chapter exercises for optimization
+      const limitedChapterExercises: Exercise[] = [];
 
       return new IndexChapter(
-        chapter.title.length > 60
-          ? chapter.title.substring(0, 57) + '...'
+        chapter.title.length > 40
+          ? chapter.title.substring(0, 37) + '...'
           : chapter.title,
-        chapter.description.length > 100
-          ? chapter.description.substring(0, 97) + '...'
-          : chapter.description,
+        '', // Empty description for optimization
         limitedSubtopics,
         limitedChapterExercises,
       );

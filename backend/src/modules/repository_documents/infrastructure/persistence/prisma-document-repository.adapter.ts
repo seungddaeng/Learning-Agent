@@ -284,13 +284,13 @@ export class PrismaDocumentRepositoryAdapter implements DocumentRepositoryPort {
       prismaDocument.uploadedBy,
       prismaDocument.status as DocumentStatus,
       prismaDocument.extractedText,
+      prismaDocument.textHash,
       prismaDocument.pageCount,
       prismaDocument.documentTitle,
       prismaDocument.documentAuthor,
       prismaDocument.language,
       prismaDocument.uploadedAt,
       prismaDocument.updatedAt,
-      prismaDocument.textHash,
     );
   }
 

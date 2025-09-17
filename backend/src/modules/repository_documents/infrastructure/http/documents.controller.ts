@@ -296,9 +296,9 @@ export class DocumentsController {
       const forceUpload =
         options.forceUpload === true || options.forceUpload === 'true';
 
-      // PASO 1: Verificar documentos eliminados reutilizables
+      // Check for reusable deleted documents
       this.logger.log(
-        'PASO 1 - Verificando documentos eliminados reutilizables...',
+        'Checking for reusable deleted documents...',
         {
           fileName: file.originalname,
           fileSize: file.size,
@@ -323,7 +323,7 @@ export class DocumentsController {
 
       // Log específico del resultado de la verificación de eliminados
       this.logger.log(
-        `PASO 1 - Resultado verificación eliminados: ${deletedResult.status}`,
+        `Deleted document check result: ${deletedResult.status}`,
         {
           status: deletedResult.status,
           deletedDocumentFound: !!deletedResult.deletedDocument,
@@ -346,7 +346,7 @@ export class DocumentsController {
               : 'RESTAURACIÓN';
 
         this.logger.log(
-          `PASO 1 - ENCONTRADO documento eliminado reutilizable (${matchType}): ${deletedResult.deletedDocument?.id}`,
+          `Found reusable deleted document (${matchType}): ${deletedResult.deletedDocument?.id}`,
           {
             matchType: deletedResult.status,
             deletedDocumentId: deletedResult.deletedDocument?.id,
@@ -358,7 +358,7 @@ export class DocumentsController {
 
         if (deletedResult.restoredDocument) {
           this.logger.log(
-            `PASO 1 - ÉXITO: Documento restaurado automáticamente: ${deletedResult.restoredDocument.id}`,
+            `Document restored successfully: ${deletedResult.restoredDocument.id}`,
             {
               restoredDocumentId: deletedResult.restoredDocument.id,
               originalName: deletedResult.restoredDocument.originalName,
@@ -387,7 +387,7 @@ export class DocumentsController {
           );
         } else {
           this.logger.warn(
-            `PASO 1 - PROBLEMA: Documento eliminado encontrado pero no pudo ser restaurado`,
+            `Deleted document found but could not be restored`,
             {
               deletedDocumentId: deletedResult.deletedDocument?.id,
               status: deletedResult.status,
@@ -397,23 +397,22 @@ export class DocumentsController {
         }
       } else {
         this.logger.log(
-          `PASO 1 - No se encontraron documentos eliminados reutilizables (${deletedResult.status})`,
+          `No reusable deleted documents found (${deletedResult.status})`,
           {
             status: deletedResult.status,
             fileName: file.originalname,
-            proceedingToStep2: true,
-          },
+            },
         );
       }
 
-      // PASO 2: Verificar duplicados en documentos activos y generar embeddings reutilizables
+      // Check for duplicates in active documents
       let preGeneratedChunks: any[] = [];
       let preGeneratedEmbeddings: number[][] = [];
       let extractedText: string = '';
 
       if (!skipSimilarityCheck && !forceUpload) {
         this.logger.log(
-          'PASO 2 - Verificando similitud con documentos activos...',
+          'Checking similarity with active documents...',
           {
             fileName: file.originalname,
             userId: userId,
@@ -443,7 +442,7 @@ export class DocumentsController {
 
         // Log específico del resultado de la verificación de similitud
         this.logger.log(
-          `PASO 2 - Resultado verificación similitud: ${similarityResult.status}`,
+          `Similarity check result: ${similarityResult.status}`,
           {
             status: similarityResult.status,
             existingDocumentFound: !!similarityResult.existingDocument,
@@ -461,27 +460,25 @@ export class DocumentsController {
             similarityResult.generatedData.embeddings || [];
           extractedText = similarityResult.generatedData.extractedText || '';
           this.logger.log(
-            `PASO 2 - OPTIMIZACIÓN: Reutilizando ${preGeneratedChunks.length} chunks y ${preGeneratedEmbeddings.length} embeddings pre-generados`,
+            `Reusing ${preGeneratedChunks.length} chunks y ${preGeneratedEmbeddings.length} embeddings pre-generados`,
             {
               chunksCount: preGeneratedChunks.length,
               embeddingsCount: preGeneratedEmbeddings.length,
               extractedTextLength: extractedText.length,
               fileName: file.originalname,
-              optimizationEnabled: true,
-            },
+              },
           );
         } else {
-          this.logger.warn(`PASO 2 - Sin datos pre-generados para reutilizar`, {
+          this.logger.warn(`No pre-generated data available for reuse`, {
             fileName: file.originalname,
             status: similarityResult.status,
-            optimizationMissed: true,
-          });
+            });
         }
 
         // Rechazar duplicados exactos con detalle específico del tipo
         if (similarityResult.status === 'exact_match') {
           this.logger.warn(
-            'PASO 2 - RECHAZADO: Documento duplicado por HASH BINARIO',
+            'Document rejected: duplicate file (binary hash)',
             {
               fileName: file.originalname,
               status: similarityResult.status,
@@ -490,8 +487,7 @@ export class DocumentsController {
                 similarityResult.existingDocument?.originalName,
               uploadedBy: similarityResult.existingDocument?.uploadedBy,
               uploadedAt: similarityResult.existingDocument?.uploadedAt,
-              duplicateType: 'BINARY_HASH',
-            },
+              },
           );
 
           throw new HttpException(
@@ -513,7 +509,7 @@ export class DocumentsController {
 
         if (similarityResult.status === 'text_hash_match') {
           this.logger.warn(
-            'PASO 2 - RECHAZADO: Documento duplicado por HASH DE TEXTO',
+            'Document rejected: duplicate content (text hash)',
             {
               fileName: file.originalname,
               status: similarityResult.status,
@@ -522,8 +518,7 @@ export class DocumentsController {
                 similarityResult.existingDocument?.originalName,
               uploadedBy: similarityResult.existingDocument?.uploadedBy,
               uploadedAt: similarityResult.existingDocument?.uploadedAt,
-              duplicateType: 'TEXT_HASH',
-            },
+              },
           );
 
           throw new HttpException(
@@ -550,7 +545,7 @@ export class DocumentsController {
           similarityResult.similarCandidates.length > 0
         ) {
           this.logger.warn(
-            'PASO 2 - RECHAZADO: Documentos similares encontrados',
+            'Document rejected: similar documents found',
             {
               fileName: file.originalname,
               candidatesCount: similarityResult.similarCandidates.length,
@@ -563,9 +558,7 @@ export class DocumentsController {
                 matchedChunks: c.matchedChunks,
                 totalChunks: c.totalChunks,
               })),
-              rejectionReason: 'SIMILAR_DOCUMENTS_FOUND',
-              duplicateType: 'SIMILARITY_CANDIDATES',
-            },
+              },
           );
 
           throw new HttpException(
@@ -599,7 +592,7 @@ export class DocumentsController {
           );
         } else {
           this.logger.log(
-            `PASO 2 - No se encontraron candidatos similares (${similarityResult.status})`,
+            `No similar candidates found (${similarityResult.status})`,
             {
               status: similarityResult.status,
               fileName: file.originalname,
@@ -610,7 +603,7 @@ export class DocumentsController {
         }
       } else {
         this.logger.log(
-          'PASO 2 - OMITIDO: Verificación de similitud deshabilitada',
+          'Similarity check skipped',
           {
             skipSimilarityCheck: skipSimilarityCheck,
             forceUpload: forceUpload,
