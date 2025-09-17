@@ -23,7 +23,7 @@ const UploadDocumentPage: React.FC = () => {
   const { processDocumentComplete } = useChunkedDocumentUpload();
   // Use only one source for user data
   const user = useUserStore((s) => s.user);
-  const { id: userId } = useUser(); // Hook that internally uses the same store
+  const { id: _userId } = useUser(); // Hook that internally uses the same store
   const isStudent = Boolean(user?.roles?.includes?.("estudiante"));
   const { courseId, id } = useParams<{ courseId: string; id: string }>();
   const location = useLocation();
@@ -72,56 +72,56 @@ const UploadDocumentPage: React.FC = () => {
   const getBreadcrumbs = () => {
     if (isInReinforcementContext && id) {
       return [
-        { label: "Home", href: "/" },
-        { label: "Classes", href: "/student/classes" },
-        { label: "Reinforcement", href: `/student/classes/${id}/reinforcement` },
-        { label: "Documents" }
+        { label: "Inicio", href: "/" },
+        { label: "Clases", href: "/student/classes" },
+        { label: "Refuerzo", href: `/student/classes/${id}/reinforcement` },
+        { label: "Documentos" }
       ];
     }
     
     // Professor context: /professor/courses/:courseId/periods/:id/documents
     if (courseId && id && actualCourse && actualClass) {
       return [
-        { label: "Home", href: "/" },
+        { label: "Inicio", href: "/" },
         { label: "Materias", href: "/professor/courses" },
         { label: actualCourse.name, href: `/professor/courses/${courseId}/periods` },
         { label: actualClass.name, href: `/professor/courses/${courseId}/periods/${id}` },
-        { label: "Documents" }
+        { label: "Documentos" }
       ];
     }
     
     // Professor context: /professor/courses/:courseId/documents (from course card)
     if (courseId && !id && actualCourse) {
       return [
-        { label: "Home", href: "/" },
+        { label: "Inicio", href: "/" },
         { label: "Materias", href: "/professor/courses" },
         { label: actualCourse.name, href: `/professor/courses/${courseId}/periods` },
-        { label: "Documents" }
+        { label: "Documentos" }
       ];
     }
     
-    return [{ label: "Home", href: "/" }, { label: "Documents" }];
+    return [{ label: "Inicio", href: "/" }, { label: "Documentos" }];
   };
 
-  const pageTitle = isSmallScreen ? "Documents" : "Academic Documents";
+  const pageTitle = isSmallScreen ? "Documentos" : "Documentos Académicos";
   const containerPadding = isSmallScreen ? "16px" : "24px";
 
   const fileConfig = {
     accept: ".pdf",
     maxSize: 100 * 1024 * 1024, // 100MB
     chunkSize: 2 * 1024 * 1024, // 2MB chunks for better performance
-    validationMessage: "Only PDF files up to 100MB are allowed"
+    validationMessage: "Solo se permiten archivos PDF de hasta 100MB"
   };
 
   const processingConfig = {
     steps: [
-      { key: "validate", title: "Validation", description: "Validating PDF format..." },
-      { key: "extract", title: "Extraction", description: "Extracting content..." },
-      { key: "process", title: "Processing", description: "Processing document..." },
-      { key: "store", title: "Storage", description: "Storing information..." }
+      { key: "validate", title: "Validación", description: "Validando formato PDF..." },
+      { key: "extract", title: "Extracción", description: "Extrayendo contenido..." },
+      { key: "process", title: "Procesamiento", description: "Procesando documento..." },
+      { key: "store", title: "Almacenamiento", description: "Guardando información..." }
     ],
-    processingText: "Processing PDF document...",
-    successText: "Document processed successfully!"
+    processingText: "Procesando documento PDF...",
+    successText: "¡Documento procesado exitosamente!"
   };
     
   const handleUploadSuccess = useCallback(async () => {
@@ -201,7 +201,7 @@ const UploadDocumentPage: React.FC = () => {
       }}>
       <PageTemplate
         title={pageTitle}
-        subtitle="PDF educational material upload and management system"
+        subtitle="Sistema de carga y gestión de material educativo PDF"
         breadcrumbs={getBreadcrumbs()}>
         <div style={{
           padding: containerPadding,
@@ -243,7 +243,7 @@ const UploadDocumentPage: React.FC = () => {
                         textOverflow: "ellipsis",
                         whiteSpace: "nowrap"
                       }}>
-                        {isSmallScreen ? "Repository" : "Document Repository"}
+                        {isSmallScreen ? "Repositorio" : "Repositorio de Documentos"}
                       </span>
                       <div style={{
                         marginLeft: "12px",
@@ -261,7 +261,7 @@ const UploadDocumentPage: React.FC = () => {
                         flexShrink: 0,
                         whiteSpace: "nowrap"
                       }}>
-                        {loading || refreshing ? (isSmallScreen ? "..." : "Updating...") : (isSmallScreen ? `${documents.length}` : `${documents.length} document${documents.length !== 1 ? 's' : ''}`)}
+                        {loading || refreshing ? (isSmallScreen ? "..." : "Actualizando...") : (isSmallScreen ? `${documents.length}` : `${documents.length} documento${documents.length !== 1 ? 's' : ''}`)}
                       </div>
                     </div>
 
@@ -281,7 +281,7 @@ const UploadDocumentPage: React.FC = () => {
                             shape: "default"
                           }}
                           modalConfig={{
-                            title: "Upload New Document",
+                            title: "Subir Nuevo Documento",
                             width: isMobileScreen ? (typeof window !== 'undefined' ? window.innerWidth * 0.9 : 600) : 600
                           }}
                           onPostUploadProcess={processDocumentComplete}

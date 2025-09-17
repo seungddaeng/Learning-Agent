@@ -1,5 +1,6 @@
 import apiClient from "../api/apiClient";
 import axios from "axios";
+import { useUserStore } from "../store/userStore";
 import type { 
   Document, 
   DocumentListResponse, 
@@ -15,18 +16,13 @@ interface HttpError {
   message?: string;
 }
 
+// Function to get user data from Zustand store
+const getUserFromStore = () => {
+  return useUserStore.getState().user;
+};
+
 // Function to get authentication token
 const getAuthToken = async (): Promise<string> => {
-
-// Interface para la información del usuario
-interface UserInfo {
-  id: string;
-  email: string;
-  name: string;
-  lastname: string;
-  roles: string[];
-}
-
   const authData = localStorage.getItem("auth");
   if (!authData) {
     throw new Error('No authentication data available. Please log in.');
@@ -42,12 +38,7 @@ interface UserInfo {
     
     return token;
   } catch (_error) {
-    // Verify token is valid and get user information
-    const user = await meAPI(token) as UserInfo;
-    
-    return { token, user };
-  } 
-    throw new Error('Error verifying authentication. Please log in again.');
+    throw new Error('Error parsing authentication data. Please log in again.');
   }
 };
 
@@ -164,13 +155,16 @@ export const documentService = {
   /**
    * Upload a document
    */
-  async uploadDocument(file: File, userId?: string | null): Promise<UploadResponse> {
+  async uploadDocument(file: File): Promise<UploadResponse> {
     try {
+      // Get user data from Zustand store
+      const user = getUserFromStore();
+      const userId = user?.id;
 
       // Get authentication token
       const token = await getAuthToken();
       
-      // Note: userId is available for future use if needed
+      // Log user info for debugging
       console.log('Uploading document for user:', userId);
 
       const formData = new FormData();
@@ -234,10 +228,9 @@ export const documentService = {
         throw new Error('No permissions to upload documents.');
       }
       
-      // If error from getAuthTokenAndVerifyUser function, keep original message
+      // If error from getAuthToken function, keep original message
       if ((error as Error).message?.includes('authentication') || 
-          (error as Error).message?.includes('session') ||
-          (error as Error).message?.includes('meAPI')) {
+          (error as Error).message?.includes('session')) {
         throw error;
       }
       

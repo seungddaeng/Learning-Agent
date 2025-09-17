@@ -325,7 +325,7 @@ const ChunkedUploadButton: React.FC<ChunkedUploadButtonProps> = ({
       const largeFileThreshold = Number(import.meta.env.VITE_LARGE_FILE_THRESHOLD_MB) || 50;
       if (fileSizeMB > largeFileThreshold) {
         message.warning({
-          content: `Large file detected (${fileSizeMB.toFixed(1)} MB). Processing may take several minutes. Please do not close this window.`,
+          content: `Archivo grande detectado (${fileSizeMB.toFixed(1)} MB). El procesamiento puede tomar varios minutos. Por favor no cierre esta ventana.`,
           duration: 8,
           style: { marginTop: '10vh' }
         });
@@ -522,7 +522,7 @@ const ChunkedUploadButton: React.FC<ChunkedUploadButtonProps> = ({
             />
           </Col>
         </Row>
-        
+
         {uploadProgressInfo.totalChunks > 0 && (
           <>
             <Divider style={{ margin: '12px 0' }} />
@@ -531,6 +531,7 @@ const ChunkedUploadButton: React.FC<ChunkedUploadButtonProps> = ({
             </Text>
           </>
         )}
+        {/* Información de chunks de subida removida para evitar confusión */}
       </Card>
     );
   };
@@ -643,7 +644,7 @@ const ChunkedUploadButton: React.FC<ChunkedUploadButtonProps> = ({
         onClick={handleButtonClick}
         loading={currentPhase === 'uploading' || currentPhase === 'processing'}
       >
-        {showText && 'Upload File'}
+        {showText && 'Subir Archivo'}
       </Button>
 
       <Modal
@@ -667,7 +668,7 @@ const ChunkedUploadButton: React.FC<ChunkedUploadButtonProps> = ({
         destroyOnClose={false}
         styles={{
           header: {
-            backgroundColor: isDark ? token.colorBgContainer : '#f8f9ff',
+            backgroundColor: 'transparent',
             borderBottom: 'none',
             boxShadow: 'none',
             filter: 'none'
@@ -706,7 +707,7 @@ const ChunkedUploadButton: React.FC<ChunkedUploadButtonProps> = ({
                   fontWeight: '500',
                   margin: isSmallScreen ? '12px 0 6px 0' : '16px 0 8px 0'
                 }}>
-                  {isSmallScreen ? 'Tap or drag here' : 'Click or drag file here'}
+                  {isSmallScreen ? 'Toca o arrastra aquí' : 'Haz clic o arrastra el archivo aquí'}
                 </p>
                 <p className="ant-upload-hint" style={{ 
                   color: isDark ? '#bfc7ff' : '#7A85C1',
@@ -725,10 +726,11 @@ const ChunkedUploadButton: React.FC<ChunkedUploadButtonProps> = ({
                   icon={<PlusOutlined />}
                   onClick={handleManualSelect}
                   style={{
-                    backgroundColor: 'var(--ant-color-primary)',
-                    borderColor: 'var(--ant-color-primary)',
+                    backgroundColor: isDark ? token.colorPrimary : '#1890ff',
+                    borderColor: isDark ? token.colorPrimary : '#1890ff',
                     borderRadius: '6px',
-                    fontWeight: '500'
+                    fontWeight: '500',
+                    color: '#ffffff'
                   }}
                   size={isSmallScreen ? "middle" : "large"}
                 >
@@ -742,7 +744,7 @@ const ChunkedUploadButton: React.FC<ChunkedUploadButtonProps> = ({
               padding: isSmallScreen ? '30px 16px' : '40px 20px',
               backgroundColor: isDark ? token.colorBgElevated : '#f6ffed',
               borderRadius: '8px',
-              border: `2px solid ${isDark ? token.colorSuccess : 'var(--ant-color-success)'}`
+              border: `2px solid ${isDark ? token.colorSuccess : '#52c41a'}`
             }}>
               <CheckCircleOutlined style={{ 
                 fontSize: isSmallScreen ? '48px' : '64px', 
@@ -776,8 +778,9 @@ const ChunkedUploadButton: React.FC<ChunkedUploadButtonProps> = ({
                 type="primary"
                 onClick={handleCloseModal}
                 style={{
-                  backgroundColor: isDark ? token.colorSuccess : 'var(--ant-color-success)',
-                  borderColor: isDark ? token.colorSuccess : 'var(--ant-color-success)',
+                  backgroundColor: isDark ? token.colorSuccess : '#52c41a',
+                  borderColor: isDark ? token.colorSuccess : '#52c41a',
+                  color: '#ffffff',
                   marginTop: '16px'
                 }}
                 size={isSmallScreen ? "middle" : "large"}
