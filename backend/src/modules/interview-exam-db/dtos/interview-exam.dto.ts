@@ -8,3 +8,13 @@ export interface UpdateInterviewQuestionDto {
   json?: any;
   lastUsedAt?: Date;
 }
+
+export interface CreateChatHistoryDto {
+  studentId: string;
+  docId: string;
+  question: string;
+  response: string;
+}
+export interface UpdateChatHistoryDto {
+  uses?: number;
+}

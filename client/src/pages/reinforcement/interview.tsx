@@ -75,8 +75,8 @@ export default function InterviewPage() {
       }
       breadcrumbs={[
         { label: "Home", href: "/" },
-        { label: "Classes", href: "/classes" },
-        { label: "Reinforcement", href: id ? generatePath("/classes/:id/reinforcement", { id }) : "#" },
+        { label: "Classes", href: "/student/classes" },
+        { label: "Reinforcement", href: id ? generatePath("/student/classes/:id/reinforcement", { id }) : "#" },
         { label: "Interview" },
       ]}
       actions={

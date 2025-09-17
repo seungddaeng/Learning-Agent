@@ -111,6 +111,7 @@ model StudentProfile {
   // relation 1:N
   enrollment    Enrollment[]
   attendance    Attendance[]
+  chatHistory   ChatHistory[]
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -156,12 +157,17 @@ model Document {
   courseId         String?
   course           Course?                   @relation(fields: [courseId], references: [id])
 
+  // Relación opcional con Classes/Período para documentos específicos de un período
+  classId          String?
+  class            Classes?                  @relation(fields: [classId], references: [id])
+
   // Relations para RAG
   chunks           DocumentChunk[]
   categories       DocumentCategoryMapping[]
   processingJobs   ProcessingJob[]
   quizQuestions    QuizQuestion[]
   interviewQuestions  InterviewQuestion[]
+  chatHistory   ChatHistory[]
   documentIndex    DocumentIndex?
   
   // Información adicional extraída
@@ -563,6 +569,7 @@ model Classes {
   // relation 1:N
   enrollment    Enrollment[]
   attendance Attendance[]
+  documents     Document[]        // Documentos específicos para este período/clase
 
 
   courseId      String
@@ -642,3 +649,25 @@ model Attendance {
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
 }
+
+model ChatHistory {
+    id         String   @id @default(uuid())
+    studentId      String            
+    docId      String
+    question    String
+    response  String
+    uses  Int     @default(0)
+
+    document        Document  @relation(fields: [docId], references: [id], onDelete: Cascade)
+    student     StudentProfile @relation(fields: [studentId], references: [userId], onDelete: Cascade)
+
+    createdAt  DateTime @default(now())
+    lastUsedAt DateTime?
+    @@index([studentId, docId])
+    @@index([createdAt])
+    @@index([lastUsedAt])
+    @@index([docId, question])
+    @@map("chat_history")
+  }
+
+
