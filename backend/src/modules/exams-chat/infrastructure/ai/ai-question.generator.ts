@@ -1,6 +1,6 @@
 import { Injectable, Inject } from '@nestjs/common';
-import type { DeepseekPort } from 'src/modules/deepseek/domain/ports/deepseek.port';
-import { DEEPSEEK_PORT } from 'src/modules/deepseek/tokens';
+import type { LlmPort } from '../../../llm/domain/ports/llm.port';
+import { LLM_PORT } from '../../../llm/tokens';
 
 export type GeneratedOptions = {
   options: string[];
@@ -14,7 +14,7 @@ export type GeneratedQuestion = {
 
 @Injectable()
 export class AIQuestionGenerator {
-  constructor(@Inject(DEEPSEEK_PORT) private readonly deepseek?: DeepseekPort) {}
+  constructor(@Inject(LLM_PORT) private readonly deepseek?: LlmPort) {}
 
   private normalizeLine(l: string) {
     return l.replace(/^[\d\)\.\-\s]+/, '').trim();
@@ -36,14 +36,19 @@ export class AIQuestionGenerator {
   async generateQuestion(prompt?: string): Promise<GeneratedQuestion> {
     const textPrompt = prompt ?? 'Genera una pregunta sobre algoritmos de programación, de opción múltiple';
     if (!this.deepseek) return { text: textPrompt };
-    const resp: any = await this.deepseek.generateQuestion(textPrompt);
-    return { text: resp?.question ?? resp?.questionText ?? textPrompt };
+    const resp = await this.deepseek.complete(textPrompt, { model: { provider: 'deepseek', name: 'deepseek-chat' } });
+    return { text: resp?.text ?? textPrompt };
   }
 
   async generateOptions(questionText: string): Promise<GeneratedOptions> {
     if (!questionText?.trim()) throw new Error('Text required');
     const fallback: GeneratedOptions = {
-      options: [`${questionText} — opción A`, `${questionText} — opción B`, `${questionText} — opción C`, `${questionText} — opción D`],
+      options: [
+        `${questionText} — opción A`,
+        `${questionText} — opción B`,
+        `${questionText} — opción C`,
+        `${questionText} — opción D`,
+      ],
       correctIndex: null,
       confidence: null,
     };
@@ -51,8 +56,11 @@ export class AIQuestionGenerator {
     const maxAttempts = 3;
     for (let i = 0; i < maxAttempts; i++) {
       try {
-        const resp: any = await this.deepseek.generateResponse(`Genera 4 opciones distintas para esta pregunta: "${questionText}"`);
-        const candidate = (resp?.answer ?? resp?.explanatio ?? '').toString().trim();
+        const resp = await this.deepseek.complete(
+          `Genera 4 opciones distintas para esta pregunta: "${questionText}"`,
+          { model: { provider: 'deepseek', name: 'deepseek-chat' } },
+        );
+        const candidate = (resp?.text ?? '').toString().trim();
         if (!candidate) continue;
         const parsed = this.parseCandidate(candidate);
         if (parsed && parsed.length >= 4) return { options: parsed.slice(0, 4), correctIndex: null, confidence: null };
