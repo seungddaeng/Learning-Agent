@@ -8,6 +8,6 @@ export interface QuestionRepositoryPort {
   findBySignature(signature: string): Promise<Question | null>;
   incrementUsage(id: string, tokensUsed?: number): Promise<void>;
   deleteOlderThan(date: Date): Promise<number>;
-  countByExam(examId: string): Promise<number>;
-  pruneToLimitByExam(examId: string, limit: number): Promise<void>;
+  countByCourse(courseId: string): Promise<number>;
+  pruneToLimitByCourse(courseId: string, limit: number): Promise<void>;
 }

@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ExamsChatController } from './infrastructure/http/exams.controller';
-import * as AiGenModule from './infrastructure/ai/ai-question.generator';
-import { EXAM_AI_GENERATOR } from './tokens';
+import { AIQuestionGenerator } from './infrastructure/ai/ai-question.generator';
+import { EXAM_AI_GENERATOR, EXAM_QUESTION_REPO } from './tokens';
 import { GenerateOptionsForQuestionUseCase } from './application/usecases/generate-options-for-question.usecase';
 import { InterviewModule } from '../interviewChat/interview.module';
 import { DsIntService } from '../interviewChat/infrastructure/dsInt.service';
@@ -36,12 +36,17 @@ const AiProvider =
   ],
   controllers: [ExamsChatController],
   providers: [
-    DsIntService,
-    AiProvider,
+    { provide: EXAM_AI_GENERATOR, useClass: AIQuestionGenerator },
+    { provide: EXAM_QUESTION_REPO, useClass: PrismaQuestionRepositoryAdapter },
+    { provide: 'AUDIT_REPO', useClass: PrismaAuditRepositoryAdapter },
+    { provide: 'METRICS_SERVICE', useClass: InMemoryMetricsService },
+    {
+      provide: 'DOCUMENT_CHUNK_REPO',
+      useExisting: DOCUMENT_CHUNK_REPOSITORY_PORT,
+    },
     GenerateOptionsForQuestionUseCase,
-    DeepseekAdapter,
-    { provide: LLM_PORT, useExisting: DeepseekAdapter },
+    GetOrGenerateQuestionUseCase,
+    PublishGeneratedQuestionUseCase,
   ],
-  exports: [AiProvider],
 })
 export class ExamsChatModule {}

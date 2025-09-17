@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { DsIntService } from 'src/modules/interviewChat/infrastructure/dsInt.service';
+import { Injectable, Inject } from '@nestjs/common';
+import type { LlmPort } from '../../../llm/domain/ports/llm.port';
+import { LLM_PORT } from '../../../llm/tokens';
 
 export type GeneratedOptions = {
   options: string[];
@@ -13,7 +14,7 @@ export type GeneratedQuestion = {
 
 @Injectable()
 export class AIQuestionGenerator {
-  constructor(private readonly dsIntService?: DsIntService) {}
+  constructor(@Inject(LLM_PORT) private readonly deepseek?: LlmPort) {}
 
   private normalizeLine(l: string) {
     return l.replace(/^[\d\)\.\-\s]+/, '').trim();
@@ -51,7 +52,6 @@ export class AIQuestionGenerator {
 
   async generateOptions(questionText: string): Promise<GeneratedOptions> {
     if (!questionText?.trim()) throw new Error('Text required');
-
     const fallback: GeneratedOptions = {
       options: [
         `${questionText} — opción A`,
@@ -62,27 +62,18 @@ export class AIQuestionGenerator {
       correctIndex: null,
       confidence: null,
     };
-
-    if (!this.dsIntService) return fallback;
-
-    try {
-      const resp = await this.dsIntService?.generateResponse(
-        `Genera 4 opciones relacionadas y distintas para esta pregunta: "${questionText}"`,
-      );
-      const candidate = (resp?.answer ?? resp?.explanation ?? '')
-        .toString()
-        .trim();
-      if (!candidate) return fallback;
-
+    if (!this.deepseek) return fallback;
+    const maxAttempts = 3;
+    for (let i = 0; i < maxAttempts; i++) {
       try {
-        const parsed = JSON.parse(candidate);
-        if (Array.isArray(parsed) && parsed.length >= 4) {
-          return { options: parsed.slice(0, 4).map(String), correctIndex: null, confidence: null };
-        }
-        if (parsed && Array.isArray((parsed as any).options)) {
-          const opts = (parsed as any).options.slice(0, 4).map(String);
-          return { options: opts, correctIndex: null, confidence: null };
-        }
+        const resp = await this.deepseek.complete(
+          `Genera 4 opciones distintas para esta pregunta: "${questionText}"`,
+          { model: { provider: 'deepseek', name: 'deepseek-chat' } },
+        );
+        const candidate = (resp?.text ?? '').toString().trim();
+        if (!candidate) continue;
+        const parsed = this.parseCandidate(candidate);
+        if (parsed && parsed.length >= 4) return { options: parsed.slice(0, 4), correctIndex: null, confidence: null };
       } catch (_) {}
 
       const lines = candidate
@@ -113,5 +104,6 @@ export class AIQuestionGenerator {
     } catch (err) {
       return fallback;
     }
+    return fallback;
   }
 }
