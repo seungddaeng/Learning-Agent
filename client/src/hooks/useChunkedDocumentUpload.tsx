@@ -67,7 +67,7 @@ export const useChunkedDocumentUpload = () => {
       }
 
       // Normal processing for documents that need post-processing
-      onProgress?.('text', 33, 'Procesando texto del documento...');
+      onProgress?.('text', 33, 'Processing document text...');
       try {
         await documentService.processDocumentText(document.id);
       } catch (textError: unknown) {

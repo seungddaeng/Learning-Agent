@@ -7,7 +7,7 @@ import type {
   UploadResponse 
 } from "../interfaces/documentInterface";
 
-// Interface para errores de HTTP
+// Interface for HTTP errors
 interface HttpError {
   response?: {
     status: number;
@@ -128,7 +128,7 @@ export const documentService = {
     try {
       const response = await apiClient.get<DocumentListBackendResponse>('/api/documents');
       
-      // Mapear respuesta del backend a nuestra interfaz
+      // Map the backend response to our interface
       const documents: Document[] = response.data.documents.map(doc => ({
         id: doc.id,
         fileName: doc.fileName,
@@ -206,14 +206,14 @@ export const documentService = {
       return {
         success: true,
         data: document,
-        status: response.data.status, // Agregar el status del backend
+        status: response.data.status, // Add the backend status.
       };
     } catch (error: unknown) {
       console.error('Error uploading document:', error);
       
       const httpError = error as HttpError;
       
-      // Manejar errores específicos de duplicados (409)
+      // Handling specific duplicate error codes (409)
       if (httpError.response?.status === 409) {
         const errorData = httpError.response.data as { message?: string };
         throw new Error(errorData?.message || 'Duplicate document detected');
@@ -256,32 +256,32 @@ export const documentService = {
    */
   async downloadAndSaveDocument(documentId: string, originalName: string): Promise<void> {
     try {
-      // Obtener la URL de descarga usando axios (nuestro backend)
+      // Get the download URL using axios (our backend)
       const downloadUrlResponse = await apiClient.get(`/api/documents/download/${documentId}`);
       const downloadUrl = downloadUrlResponse.data.downloadUrl;
-      
-      // Usar fetch() para MinIO ya que axios puede interferir con las URLs firmadas
+
+      // Use fetch() for MinIO since axios may interfere with signed URLs
       const response = await fetch(downloadUrl);
       if (!response.ok) {
         throw new Error(`Download error: ${response.status} ${response.statusText}`);
       }
       
       const blob = await response.blob();
-      
-      // Crear URL temporal para el blob
+
+      // Create a temporary URL for the blob
       const blobUrl = window.URL.createObjectURL(blob);
-      
-      // Crear enlace temporal para descarga forzada
+
+      // Create a temporary link for forced download
       const link = document.createElement('a');
       link.href = blobUrl;
       link.download = originalName.endsWith('.pdf') ? originalName : `${originalName}.pdf`;
-      
-      // Forzar descarga
+
+      // Force download
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
-      // Limpiar blob URL para liberar memoria
+
+      // Clean up blob URL to free memory
       window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
       console.error('Error downloading document:', error);
@@ -329,7 +329,7 @@ export const documentService = {
   },
 
   /**
-   * Obtener chunks de un documento
+   * Get chunks from a document
    */
   async getDocumentChunks(documentId: string): Promise<DocumentChunksBackendResponse> {
     try {
@@ -337,7 +337,7 @@ export const documentService = {
       return response.data;
     } catch (error) {
       console.error('Error getting document chunks:', error);
-      throw new Error('Error al obtener los chunks del documento');
+      throw new Error('Error getting document chunks');
     }
   },
 
@@ -404,7 +404,7 @@ export const documentService = {
   },
 
   /**
-   * Procesamiento completo de un documento (upload + process + chunks)
+   * Complete processing of a document (upload + process + chunks)
    */
   async processDocumentComplete(
     file: File,
@@ -419,7 +419,7 @@ export const documentService = {
     };
   }> {
     try {
-      // Paso 1: Upload
+      // Step 1: Upload
       onProgress?.('upload', 25, 'Uploading document...');
       const uploadResult = await this.uploadDocument(file);
       
@@ -453,7 +453,7 @@ export const documentService = {
   },
 
   /**
-   * Obtener índice de un documento
+   * Get the index of a document
    */
   async getDocumentIndex(documentId: string): Promise<{
     success: boolean;
@@ -490,7 +490,7 @@ export const documentService = {
   },
 
   /**
-   * Generar índice para un documento
+   * Generate an index for a document
    */
   async generateDocumentIndex(documentId: string): Promise<{
     success: boolean;
@@ -509,7 +509,7 @@ export const documentService = {
       return response.data;
     } catch (error) {
       console.error('Error generating document index:', error);
-      throw new Error('Error al generar el índice del documento');
+      throw new Error('Error generating document index');
     }
   },
 };

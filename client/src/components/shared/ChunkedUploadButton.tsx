@@ -531,7 +531,7 @@ const ChunkedUploadButton: React.FC<ChunkedUploadButtonProps> = ({
             </Text>
           </>
         )}
-        {/* Información de chunks de subida removida para evitar confusión */}
+        {/* Upload chunk info removed to avoid confusion */}
       </Card>
     );
   };

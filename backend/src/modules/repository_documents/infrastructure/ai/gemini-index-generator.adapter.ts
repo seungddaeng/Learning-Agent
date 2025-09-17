@@ -146,7 +146,7 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
       },
     });
 
-    // Combinar chunks del lote en texto
+    // Combine batch chunks into text
     const batchText = batch.map((chunk) => chunk.content).join('\n\n');
 
     const prompt = this.buildBatchPrompt(
@@ -162,13 +162,13 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
     const response = result.response;
     const text = response.text();
 
-    // Parsear la respuesta JSON del lote
+    // Parse batch JSON response
     const batchData = this.parseGeminiResponse(text);
 
-    const chapters = 
+    const chapters =
       batchData.chapters?.map((chapter: any) => this.mapChapter(chapter)) || [];
 
-    // Limitar el contenido para optimizar tamaño
+    // Limit content to optimize size
     return this.limitChapterContent(chapters, maxChaptersPerBatch);
   }
 
@@ -330,7 +330,7 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
   }
 
   /**
-   * Construye el prompt para un lote específico
+   * Create the prompt for a specific batch
    */
   private buildBatchPrompt(
     documentTitle: string,
@@ -371,16 +371,16 @@ INSTRUCCIONES CRÍTICAS:
 19. PRIORIZA la calidad sobre la cantidad de contenido
 
 EJEMPLOS DE TÍTULOS CORRECTOS:
-✅ "Introducción al algoritmo X-SLAM"
-✅ "Metodología de procesamiento"
-✅ "Análisis de resultados experimentales"
-✅ "Comparación con métodos existentes"
+"Introducción al algoritmo X-SLAM"
+"Metodología de procesamiento"
+"Análisis de resultados experimentales"
+"Comparación con métodos existentes"
 
 EJEMPLOS DE TÍTULOS INCORRECTOS (NO USAR):
-❌ "1.1.1 X-SLAM: Scalable Dense SLAM" 
-❌ "1−cos휃, ].(22), gradient"
-❌ "Paolo Cignoni, Roberto Scopigno"
-❌ "푟 ,T 푔,푞 ,퐷"
+"1.1.1 X-SLAM: Scalable Dense SLAM" 
+"1−cos휃, ].(22), gradient"
+"Paolo Cignoni, Roberto Scopigno"
+"푟 ,T 푔,푞 ,퐷"
 
 LÍMITES ESTRICTOS PARA OPTIMIZACIÓN:
 - MÁXIMO ${maxChaptersPerBatch} capítulos en total
@@ -566,7 +566,7 @@ IMPORTANTE:
 
     // Remove HTML tags that break JSON
     fixed = fixed.replace(/<[^>]*>/g, '');
-    
+
     // Fix missing commas between array objects
     fixed = fixed.replace(/}\s*\n\s*{/g, '},\n  {');
 
@@ -661,26 +661,26 @@ IMPORTANTE:
   }
 
   /**
-   * Limita el contenido de los capítulos para optimizar el tamaño del JSON
+   * Limit the content of the chapters to optimize the size of the JSON file.
    */
   private limitChapterContent(
     chapters: IndexChapter[],
     maxChapters: number,
   ): IndexChapter[] {
-    // Limitar número de capítulos
+    // Limit the number of chapters
     const limitedChapters = chapters.slice(0, maxChapters);
 
     return limitedChapters.map((chapter) => {
-      // Limitar subtemas a máximo 2
+      // Limit subtopics to a maximum of 2
       const limitedSubtopics = chapter.subtopics
         .slice(0, 2)
         .map((subtopic) => ({
           ...subtopic,
-          // Limitar ejercicios por subtema a máximo 1
+          // Limit exercises per subtopic to a maximum of 1
           exercises: subtopic.exercises.slice(0, 1),
         }));
 
-      // Limitar ejercicios del capítulo a máximo 1
+      // Limit chapter exercises to a maximum of 1
       const limitedChapterExercises = chapter.exercises.slice(0, 1);
 
       return new IndexChapter(

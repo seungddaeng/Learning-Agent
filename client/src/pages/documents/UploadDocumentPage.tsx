@@ -52,11 +52,11 @@ const UploadDocumentPage: React.FC = () => {
   const isDark = theme === "dark";
   const { token } = antTheme.useToken();
   
-  // Estados para el sidebar de previsualización
+  // State for preview sidebar
   const [previewSidebarVisible, setPreviewSidebarVisible] = useState<boolean>(false);
   const [documentToPreview, setDocumentToPreview] = useState<Document | null>(null);
   
-  // Estados para el sidebar de datos
+  // State for data sidebar
   const [dataSidebarVisible, setDataSidebarVisible] = useState<boolean>(false);
   const [documentToViewData, setDocumentToViewData] = useState<Document | null>(null);
 
