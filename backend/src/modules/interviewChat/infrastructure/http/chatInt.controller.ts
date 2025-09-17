@@ -18,10 +18,12 @@ export class ChatIntController {
   constructor(private readonly dsService: DsIntService) {}
   @Get('question')
   async generateQuestion(
-    @Query('topico') topico: string,
+    @Query('courseId') courseId: string,
+    @Query('docId') docId: string,
   ): Promise<QuestionResponse> {
-    console.log('topico:', topico);
-    return this.dsService.generateQuestion(topico);
+    console.log('courseId:', courseId);
+    console.log('docId:', docId);
+    return this.dsService.generateQuestion(courseId, docId);
   }
 
   // Get advice for an answer
@@ -39,14 +41,16 @@ export class ChatIntController {
   }
   @Get('multipleSelection')
   async generateMultipleSelection(
-    @Query('topico') topico: string,
+    @Query('courseId') courseId: string,
+    @Query('docId') docId: string,
   ): Promise<MultipleSelectionResponse> {
-    return await this.dsService.generateMultipleSelection(topico);
+    return await this.dsService.generateMultipleSelection(courseId, docId);
   }
   @Get('doubleOption')
   async generateDoubleOption(
-    @Query('topico') topico: string,
+    @Query('courseId') courseId: string,
+    @Query('docId') docId: string,
   ): Promise<DoubleOptionResponse> {
-    return await this.dsService.generatedoubleOption(topico);
+    return await this.dsService.generatedoubleOption(courseId, docId);
   }
 }
