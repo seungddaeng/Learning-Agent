@@ -74,7 +74,7 @@ export const ExamForm = forwardRef<ExamFormHandle, Props>(function ExamForm(
       timeMinutes: 45,
     };
   });
-  
+
 
   const [step, setStep] = useState(0);
   const steps = ['Datos generales', 'Cantidad de preguntas', 'Tiempo y referencia'];
@@ -93,6 +93,7 @@ export const ExamForm = forwardRef<ExamFormHandle, Props>(function ExamForm(
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [sending, setSending] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
 
   useImperativeHandle(ref, () => ({ getSnapshot }), [getSnapshot]);
 
@@ -123,7 +124,7 @@ export const ExamForm = forwardRef<ExamFormHandle, Props>(function ExamForm(
 
   const onChange = (name: string, value: string) => {
     let v = name === 'subject' ? value.replace(/\s+/g, ' ').trimStart() : value;
-    
+
     if (['multipleChoice', 'trueFalse', 'analysis', 'openEnded'].includes(name)) {
       if (value === '' || !/^\d+$/.test(value)) {
         v = '';
@@ -132,7 +133,7 @@ export const ExamForm = forwardRef<ExamFormHandle, Props>(function ExamForm(
         v = num.toString();
       }
     }
-    
+
     setValues((prev) => ({ ...prev, [name]: v }));
     setValue(name as any, v);
     setTouched((prev) => ({ ...prev, [name]: true }));
@@ -330,62 +331,62 @@ export const ExamForm = forwardRef<ExamFormHandle, Props>(function ExamForm(
                 <label htmlFor="difficulty" className="block text-sm font-medium mb-1">
                   Dificultad
                 </label>
-                  <div className="difficulty-selector" 
-                    style={{
-                      display: 'flex',
-                      background: 'var(--app-colorBgElevated)',
-                      borderRadius: '6px',
-                      overflow: 'hidden',
-                      height: '44px',
-                      border: '1px solid var(--app-colorBorder)'
-                    }}
-                  >
-                    {['fácil', 'medio', 'difícil'].map((level) => (
-                      <div key={level} className="difficulty-option" style={{ flex: 1, position: 'relative' }}>
-                        <input
-                          id={`difficulty-${level}`}
-                          className="difficulty-input"
-                          type="radio"
-                          name="difficulty"
-                          value={level}
-                          checked={values.difficulty === level}
-                          onChange={(e) => onChange('difficulty', e.target.value)}
-                          style={{
-                            position: 'absolute',
-                            opacity: 0,
-                            width: 0,
-                            height: 0
-                          }}
-                        />
-                        <label
-                          htmlFor={`difficulty-${level}`}
-                          className="difficulty-label"
-                          style={{
-                            display: 'flex',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            height: '100%',
-                            background: values.difficulty === level 
-                              ? 'var(--app-colorPrimary)' 
-                              : 'var(--app-colorBgContainer)',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease',
-                            fontSize: '13px',
-                            fontWeight: values.difficulty === level ? 600 : 500,
-                            color: values.difficulty === level 
-                              ? 'var(--app-colorTextOnPrimary)' 
-                              : 'var(--app-colorText)',
-                            borderRight: level !== 'difícil' 
-                            ? '1px solid var(--app-colorBorder)' 
+                <div className="difficulty-selector"
+                  style={{
+                    display: 'flex',
+                    background: 'var(--app-colorBgElevated)',
+                    borderRadius: '6px',
+                    overflow: 'hidden',
+                    height: '44px',
+                    border: '1px solid var(--app-colorBorder)'
+                  }}
+                >
+                  {['fácil', 'medio', 'difícil'].map((level) => (
+                    <div key={level} className="difficulty-option" style={{ flex: 1, position: 'relative' }}>
+                      <input
+                        id={`difficulty-${level}`}
+                        className="difficulty-input"
+                        type="radio"
+                        name="difficulty"
+                        value={level}
+                        checked={values.difficulty === level}
+                        onChange={(e) => onChange('difficulty', e.target.value)}
+                        style={{
+                          position: 'absolute',
+                          opacity: 0,
+                          width: 0,
+                          height: 0
+                        }}
+                      />
+                      <label
+                        htmlFor={`difficulty-${level}`}
+                        className="difficulty-label"
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          height: '100%',
+                          background: values.difficulty === level
+                            ? 'var(--app-colorPrimary)'
+                            : 'var(--app-colorBgContainer)',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          fontSize: '13px',
+                          fontWeight: values.difficulty === level ? 600 : 500,
+                          color: values.difficulty === level
+                            ? 'var(--app-colorTextOnPrimary)'
+                            : 'var(--app-colorText)',
+                          borderRight: level !== 'difícil'
+                            ? '1px solid var(--app-colorBorder)'
                             : 'none',
-                            textTransform: 'capitalize'
-                          }}
-                        >
-                          {level}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
+                          textTransform: 'capitalize'
+                        }}
+                      >
+                        {level}
+                      </label>
+                    </div>
+                  ))}
+                </div>
                 {touched.difficulty && errors.difficulty && (
                   <small className="error block mt-1 text-xs text-red-500">{errors.difficulty}</small>
                 )}
@@ -395,64 +396,64 @@ export const ExamForm = forwardRef<ExamFormHandle, Props>(function ExamForm(
                 <label htmlFor="attempts" className="block text-sm font-medium mb-1">
                   N.º de intentos
                 </label>
-                <div className="attempts-selector" 
-                    style={{
-                      display: 'flex',
-                      background: 'var(--app-colorBgElevated)',
-                      borderRadius: '6px',
-                      overflow: 'hidden',
-                      height: '44px',
-                      border: '1px solid var(--app-colorBorder)'
-                      
-                    }}
-                  >
-                    {[1, 2, 3].map((num) => (
-                      <div key={num} className="attempt-option" style={{ flex: 1, position: 'relative', }}>
-                        <input
-                          id={`attempts-${num}`}
-                          className="attempt-input"
-                          type="radio"
-                          name="attempts"
-                          value={num}
-                          checked={values.attempts === String(num)}
-                          onChange={(e) => onChange('attempts', e.target.value)}
-                          style={{
-                            position: 'absolute',
-                            opacity: 0,
-                            width: 0,
-                            height: 0
-                          }}
-                        />
-                        <label
-                          htmlFor={`attempts-${num}`}
-                          className="attempt-label"
-                          style={{
-                            flex: 1,
-                            display: 'flex',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            height: '100%',
-                            background: values.attempts === String(num) 
-                              ? 'var(--app-colorPrimary)' 
-                              : 'var(--app-colorBgContainer)',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease',
-                            fontSize: '16px',
-                            fontWeight:  600, 
-                            lineHeight: '1', 
-                            color: values.attempts === String(num) 
-                              ? 'var(--app-colorTextOnPrimary)' 
-                              : 'var(--app-colorText)',
-                            borderRight: num < 3 
-                            ? '1px solid var(--app-colorBorder)' 
+                <div className="attempts-selector"
+                  style={{
+                    display: 'flex',
+                    background: 'var(--app-colorBgElevated)',
+                    borderRadius: '6px',
+                    overflow: 'hidden',
+                    height: '44px',
+                    border: '1px solid var(--app-colorBorder)'
+
+                  }}
+                >
+                  {[1, 2, 3].map((num) => (
+                    <div key={num} className="attempt-option" style={{ flex: 1, position: 'relative', }}>
+                      <input
+                        id={`attempts-${num}`}
+                        className="attempt-input"
+                        type="radio"
+                        name="attempts"
+                        value={num}
+                        checked={values.attempts === String(num)}
+                        onChange={(e) => onChange('attempts', e.target.value)}
+                        style={{
+                          position: 'absolute',
+                          opacity: 0,
+                          width: 0,
+                          height: 0
+                        }}
+                      />
+                      <label
+                        htmlFor={`attempts-${num}`}
+                        className="attempt-label"
+                        style={{
+                          flex: 1,
+                          display: 'flex',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          height: '100%',
+                          background: values.attempts === String(num)
+                            ? 'var(--app-colorPrimary)'
+                            : 'var(--app-colorBgContainer)',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          fontSize: '16px',
+                          fontWeight: 600,
+                          lineHeight: '1',
+                          color: values.attempts === String(num)
+                            ? 'var(--app-colorTextOnPrimary)'
+                            : 'var(--app-colorText)',
+                          borderRight: num < 3
+                            ? '1px solid var(--app-colorBorder)'
                             : 'none'
-                          }}
-                        >
-                          {num}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
+                        }}
+                      >
+                        {num}
+                      </label>
+                    </div>
+                  ))}
+                </div>
                 {touched.attempts && errors.attempts && (
                   <small className="error block mt-1 text-xs text-red-500">{errors.attempts}</small>
                 )}
@@ -731,7 +732,7 @@ export const ExamForm = forwardRef<ExamFormHandle, Props>(function ExamForm(
         </div>
       </div>
 
-      <div className="actions-row button-hover border-t flex justify-between items-center flex-wrap gap-3 px-4 " 
+      <div className="actions-row button-hover border-t flex justify-between items-center flex-wrap gap-3 px-4 "
         style={{
           alignItems: 'center',
           marginTop: 20,
@@ -760,7 +761,7 @@ export const ExamForm = forwardRef<ExamFormHandle, Props>(function ExamForm(
             Limpiar
           </Button>
         </div>
-         <div className="flex flex-wrap items-center gap-3 sm:gap-4 px-1 py-1">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4 px-1 py-1">
           {step < 2 && (
             <Button
               type="primary"
@@ -773,15 +774,44 @@ export const ExamForm = forwardRef<ExamFormHandle, Props>(function ExamForm(
               Siguiente
             </Button>
           )}
-          {step === 2 && onGenerateAI && (
+          {step === 2 && (
             <Button
-            type="primary"
-            disabled={sending}
-            onClick={onGenerateAI}
+              type="primary"
+              htmlType="button"          
+              loading={aiLoading}
+              disabled={sending || aiLoading}
+              onClick={async (e) => {    
+                e.preventDefault();
+                if (!onGenerateAI) {
+                  onToast('La acción de IA no está disponible en este contexto.', 'warn');
+                  return;
+                }
+
+                const ok =
+                  values.subject &&
+                  values.difficulty &&
+                  values.attempts &&
+                  getTotalQuestions() > 0 &&
+                  values.timeMinutes;
+
+                if (!ok) {
+                  onToast('Completa los pasos 1 y 2 y define tiempo antes de generar con IA.', 'warn');
+                  return;
+                }
+
+                try {
+                  setAiLoading(true);
+                  await onGenerateAI();  
+                } catch (err: any) {
+                  onToast(err?.message || 'Falló la generación con IA.', 'error');
+                } finally {
+                  setAiLoading(false);
+                }
+              }}
             >
               Generar preguntas con IA
-              </Button>
-            )}
+            </Button>
+          )}
         </div>
       </div>
     </form>

@@ -11,6 +11,10 @@ const implProvider = {
       return require('./infrastructure/adapters/openai.adapter')
         .OpenAiAdapter;
     }
+    else if (provider === 'deepseek') {
+      return require('../llm/infrastructure/adapters/ds.adapter')
+        .DeepseekAdapter;
+    }
 
     // (opcional, si quieres dejar gemini activo por env)
     // if (provider === 'gemini') {

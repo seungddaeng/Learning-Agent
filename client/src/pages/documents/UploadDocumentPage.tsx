@@ -1,6 +1,7 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import { Card, message, Row, Col, Grid, theme as antTheme } from "antd";
 import { FileTextOutlined } from "@ant-design/icons";
+import { useParams, useLocation } from "react-router-dom";
 import PageTemplate from "../../components/PageTemplate";
 import ChunkedUploadButton from "../../components/shared/ChunkedUploadButton";
 import { DocumentTable } from "../../components/documents/DocumentTable";
@@ -8,19 +9,43 @@ import { PdfPreviewSidebar } from "../../components/documents/PdfPreviewSidebar"
 import { DocumentDataSidebar } from "../../components/documents/DocumentDataSidebar";
 import { useDocuments } from "../../hooks/useDocuments";
 import { useChunkedDocumentUpload } from "../../hooks/useChunkedDocumentUpload";
+import { useUser } from "../../context/UserContext";
 import { useUserStore } from "../../store/userStore";
 import { useThemeStore } from "../../store/themeStore";
 import type { Document } from "../../interfaces/documentInterface";
+import useCourses from "../../hooks/useCourses";
+import useClasses from "../../hooks/useClasses";
 
 const { useBreakpoint } = Grid;
 
 const UploadDocumentPage: React.FC = () => {
   const { documents, loading, downloadDocument, deleteDocument, loadDocuments } = useDocuments();
   const { processDocumentComplete } = useChunkedDocumentUpload();
+  // Use only one source for user data
   const user = useUserStore((s) => s.user);
+  const { id: userId } = useUser(); // Hook that internally uses the same store
   const isStudent = Boolean(user?.roles?.includes?.("estudiante"));
+  const { courseId, id } = useParams<{ courseId: string; id: string }>();
+  const location = useLocation();
+  
+  // Hooks to get course and period information
+  const { actualCourse, getCourseByID } = useCourses();
+  const { actualClass, fetchClassById } = useClasses();
+
+  // Get course and period information when necessary
+  useEffect(() => {
+    if (courseId && !actualCourse) {
+      getCourseByID(courseId);
+    }
+    if (id && !actualClass) {
+      fetchClassById(id);
+    }
+  }, [courseId, id, actualCourse, actualClass, getCourseByID, fetchClassById]);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const screens = useBreakpoint();
+  
+  // Check if we're in the student reinforcement context
+  const isInReinforcementContext = location.pathname.includes('/student/classes/') && location.pathname.includes('/reinforcement/documents');
   
   // Theme
   const theme = useThemeStore((state: { theme: string }) => state.theme);
@@ -43,25 +68,60 @@ const UploadDocumentPage: React.FC = () => {
     ? '50%'
     : '100%';
 
-  const pageTitle = isSmallScreen ? "Documentos" : "Documentos Académicos";
+  // Create dynamic breadcrumbs based on context
+  const getBreadcrumbs = () => {
+    if (isInReinforcementContext && id) {
+      return [
+        { label: "Home", href: "/" },
+        { label: "Classes", href: "/student/classes" },
+        { label: "Reinforcement", href: `/student/classes/${id}/reinforcement` },
+        { label: "Documents" }
+      ];
+    }
+    
+    // Professor context: /professor/courses/:courseId/periods/:id/documents
+    if (courseId && id && actualCourse && actualClass) {
+      return [
+        { label: "Home", href: "/" },
+        { label: "Materias", href: "/professor/courses" },
+        { label: actualCourse.name, href: `/professor/courses/${courseId}/periods` },
+        { label: actualClass.name, href: `/professor/courses/${courseId}/periods/${id}` },
+        { label: "Documents" }
+      ];
+    }
+    
+    // Professor context: /professor/courses/:courseId/documents (from course card)
+    if (courseId && !id && actualCourse) {
+      return [
+        { label: "Home", href: "/" },
+        { label: "Materias", href: "/professor/courses" },
+        { label: actualCourse.name, href: `/professor/courses/${courseId}/periods` },
+        { label: "Documents" }
+      ];
+    }
+    
+    return [{ label: "Home", href: "/" }, { label: "Documents" }];
+  };
+
+  const pageTitle = isSmallScreen ? "Documents" : "Academic Documents";
   const containerPadding = isSmallScreen ? "16px" : "24px";
 
   const fileConfig = {
     accept: ".pdf",
     maxSize: 100 * 1024 * 1024, // 100MB
-    chunkSize: 2 * 1024 * 1024, // 2MB chunks para mejor rendimiento
-    validationMessage: "Solo se permiten archivos PDF de hasta 100MB"
+    chunkSize: 2 * 1024 * 1024, // 2MB chunks for better performance
+    validationMessage: "Only PDF files up to 100MB are allowed"
   };
 
   const processingConfig = {
     steps: [
-      { key: "validate", title: "Validación", description: "Validando formato PDF..." },
-      { key: "extract", title: "Extracción", description: "Extrayendo contenido..." },
-      { key: "process", title: "Procesamiento", description: "Procesando documento..." },
-      { key: "store", title: "Almacenamiento", description: "Almacenando información..." }
+      { key: "validate", title: "Validation", description: "Validating PDF format..." },
+      { key: "extract", title: "Extraction", description: "Extracting content..." },
+      { key: "process", title: "Processing", description: "Processing document..." },
+      { key: "store", title: "Storage", description: "Storing information..." }
     ],
-    processingText: "Procesando documento PDF...",
-    successText: "¡Documento procesado exitosamente!"
+    processingText: "Processing PDF document...",
+    successText: "Document processed successfully!"
   };
     
   const handleUploadSuccess = useCallback(async () => {
@@ -69,7 +129,7 @@ const UploadDocumentPage: React.FC = () => {
     try {
       await loadDocuments();
     } catch (error) {
-      console.error("Error actualizando tabla:", error);
+      console.error("Error updating table:", error);
     } finally {
       setRefreshing(false);
     }
@@ -78,15 +138,15 @@ const UploadDocumentPage: React.FC = () => {
   const handleDownload = useCallback(async (doc: Document) => {
     try {
       await downloadDocument(doc);
-      message.success("Archivo descargado correctamente");
+      message.success("File downloaded successfully");
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Error al descargar";
+      const errorMessage = err instanceof Error ? err.message : "Download error";
       message.error(errorMessage);
     }
   }, [downloadDocument]);
 
   const handleDeleteSuccess = useCallback(() => {
-    message.success("Documento eliminado exitosamente");
+    message.success("Document deleted successfully");
     loadDocuments();
   }, [loadDocuments]);
 
@@ -141,8 +201,8 @@ const UploadDocumentPage: React.FC = () => {
       }}>
       <PageTemplate
         title={pageTitle}
-        subtitle="Sistema de carga y administración de material educativo en formato PDF"
-        breadcrumbs={[{ label: "Home", href: "/" }, { label: "Documentos" }]}>
+        subtitle="PDF educational material upload and management system"
+        breadcrumbs={getBreadcrumbs()}>
         <div style={{
           padding: containerPadding,
           width: "100%",
@@ -183,7 +243,7 @@ const UploadDocumentPage: React.FC = () => {
                         textOverflow: "ellipsis",
                         whiteSpace: "nowrap"
                       }}>
-                        {isSmallScreen ? "Repositorio" : "Repositorio de Documentos"}
+                        {isSmallScreen ? "Repository" : "Document Repository"}
                       </span>
                       <div style={{
                         marginLeft: "12px",
@@ -201,7 +261,7 @@ const UploadDocumentPage: React.FC = () => {
                         flexShrink: 0,
                         whiteSpace: "nowrap"
                       }}>
-                        {loading || refreshing ? (isSmallScreen ? "..." : "Actualizando...") : (isSmallScreen ? `${documents.length}` : `${documents.length} documento${documents.length !== 1 ? 's' : ''}`)}
+                        {loading || refreshing ? (isSmallScreen ? "..." : "Updating...") : (isSmallScreen ? `${documents.length}` : `${documents.length} document${documents.length !== 1 ? 's' : ''}`)}
                       </div>
                     </div>
 
@@ -221,7 +281,7 @@ const UploadDocumentPage: React.FC = () => {
                             shape: "default"
                           }}
                           modalConfig={{
-                            title: "Cargar Nuevo Documento",
+                            title: "Upload New Document",
                             width: isMobileScreen ? (typeof window !== 'undefined' ? window.innerWidth * 0.9 : 600) : 600
                           }}
                           onPostUploadProcess={processDocumentComplete}
@@ -262,7 +322,7 @@ const UploadDocumentPage: React.FC = () => {
       </PageTemplate>
       </div>
 
-      {/* Sidebar de previsualización de PDF */}
+      {/* PDF preview sidebar */}
       <PdfPreviewSidebar
         document={documentToPreview}
         visible={previewSidebarVisible}
@@ -270,7 +330,7 @@ const UploadDocumentPage: React.FC = () => {
         sidebarWidth={sidebarWidth}
       />
 
-      {/* Sidebar de datos del documento */}
+      {/* Document data sidebar */}
       <DocumentDataSidebar
         document={documentToViewData}
         visible={dataSidebarVisible}

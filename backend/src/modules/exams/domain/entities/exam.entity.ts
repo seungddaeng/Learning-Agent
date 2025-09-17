@@ -1,7 +1,6 @@
 import { Difficulty } from './difficulty.vo';
 import { PositiveInt } from './positive-int.vo';
-
-export type ExamStatus = 'Guardado' | 'Publicado';
+import { ExamStatus } from '../constants/exam.constants';
 
 export class Exam {
   constructor(
@@ -41,20 +40,5 @@ export class Exam {
       new Date(raw.createdAt),
       new Date(raw.updatedAt),
     );
-  }
-
-  toJSON() {
-    return {
-      id: this.id,
-      title: this.title,
-      status: this.status,
-      classId: this.classId,
-      difficulty: this.difficulty.getValue(),
-      attempts: this.attempts.getValue(),
-      timeMinutes: this.timeMinutes.getValue(),
-      reference: this.reference,
-      createdAt: this.createdAt,
-      updatedAt: this.updatedAt,
-    };
   }
 }

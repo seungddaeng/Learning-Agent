@@ -1,7 +1,5 @@
 import { Exam } from '../entities/exam.entity';
 
-export type ExamStatus = 'Guardado' | 'Publicado';
-
 export interface ExamRepositoryPort {
   create(exam: Exam): Promise<Exam>;
   findByIdOwned(id: string, teacherId: string): Promise<Exam | null>;
