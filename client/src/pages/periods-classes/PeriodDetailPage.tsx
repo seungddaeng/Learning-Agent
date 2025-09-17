@@ -384,7 +384,7 @@ export default function PeriodDetailPage() {
         title="Cargando..."
         subtitle="Cargando información del curso"
         breadcrumbs={[
-          { label: "Home", href: "/" },
+          { label: "Inicio", href: "/" },
           { label: "Materias", href: "/professor/courses" },
           { label: "Cargando..." }
         ]}
@@ -402,7 +402,7 @@ export default function PeriodDetailPage() {
         title="Curso no encontrado"
         subtitle="El curso solicitado no existe"
         breadcrumbs={[
-          { label: "Home", href: "/" },
+          { label: "Inicio", href: "/" },
           { label: "Materias", href: "/professor/courses" },
           { label: "Curso no encontrado" },
         ]}
@@ -424,7 +424,7 @@ export default function PeriodDetailPage() {
       title={actualClass.name}
       subtitle={dayjs().format("DD [de] MMMM [de] YYYY")}
       breadcrumbs={[
-        { label: "Home", href: "/" },
+        { label: "Inicio", href: "/" },
         { label: "Materias", href: "/professor/courses" },
         { label: actualCourse?.name || "Materia", href: `/professor/courses/${courseId}/periods` },
         { label: actualClass.name },

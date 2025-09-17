@@ -78,14 +78,14 @@ export default function ExamsCreatePage() {
   // Breadcrumbs dinámicos basados en si viene de un curso específico
   const breadcrumbs = courseId 
     ? [
-        { label: 'Home', href: '/' },
+        { label: 'Inicio', href: '/' },
         { label: 'Materias', href: '/professor/courses' },
         { label: actualCourse?.name || 'Curso', href: `/professor/courses/${courseId}/periods` },
         { label: 'Exámenes', href: `/professor/courses/${courseId}/exams` },
         { label: 'Crear examen' },
       ]
     : [
-        { label: 'Home', href: '/' },
+        { label: 'Inicio', href: '/' },
         { label: 'Materias', href: '/professor/courses' },
         { label: 'Crear examen' },
       ];

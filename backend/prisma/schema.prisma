@@ -156,6 +156,10 @@ model Document {
   courseId         String?
   course           Course?                   @relation(fields: [courseId], references: [id])
 
+  // Relación opcional con Classes/Período para documentos específicos de un período
+  classId          String?
+  class            Classes?                  @relation(fields: [classId], references: [id])
+
   // Relations para RAG
   chunks           DocumentChunk[]
   categories       DocumentCategoryMapping[]
@@ -559,6 +563,7 @@ model Classes {
   // relation 1:N
   enrollment    Enrollment[]
   attendance Attendance[]
+  documents     Document[]        // Documentos específicos para este período/clase
 
   quizQuestions    QuizQuestion[]
   interviewQuestions InterviewQuestion[]
