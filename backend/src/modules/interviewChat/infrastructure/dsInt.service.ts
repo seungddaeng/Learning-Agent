@@ -10,6 +10,8 @@ import {
 } from 'src/modules/reinforcement/infrastructure/http/dto/response';
 import { ChatResponse } from 'src/modules/reinforcement/infrastructure/http/dto/chat-response';
 import { QuestionResponse } from './http/dto/question-response';
+import { GetDocumentContentUseCase } from 'src/modules/repository_documents/application/queries/get-document-content.usecase';
+import { IntExamRepository } from 'src/modules/interview-exam-db/int-exam/int-exam.repository';
 
 @Injectable()
 export class DsIntService {
@@ -17,11 +19,30 @@ export class DsIntService {
     @Inject(LLM_PORT) private readonly llm: LlmPort,
     @Inject(PROMPT_TEMPLATE_PORT)
     private readonly promptTemplatePort: PromptTemplatePort,
+    private readonly intExamRepository: IntExamRepository,
+    private readonly getDocumentContentUseCase: GetDocumentContentUseCase,
   ) {}
-  async generateQuestion(topico: string): Promise<QuestionResponse> {
+  async generateQuestion(
+    courseId: string,
+    docId: string,
+  ): Promise<QuestionResponse> {
     try {
+        const openQuestions = await this.intExamRepository.findByCourseAndDocumentAndType(
+        courseId,
+        docId,
+        'open_question',
+      );
+      const isdb = Math.random() > 0.5;
+      if (openQuestions.length > 0 && isdb) {
+        console.log('openQuestions:', openQuestions);
+        const randomQuestion =
+          openQuestions[Math.floor(Math.random() * openQuestions.length)];
+        return randomQuestion.json as unknown as QuestionResponse;
+      }
+      const doc = await this.getDocumentContentUseCase.execute({ docId });
+      console.log('doc:', doc);
       const vars: Record<string, string> = {
-        topico: topico,
+        content: doc.contenido,
       };
       const prompt = await this.promptTemplatePort.render('interview.v1', vars);
       const resp = await this.llm.complete(prompt, {
@@ -40,6 +61,12 @@ export class DsIntService {
 
       // Parse the JSON response
       const response = JSON.parse(responseContent) as QuestionResponse;
+      await this.intExamRepository.create({
+        courseId,
+        docId,
+        json: response,
+        type: 'open_question',
+      });
       return response;
     } catch (error) {
       console.error('OpenAI Error in generateQuestion:', error);
@@ -87,11 +114,26 @@ export class DsIntService {
   }
 
   async generateMultipleSelection(
-    topico: string,
+    courseId: string,
+    docId: string,
   ): Promise<MultipleSelectionResponse> {
     try {
+      const questions = await this.intExamRepository.findByCourseAndDocumentAndType(
+        courseId,
+        docId,
+        'multiple_selection',
+      );
+      const isdb = Math.random() > 0.5;
+      if (questions.length > 0 && isdb) {
+        console.log('questions:', questions);
+        const randomQuestion =
+          questions[Math.floor(Math.random() * questions.length)];
+        return randomQuestion.json as unknown as MultipleSelectionResponse;
+      }
+      const doc = await this.getDocumentContentUseCase.execute({ docId });
+      console.log('doc:', doc);
       const vars: Record<string, string> = {
-        topico: topico,
+        content: doc.contenido,
       };
       const prompt = await this.promptTemplatePort.render(
         'interview.multipleSelection.v1',
@@ -111,16 +153,38 @@ export class DsIntService {
         throw new Error('No response from AI');
       }
       const response = JSON.parse(responseContent) as MultipleSelectionResponse;
+      await this.intExamRepository.create({
+        courseId,
+        docId,
+        json: response,
+        type: 'multiple_selection',
+      });
       return response;
     } catch (error) {
       console.error('OpenAI Error in generateMultipleSelection:', error);
       throw new Error('Error generating multiple selection and question');
     }
   }
-  async generatedoubleOption(topico: string): Promise<DoubleOptionResponse> {
+  async generatedoubleOption(courseId: string,
+        docId: string,): Promise<DoubleOptionResponse> {
     try {
+      const doubleQuestions =
+        await this.intExamRepository.findByCourseAndDocumentAndType(
+          courseId,
+          docId,
+          'double_selection',
+        );
+      const isdb = Math.random() > 0.5;
+      if (doubleQuestions.length > 0 && isdb) {
+        console.log('doubleQuestions:', doubleQuestions);
+        const randomQuestion =
+          doubleQuestions[Math.floor(Math.random() * doubleQuestions.length)];
+        return randomQuestion.json as unknown as DoubleOptionResponse;
+      }
+      const doc = await this.getDocumentContentUseCase.execute({ docId });
+      console.log('doc:', doc);
       const vars: Record<string, string> = {
-        topico: topico,
+        content: doc.contenido,
       };
       const prompt = await this.promptTemplatePort.render(
         'interview.doubleOption.v1',
@@ -140,6 +204,12 @@ export class DsIntService {
         throw new Error('No response from AI');
       }
       const responseDO = JSON.parse(responseContent) as DoubleOptionResponse;
+      await this.intExamRepository.create({
+        courseId,
+        docId,
+        json: responseDO,
+        type: 'double_selection',
+      });
       return responseDO;
     } catch (error) {
       console.error('OpenAI Error in generateMultipleSelection:', error);
