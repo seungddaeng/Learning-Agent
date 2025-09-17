@@ -1,19 +1,20 @@
-import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
-import { Button,  Empty, Input, message } from "antd";
+import { useParams, useNavigate } from "react-router-dom";
+import { Button, Empty, Input, message } from "antd";
 import { PlusOutlined, ReadOutlined } from "@ant-design/icons";
-import PageTemplate from "../../components/PageTemplate";
-import { CreatePeriodForm } from "../../components/CreatePeriodForm";
-import useClasses from "../../hooks/useClasses";
-import type { Clase, CreateClassDTO } from "../../interfaces/claseInterface";
-import { useUserStore } from "../../store/userStore";
 import dayjs from "dayjs";
-import GlobalScrollbar from '../../components/GlobalScrollbar';
-import AccessDenied from "../../components/shared/AccessDenied";
-import CustomCard from "../../components/shared/CustomCard";
-import useCourses from "../../hooks/useCourses";
 
-export function CoursePeriodsPage() {
+import AccessDenied from "../../components/shared/AccessDenied";
+import type { Clase, CreateClassDTO } from "../../interfaces/claseInterface";
+import CustomCard from "../../components/shared/CustomCard";
+import GlobalScrollbar from '../../components/GlobalScrollbar';
+import PageTemplate from "../../components/PageTemplate";
+import PeriodForm from "../../components/PeriodForm";
+import useClasses from "../../hooks/useClasses";
+import useCourses from "../../hooks/useCourses";
+import { useUserStore } from "../../store/userStore";
+
+export default function CoursePeriodsPage() {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
   const user = useUserStore((s) => s.user);
@@ -28,25 +29,25 @@ export function CoursePeriodsPage() {
   const { actualCourse, getCourseByID } = useCourses();
 
   const fetchCoursePeriods = useCallback(async () => {
-    if (!courseId) return
+    if (!courseId) return;
     setLoading(true);
-    
-    const courseRes = await getCourseByID(courseId)
+
+    const courseRes = await getCourseByID(courseId);
     if (courseRes.state == "error") {
-      setLoading(false)
-      message.error(courseRes.message)
-      return
+      setLoading(false);
+      message.error(courseRes.message);
+      return;
     }
 
     const periodsRes = await fetchClassesByCourse(courseId);
     if (periodsRes.state == "error") {
-      setLoading(false)
-      message.error(periodsRes.message)
-      return
+      setLoading(false);
+      message.error(periodsRes.message);
+      return;
     }
 
-    setLoading(false)
-  }, [courseId])
+    setLoading(false);
+  }, [courseId]);
 
   useEffect(() => {
     if (courseId) {
@@ -61,25 +62,38 @@ export function CoursePeriodsPage() {
       return;
     }
 
-    const filtered = classes.filter((period) =>
-      period.semester.toLowerCase().includes(lower) ||
-      period.name.toLowerCase().includes(lower)
+    const filtered = classes.filter(
+      (period) =>
+        period.semester.toLowerCase().includes(lower) ||
+        period.name.toLowerCase().includes(lower)
     );
     setFilteredPeriods(filtered);
   }, [searchTerm, classes]);
 
-  const handleCreatePeriod = async (periodData: CreateClassDTO) => {
-    if (!courseId) return
+  const handleCreatePeriod = async (periodData: Clase | CreateClassDTO) => {
+    if (!courseId) return;
 
     setCreatingPeriod(true);
-    const res = await createClass(periodData)
-    if (res.state == "error") {
-      message.error(res.message)
-      setCreatingPeriod(false);
-      return
+    let createData: CreateClassDTO;
+    if ("courseId" in periodData && typeof periodData.courseId === "string") {
+      createData = periodData as CreateClassDTO;
+    } else {
+      createData = {
+        semester: periodData.semester,
+        dateBegin: periodData.dateBegin,
+        dateEnd: periodData.dateEnd,
+        courseId: courseId,
+        teacherId: periodData.teacherId,
+      };
     }
-    message.success(res.message)
-    await fetchClassesByCourse(courseId)
+    const res = await createClass(createData);
+    if (res.state == "error") {
+      message.error(res.message);
+      setCreatingPeriod(false);
+      return;
+    }
+    message.success(res.message);
+    await fetchClassesByCourse(courseId);
     setCreatingPeriod(false);
   };
 
@@ -162,7 +176,7 @@ export function CoursePeriodsPage() {
                 alignItems: "center",
                 marginBottom: 24,
                 flexWrap: "wrap",
-                gap: "12px"
+                gap: "12px",
               }}
             >
               <div>
@@ -187,7 +201,7 @@ export function CoursePeriodsPage() {
                   onClick={() => setModalOpen(true)}
                   style={{
                     borderRadius: 8,
-                    fontWeight: "500"
+                    fontWeight: "500",
                   }}
                 >
                   Crear Período
@@ -235,7 +249,7 @@ export function CoursePeriodsPage() {
 
             {/* Modal para crear período */}
             {actualCourse && (
-              <CreatePeriodForm
+              <PeriodForm
                 open={modalOpen}
                 onClose={handleModalCancel}
                 onSubmit={handleCreatePeriod}

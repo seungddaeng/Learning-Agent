@@ -4,13 +4,14 @@ import { CalendarOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 
-import type { StudentInfo } from "../interfaces/studentInterface";
 import type { AttendanceRow, CreateAttendanceInterface } from "../interfaces/attendanceInterface";
+import type { StudentInfo } from "../interfaces/studentInterface";
 import useAttendance from "../hooks/useAttendance";
 
 interface AttendanceModalProps {
   open: boolean;
   onClose: () => void;
+  onSubmit: () => void;
   students: StudentInfo[];
   classId: string;
 }
@@ -19,6 +20,7 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
   open,
   onClose,
   students = [],
+  onSubmit,
   classId,
 }) => {
   const [studentMap, setStudentMap] = useState<Map<string, boolean>>(new Map())
@@ -134,6 +136,7 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
       message.info(res.message)
     }
     resetStudentMap();
+    onSubmit();
     onClose();
   }
 
@@ -158,7 +161,7 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
       maskClosable={false}
       centered
       footer={[
-        <Button key="cancel" danger onClick={handleCancel}>
+        <Button key="cancel" danger type="primary" onClick={handleCancel}>
           Cancelar
         </Button>,
         <Button type="primary" onClick={handleSubmit}>
