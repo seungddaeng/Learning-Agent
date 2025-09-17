@@ -293,7 +293,7 @@ export const ExamForm = forwardRef<ExamFormHandle, Props>(function ExamForm(
             <>
               <div className="form-group sm:col-span-2">
                 <label htmlFor="subject" className="block text-sm font-medium mb-1">
-                  Materia
+                  Titulo del examen
                 </label>
                 <input
                   id="subject"
@@ -307,7 +307,7 @@ export const ExamForm = forwardRef<ExamFormHandle, Props>(function ExamForm(
                     outline-none transition
                     focus:ring-2
                   "
-                  placeholder="Ej: Algorítmica 1"
+                  placeholder="Ej: 1er parcial"
                   value={values.subject || ''}
                   onChange={(e) => onChange('subject', e.target.value)}
                   autoComplete="off"
