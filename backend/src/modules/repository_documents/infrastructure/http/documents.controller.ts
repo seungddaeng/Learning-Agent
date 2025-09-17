@@ -40,6 +40,10 @@ import {
   UnifiedUploadResponseDto,
   UnifiedUploadRequestDto,
 } from './dtos/unified-upload.dto';
+import type {
+  GenerateDocumentIndexRequestDto,
+  GenerateDocumentIndexResponseDto,
+} from './dtos/generate-document-index.dto';
 
 @Controller('api/documents')
 export class DocumentsController {
@@ -248,12 +252,14 @@ export class DocumentsController {
     try {
       console.log(' Upload request received:', {
         hasFile: !!file,
-        fileInfo: file ? {
-          originalname: file.originalname,
-          size: file.size,
-          mimetype: file.mimetype,
-          fieldname: file.fieldname,
-        } : null,
+        fileInfo: file
+          ? {
+              originalname: file.originalname,
+              size: file.size,
+              mimetype: file.mimetype,
+              fieldname: file.fieldname,
+            }
+          : null,
         hasUser: !!req.user,
         userId: req.user?.id,
         headers: req.headers,
@@ -428,7 +434,7 @@ export class DocumentsController {
             maxCandidates: options.maxSimilarCandidates || 5,
             skipEmbeddings: false,
             useSampling: true,
-            returnGeneratedData: true, // NUEVO: solicitar que devuelva chunks y embeddings generados
+            returnGeneratedData: true, // solicitar que devuelva chunks y embeddings generados
           },
         );
 
@@ -1029,7 +1035,7 @@ export class DocumentsController {
       });
 
       this.logger.log(
-        `Índice generado exitosamente para documento: ${documentId}`,
+        `Index generated successfully for document: ${documentId}`,
       );
 
       return {
@@ -1065,7 +1071,7 @@ export class DocumentsController {
           generatedAt: result.generatedAt.toISOString(),
           status: result.status,
         },
-        message: 'Índice generado exitosamente',
+        message: 'Index generated successfully',
       };
     } catch (error) {
       if (
@@ -1099,7 +1105,6 @@ export class DocumentsController {
       );
     }
   }
-
   /**
    * Obtiene el índice guardado de un documento
    */

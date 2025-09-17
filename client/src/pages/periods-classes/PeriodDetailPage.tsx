@@ -1,5 +1,5 @@
-import { useParams, useNavigate } from "react-router-dom";
 import { useCallback, useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { Table, Button, message, Typography, Empty, Tabs } from "antd";
 import {
   EditOutlined,
@@ -14,34 +14,34 @@ import {
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 
+import useAttendance from "../../hooks/useAttendance";
 import useClasses from "../../hooks/useClasses";
-import useTeacher from "../../hooks/useTeacher";
-import useStudents from "../../hooks/useStudents";
 import useCourses from "../../hooks/useCourses";
 import useEnrollment from "../../hooks/useEnrollment";
-import useAttendance from "../../hooks/useAttendance";
+import useStudents from "../../hooks/useStudents";
+import useTeacher from "../../hooks/useTeacher";
 
+import type { createEnrollmentInterface, EnrollGroupRow } from "../../interfaces/enrollmentInterface";
 import type { Clase } from "../../interfaces/claseInterface";
 import type { StudentInfo } from "../../interfaces/studentInterface";
-import type { createEnrollmentInterface, EnrollGroupRow } from "../../interfaces/enrollmentInterface";
 
+import CourseExamsPanel from "../courses/CourseExamsPanel";
+import AbsencesModal from "../../components/AbsencesModal";
+import AttendanceModal from "../../components/AttendanceModal";
+import GlobalScrollbar from "../../components/GlobalScrollbar";
 import PageTemplate from "../../components/PageTemplate";
 import PeriodForm from "../../components/PeriodForm";
+import { processFile } from "../../utils/enrollGroupByFile";
 import { SafetyModal } from "../../components/safetyModal";
 import { SingleStudentForm } from "../../components/singleStudentForm";
 import StudentPreviewModal from "../../components/StudentPreviewModal";
-import UploadButton from "../../components/shared/UploadButton";
-import AttendanceModal from "../../components/AttendanceModal";
-import GlobalScrollbar from "../../components/GlobalScrollbar";
-import AbsencesModal from "../../components/AbsencesModal";
-import CourseExamsPanel from "../courses/CourseExamsPanel";
-import { processFile } from "../../utils/enrollGroupByFile";
 import { useUserStore } from "../../store/userStore";
+import UploadButton from "../../components/shared/UploadButton";
 
 const { Text } = Typography;
 const { TabPane } = Tabs;
 
-export function CourseDetailPage() {
+export default function PeriodDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
@@ -205,7 +205,7 @@ export function CourseDetailPage() {
       message.success(res.message);
       setTimeout(() => {
         if (user?.roles.includes("docente")) {
-          navigate("/courses");
+          navigate(`/professor/courses/${courseId}/periods`);
         } else {
           navigate("/");
         }
