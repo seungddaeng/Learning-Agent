@@ -38,7 +38,6 @@ export class GetOrGenerateQuestionUseCase {
     const now = new Date();
     const signature = createSignature({ text: input.prompt });
 
-    // Revisión de cache
     const existing = await this.repo.findBySignature(signature);
     if (existing && existing.lastUsedAt && (now.getTime() - existing.lastUsedAt.getTime()) <= this.ttlMs) {
       existing.lastUsedAt = now;
@@ -50,7 +49,6 @@ export class GetOrGenerateQuestionUseCase {
       return { id: existing.id, question: existing.text, cached: true };
     }
 
-    // Preparar contexto desde chunks
     let contextText = '';
     if (input.courseId) {
       try {
@@ -68,7 +66,6 @@ export class GetOrGenerateQuestionUseCase {
 
     const promptWithContext = `${input.prompt}${contextText ? '\n\n' + contextText : ''}`;
 
-    // Generación de pregunta
     const maxAttempts = 5;
     let generatedQuestionText = '';
     let generatedOptions: string[] | null = null;
@@ -108,7 +105,6 @@ export class GetOrGenerateQuestionUseCase {
       throw new Error('Failed to generate a valid question');
     }
 
-    // Guardar en repo
     const toSave: any = {
       id: undefined,
       text: generatedQuestionText,
