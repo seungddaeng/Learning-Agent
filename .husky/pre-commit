@@ -19,7 +19,7 @@ else
   echo "Unit tests failed, commit aborted"
   exit 1
 fi
-#the frontend build has to be fixed ...
+# TODO: Fix issues with the frontend build process
 echo "Building frontend..."
 if npm --prefix client run build; then
   echo "Frontend build completed successfully"
