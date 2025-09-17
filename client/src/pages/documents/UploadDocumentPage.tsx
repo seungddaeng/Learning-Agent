@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect, useMemo } from "react";
 import { Card, message, Row, Col, Grid, theme as antTheme } from "antd";
 import { FileTextOutlined } from "@ant-design/icons";
 import { useParams, useLocation } from "react-router-dom";
@@ -19,7 +19,6 @@ import useClasses from "../../hooks/useClasses";
 const { useBreakpoint } = Grid;
 
 const UploadDocumentPage: React.FC = () => {
-  const { documents, loading, downloadDocument, deleteDocument, loadDocuments } = useDocuments();
   const { processDocumentComplete } = useChunkedDocumentUpload();
   // Use only one source for user data
   const user = useUserStore((s) => s.user);
@@ -27,6 +26,15 @@ const UploadDocumentPage: React.FC = () => {
   const isStudent = Boolean(user?.roles?.includes?.("estudiante"));
   const { courseId, id } = useParams<{ courseId: string; id: string }>();
   const location = useLocation();
+  
+  // Memoize filters to prevent infinite re-renders
+  const documentsFilters = useMemo(() => ({
+    courseId,
+    classId: id
+  }), [courseId, id]);
+  
+  // Now we can use the documents hook with stable filters
+  const { documents, loading, downloadDocument, deleteDocument, loadDocuments } = useDocuments(documentsFilters);
   
   // Hooks to get course and period information
   const { actualCourse, getCourseByID } = useCourses();
@@ -286,6 +294,8 @@ const UploadDocumentPage: React.FC = () => {
                           }}
                           onPostUploadProcess={processDocumentComplete}
                           onUploadSuccess={handleUploadSuccess}
+                          courseId={courseId}
+                          classId={id}
                         />
                       </div>
                     )}

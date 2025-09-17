@@ -51,6 +51,8 @@ interface DocumentBackendResponse {
   size: number;
   downloadUrl: string;
   uploadedAt: string;
+  courseId?: string;
+  classId?: string;
 }
 
 interface DocumentListBackendResponse {
@@ -122,11 +124,21 @@ interface DocumentChunksBackendResponse {
 
 export const documentService = {
   /**
-   * Get list of documents
+   * Get list of documents with optional filters
    */
-  async getDocuments(): Promise<DocumentListResponse> {
+  async getDocuments(filters?: { courseId?: string; classId?: string }): Promise<DocumentListResponse> {
     try {
-      const response = await apiClient.get<DocumentListBackendResponse>('/api/documents');
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (filters?.courseId) {
+        params.append('courseId', filters.courseId);
+      }
+      if (filters?.classId) {
+        params.append('classId', filters.classId);
+      }
+      
+      const url = `/api/documents${params.toString() ? `?${params.toString()}` : ''}`;
+      const response = await apiClient.get<DocumentListBackendResponse>(url);
       
       // Map the backend response to our interface
       const documents: Document[] = response.data.documents.map(doc => ({
@@ -137,6 +149,8 @@ export const documentService = {
         size: doc.size,
         downloadUrl: doc.downloadUrl,
         uploadedAt: doc.uploadedAt,
+        courseId: doc.courseId,
+        classId: doc.classId,
       }));
 
       return {
@@ -153,9 +167,12 @@ export const documentService = {
   },
 
   /**
-   * Upload a document
+   * Upload a document with optional course and class association
    */
-  async uploadDocument(file: File): Promise<UploadResponse> {
+  async uploadDocument(
+    file: File, 
+    options?: { courseId?: string; classId?: string }
+  ): Promise<UploadResponse> {
     try {
       // Get user data from Zustand store
       const user = getUserFromStore();
@@ -169,6 +186,14 @@ export const documentService = {
 
       const formData = new FormData();
       formData.append('file', file);
+      
+      // Add courseId and classId if provided
+      if (options?.courseId) {
+        formData.append('courseId', options.courseId);
+      }
+      if (options?.classId) {
+        formData.append('classId', options.classId);
+      }
 
       // Prepare headers (DO NOT include Content-Type for multipart/form-data)
       const headers = {
@@ -201,6 +226,8 @@ export const documentService = {
         size: response.data.document.size,
         downloadUrl: response.data.document.downloadUrl,
         uploadedAt: response.data.document.uploadedAt,
+        courseId: options?.courseId,
+        classId: options?.classId,
       };
 
       return {

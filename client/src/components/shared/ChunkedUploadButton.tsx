@@ -107,6 +107,8 @@ interface ChunkedUploadButtonProps {
   onUploadError?: (error: Error) => void;
   onModalClose?: () => void;
   disabled?: boolean;
+  courseId?: string;
+  classId?: string;
 }
 const ChunkedUploadButton: React.FC<ChunkedUploadButtonProps> = ({
   onPostUploadProcess,
@@ -118,7 +120,9 @@ const ChunkedUploadButton: React.FC<ChunkedUploadButtonProps> = ({
   onUploadSuccess,
   onUploadError,
   onModalClose,
-  disabled = false
+  disabled = false,
+  courseId,
+  classId
 }) => {
   const [modalOpen, setModalOpen] = useState<boolean>(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -341,7 +345,9 @@ const ChunkedUploadButton: React.FC<ChunkedUploadButtonProps> = ({
             chunksUploaded: chunkIndex + 1,
             totalChunks
           } : null);
-        }
+        },
+        courseId,
+        classId
       };
 
       const result = await chunkedUploadService.uploadFileWithChunks(file, options);
