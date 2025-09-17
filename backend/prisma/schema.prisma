@@ -111,6 +111,7 @@ model StudentProfile {
   // relation 1:N
   enrollment    Enrollment[]
   attendance    Attendance[]
+  chatHistory   ChatHistory[]
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -162,6 +163,7 @@ model Document {
   processingJobs   ProcessingJob[]
   quizQuestions    QuizQuestion[]
   interviewQuestions  InterviewQuestion[]
+  chatHistory   ChatHistory[]
   
   // Información adicional extraída
   pageCount        Int?                      // Número de páginas (PDFs)
@@ -497,4 +499,25 @@ model Attendance {
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
 }
+
+model ChatHistory {
+    id         String   @id @default(uuid())
+    studentId      String            
+    docId      String
+    question    String
+    response  String
+    uses  Int     @default(0)
+
+    document        Document  @relation(fields: [docId], references: [id], onDelete: Cascade)
+    student     StudentProfile @relation(fields: [studentId], references: [userId], onDelete: Cascade)
+
+    createdAt  DateTime @default(now())
+    lastUsedAt DateTime?
+    @@index([studentId, docId])
+    @@index([createdAt])
+    @@index([lastUsedAt])
+    @@index([docId, question])
+    @@map("chat_history")
+  }
+
 
