@@ -43,6 +43,10 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
     this.genAI = new GoogleGenerativeAI(apiKey);
   }
 
+  private getMaxOutputTokens(): number {
+    return this.configService.get<number>('GEMINI_MAX_OUTPUT_TOKENS') || 256;
+  }
+
   async generateDocumentIndex(
     documentId: string,
     documentTitle: string,
@@ -55,12 +59,35 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
       this.logger.log(`Generating index for document: ${documentTitle}`);
       this.logger.log(`Processing all ${chunks.length} chunks in batches`);
 
-      // Process all chunks in small batches
-      const batchSize = 50; // Batch size to avoid token limits
+      // for large documents
+      const totalContentSize = chunks.reduce(
+        (total, chunk) => total + chunk.content.length,
+        0,
+      );
+      const isLargeDocument = totalContentSize > 50000 || chunks.length > 50;
+
+      if (isLargeDocument) {
+        this.logger.warn(
+          `Large document detected (${totalContentSize} chars, ${chunks.length} chunks). Using ultra-conservative processing.`,
+        );
+      }
+
+      // ULTRA conservative batch processing for quota limits
+      let batchSize = isLargeDocument ? 3 : 5; // Start with very small batches
+      const maxChaptersPerBatch = 1;
       const allChapters: IndexChapter[] = [];
 
-      // Sort chunks by index
+      // Sort chunks by index first
       const sortedChunks = chunks.sort((a, b) => a.chunkIndex - b.chunkIndex);
+
+      // Check if we have too many chunks for free tier (50 requests/day)
+      const estimatedBatches = Math.ceil(sortedChunks.length / batchSize);
+      if (estimatedBatches > 40) {
+        this.logger.warn(
+          `Document requires ${estimatedBatches} batches, reducing to minimal processing to stay within quota`,
+        );
+        batchSize = Math.ceil(sortedChunks.length / 35); // Limit to 35 requests max
+      }
 
       // Process in batches
       for (let i = 0; i < sortedChunks.length; i += batchSize) {
@@ -79,26 +106,76 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
             batchNumber,
             totalBatches,
             finalConfig,
+            maxChaptersPerBatch,
           );
 
           allChapters.push(...batchChapters);
 
-          // Small pause between batches to avoid rate limits
+          // Much longer pause between batches to prevent API quota issues
+          const delayTime = isLargeDocument ? 20000 : 15000; // Very long delays for quota
           if (i + batchSize < sortedChunks.length) {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+            this.logger.log(
+              `Waiting ${delayTime / 1000}s before next batch to respect rate limits...`,
+            );
+            await new Promise((resolve) => setTimeout(resolve, delayTime));
           }
         } catch (batchError) {
           this.logger.warn(
-            `Error in batch ${batchNumber}, using fallback:`,
-            batchError,
+            `Error in batch ${batchNumber}:`,
+            batchError instanceof Error
+              ? batchError.message
+              : String(batchError),
           );
 
-          // Generate basic chapters for this batch
-          const fallbackChapters = this.generateFallbackChaptersForBatch(
-            batch,
-            batchNumber,
-          );
-          allChapters.push(...fallbackChapters);
+          // Check if it's a quota/rate limit error
+          const errorMessage =
+            batchError instanceof Error
+              ? batchError.message
+              : String(batchError);
+          const isQuotaError =
+            errorMessage.includes('quota') ||
+            errorMessage.includes('Too Many Requests') ||
+            errorMessage.includes('429');
+
+          if (isQuotaError) {
+            this.logger.error(
+              `QUOTA EXCEEDED: Gemini API quota reached. Switching to fallback mode for remaining batches.`,
+            );
+
+            // Generate fallback chapters for this batch and all remaining batches
+            const fallbackChapters = this.generateFallbackChaptersForBatch(
+              batch,
+              batchNumber,
+            );
+            allChapters.push(...fallbackChapters);
+
+            // Generate fallback for all remaining batches
+            for (
+              let j = i + batchSize;
+              j < sortedChunks.length;
+              j += batchSize
+            ) {
+              const remainingBatch = sortedChunks.slice(j, j + batchSize);
+              const remainingBatchNumber = Math.floor(j / batchSize) + 1;
+              const remainingFallback = this.generateFallbackChaptersForBatch(
+                remainingBatch,
+                remainingBatchNumber,
+              );
+              allChapters.push(...remainingFallback);
+            }
+
+            this.logger.warn(
+              `Generated fallback content for ${Math.ceil((sortedChunks.length - i) / batchSize)} remaining batches due to quota limits.`,
+            );
+            break; // Exit the loop since we've handled all remaining batches
+          } else {
+            // Generate basic chapters for this batch only
+            const fallbackChapters = this.generateFallbackChaptersForBatch(
+              batch,
+              batchNumber,
+            );
+            allChapters.push(...fallbackChapters);
+          }
         }
       }
 
@@ -134,16 +211,17 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
     batchNumber: number,
     totalBatches: number,
     config: IndexGenerationConfig,
+    maxChaptersPerBatch: number = 2,
   ): Promise<IndexChapter[]> {
     const model = this.genAI.getGenerativeModel({
       model: config.model!,
       generationConfig: {
         temperature: config.temperature,
-        maxOutputTokens: 4096, // Reducido para lotes más pequeños
+        maxOutputTokens: this.getMaxOutputTokens(), // Made configurable via GEMINI_MAX_OUTPUT_TOKENS env var
       },
     });
 
-    // Combinar chunks del lote en texto
+    // Combine batch chunks into text
     const batchText = batch.map((chunk) => chunk.content).join('\n\n');
 
     const prompt = this.buildBatchPrompt(
@@ -152,18 +230,70 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
       batchNumber,
       totalBatches,
       config,
+      maxChaptersPerBatch,
     );
 
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    const text = response.text();
-
-    // Parsear la respuesta JSON del lote
-    const batchData = this.parseGeminiResponse(text);
-
-    return (
-      batchData.chapters?.map((chapter: any) => this.mapChapter(chapter)) || []
+    // explicit timeout
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(
+        () => reject(new Error('Timeout: El modelo tomó demasiado tiempo')),
+        45000,
+      ),
     );
+
+    const generation = model.generateContent(prompt);
+
+    try {
+      const result = await Promise.race([generation, timeout]);
+      const response = result.response;
+      const text = response.text();
+
+      // Validate response is not too long
+      if (text.length > 25000) {
+        this.logger.warn(
+          `Response too long (${text.length} chars), truncating...`,
+        );
+        const truncatedText = text.substring(0, 25000);
+        // Ensure valid JSON ending
+        const lastBrace = truncatedText.lastIndexOf('}');
+        if (lastBrace > 0) {
+          const validJson = truncatedText.substring(0, lastBrace + 1);
+          const batchData = this.parseGeminiResponse(validJson);
+          const chapters =
+            batchData.chapters?.map((chapter: any) =>
+              this.mapChapter(chapter),
+            ) || [];
+          return chapters;
+        }
+      }
+
+      // Parse batch JSON response
+      const batchData = this.parseGeminiResponse(text);
+      const chapters =
+        batchData.chapters?.map((chapter: any) => this.mapChapter(chapter)) ||
+        [];
+
+      return chapters;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
+      // Check for quota/rate limit errors and provide specific error details
+      if (
+        errorMessage.includes('quota') ||
+        errorMessage.includes('Too Many Requests') ||
+        errorMessage.includes('429')
+      ) {
+        this.logger.error(
+          `QUOTA ERROR in batch ${batchNumber}: Gemini API quota exceeded`,
+        );
+        throw error; // Re-throw quota errors to be handled by the main loop
+      }
+
+      this.logger.error(`General error in batch ${batchNumber}:`, errorMessage);
+      // Return empty array for non-quota errors
+      return [];
+    }
   }
 
   /**
@@ -324,7 +454,7 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
   }
 
   /**
-   * Construye el prompt para un lote específico
+   * Create the prompt for a specific batch
    */
   private buildBatchPrompt(
     documentTitle: string,
@@ -332,60 +462,37 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
     batchNumber: number,
     totalBatches: number,
     config: IndexGenerationConfig,
+    maxChaptersPerBatch: number = 2,
   ): string {
     return `
-Eres un experto en análisis de documentos académicos y generación de contenido educativo.
+Analiza el contenido y genera UN ÍNDICE MUY SIMPLE.
 
 DOCUMENTO: "${documentTitle}"
 LOTE: ${batchNumber} de ${totalBatches}
 
-CONTENIDO DEL LOTE:
+CONTENIDO:
 ${batchText}
 
-INSTRUCCIONES:
-1. Analiza SOLO el contenido de este lote
-2. Genera capítulos y subtemas basados en el contenido real
-3. Los títulos deben ser descriptivos y específicos del contenido
-4. Incluye entre 2-5 capítulos por lote dependiendo del contenido
-5. Cada capítulo debe tener 2-4 subtemas relevantes
-6. Crea ejercicios educativos específicos para cada tema
-7. Los ejercicios NO deben ser de opción múltiple
-8. Incluye diferentes tipos: CONCEPTUAL, PRACTICAL, ANALYSIS, APPLICATION, PROBLEM_SOLVING
-9. Asigna dificultad: BASIC, INTERMEDIATE, ADVANCED
+REGLAS ESTRICTAS:
+1. MÁXIMO 1 capítulo por lote
+2. MÁXIMO 1 subtema por capítulo
+3. Títulos MUY breves (máximo 20 caracteres)
+4. SIN descripciones largas
+5. JSON máximo 12 líneas TOTAL
+6. SI el documento es grande, crear índice MUY básico
+7. NUNCA exceder 12 líneas de JSON
 
-Responde ÚNICAMENTE con un JSON válido en este formato:
+Responde SOLO con este JSON compacto:
 {
-  "title": "Título descriptivo del lote",
+  "title": "Breve",
   "chapters": [
     {
-      "title": "Título del capítulo basado en contenido real",
-      "description": "Breve descripción",
+      "title": "Cap1",
+      "description": "",
       "subtopics": [
-        {
-          "title": "Subtema específico del contenido",
-          "description": "Descripción del subtema",
-          "exercises": [
-            {
-              "type": "CONCEPTUAL|PRACTICAL|ANALYSIS|APPLICATION|PROBLEM_SOLVING",
-              "title": "Título del ejercicio",
-              "description": "Descripción detallada del ejercicio",
-              "difficulty": "BASIC|INTERMEDIATE|ADVANCED",
-              "estimatedTime": "15 minutos",
-              "keywords": ["palabra1", "palabra2"]
-            }
-          ]
-        }
+        {"title": "Sub1", "description": "", "exercises": []}
       ],
-      "exercises": [
-        {
-          "type": "CONCEPTUAL|PRACTICAL|ANALYSIS|APPLICATION|PROBLEM_SOLVING",
-          "title": "Título del ejercicio del capítulo",
-          "description": "Descripción detallada",
-          "difficulty": "BASIC|INTERMEDIATE|ADVANCED",
-          "estimatedTime": "30 minutos",
-          "keywords": ["palabra1", "palabra2"]
-        }
-      ]
+      "exercises": []
     }
   ]
 }
@@ -510,6 +617,9 @@ IMPORTANTE:
   private fixCommonJsonErrors(jsonString: string): string {
     let fixed = jsonString;
 
+    // Remove HTML tags that break JSON
+    fixed = fixed.replace(/<[^>]*>/g, '');
+
     // Fix missing commas between array objects
     fixed = fixed.replace(/}\s*\n\s*{/g, '},\n  {');
 
@@ -524,6 +634,9 @@ IMPORTANTE:
 
     // Fix single quotes to double quotes
     fixed = fixed.replace(/'/g, '"');
+
+    // Remove trailing commas
+    fixed = fixed.replace(/,(\s*[}\]])/g, '$1');
 
     return fixed;
   }
@@ -598,6 +711,40 @@ IMPORTANTE:
       default:
         return ExerciseDifficulty.INTERMEDIATE;
     }
+  }
+
+  /**
+   * Limit the content of the chapters to optimize the size of the JSON file.
+   */
+  private limitChapterContent(
+    chapters: IndexChapter[],
+    maxChapters: number,
+  ): IndexChapter[] {
+    // Limit the number of chapters more strictly
+    const limitedChapters = chapters.slice(0, maxChapters);
+
+    return limitedChapters.map((chapter) => {
+      // Limit subtopics to a maximum of 1 for optimization
+      const limitedSubtopics = chapter.subtopics
+        .slice(0, 1)
+        .map((subtopic) => ({
+          ...subtopic,
+          // No exercises for optimization
+          exercises: [],
+        }));
+
+      // No chapter exercises for optimization
+      const limitedChapterExercises: Exercise[] = [];
+
+      return new IndexChapter(
+        chapter.title.length > 40
+          ? chapter.title.substring(0, 37) + '...'
+          : chapter.title,
+        '', // Empty description for optimization
+        limitedSubtopics,
+        limitedChapterExercises,
+      );
+    });
   }
 
   private generateId(): string {

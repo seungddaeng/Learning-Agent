@@ -24,11 +24,11 @@ type NavItem = { key: string; icon: React.ReactNode; label: React.ReactNode };
 
 function buildNavItems(roles: string[] | undefined): NavItem[] {
   const common: NavItem[] = [
-    { key: "/", icon: <HomeOutlined />, label: <Link to="/">Home</Link> },
+    { key: "/", icon: <HomeOutlined />, label: <Link to="/">Inicio</Link> },
     {
       key: "/settings",
       icon: <SettingOutlined />,
-      label: <Link to="/settings">Settings</Link>,
+      label: <Link to="/settings">Configuración</Link>,
     },
   ];
 
