@@ -11,36 +11,29 @@ export class ListDocumentsUseCase {
   ) {}
 
   /**
-   * Ejecuta el caso de uso para listar documentos
-   * @param filters - Filtros opcionales para course y class
-   * @returns Lista de documentos disponibles, excluyendo los eliminados
+   * Executes use case to list documents
    */
   async execute(filters?: { courseId?: string; classId?: string }): Promise<DocumentListResponse> {
     try {
-      // Obtener documentos de la base de datos con filtros
       const dbDocuments = filters?.courseId || filters?.classId 
         ? await this.documentRepository.findWithFilters(filters)
         : await this.documentRepository.findAll();
-
-      // Crear DocumentListItem con datos correctos
       const documents: DocumentListItem[] = [];
 
       for (const doc of dbDocuments) {
         try {
-          // Verificar que el archivo existe en el storage
           const exists = await this.documentStorage.documentExists(
             doc.fileName,
           );
           if (!exists) continue;
 
-          // Generar URL de descarga
           const downloadUrl = await this.documentStorage.generateDownloadUrl(
             doc.fileName,
           );
 
           documents.push(
             new DocumentListItem(
-              doc.id, // ID real del documento
+              doc.id,
               doc.fileName,
               doc.originalName,
               doc.mimeType,
@@ -53,7 +46,6 @@ export class ListDocumentsUseCase {
           );
         } catch (error) {
           console.error(`Error processing document ${doc.id}:`, error);
-          // Continuar con el siguiente documento
         }
       }
 
@@ -62,13 +54,12 @@ export class ListDocumentsUseCase {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
 
-      // Manejar errores específicos de conexión o bucket vacío
       if (
         errorMessage.includes('NoSuchBucket') ||
         errorMessage.includes('bucket does not exist')
       ) {
         throw new Error(
-          'Bucket de documentos no encontrado. Verifique la configuración de MinIO.',
+          'Document bucket not found. Check MinIO configuration.',
         );
       }
 
@@ -77,10 +68,10 @@ export class ListDocumentsUseCase {
         errorMessage.includes('ECONNREFUSED')
       ) {
         throw new Error(
-          'Error de conexión con MinIO. Verifique que el servicio esté disponible.',
+          'MinIO connection error. Verify service is available.',
         );
       }
-      throw new Error(`Error al listar documentos: ${errorMessage}`);
+      throw new Error(`Error listing documents: ${errorMessage}`);
     }
   }
 }

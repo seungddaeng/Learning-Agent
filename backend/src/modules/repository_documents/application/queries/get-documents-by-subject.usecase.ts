@@ -27,11 +27,9 @@ export class GetDocumentsBySubjectUseCase {
     request: GetDocumentsBySubjectRequest,
   ): Promise<GetDocumentsBySubjectResponse> {
     const { subjectId, tipo, page = 1, limit = 10 } = request;
-    // Calculate offset for pagination
     const offset = (page - 1) * limit;
 
     try {
-      // Get documents from the database filtered by course
       const dbDocuments = await this.documentRepository.findByCourseId(
         subjectId,
         offset,
@@ -39,7 +37,6 @@ export class GetDocumentsBySubjectUseCase {
         tipo,
       );
 
-      // Get the total number of documents for the subject
       const total = await this.documentRepository.countByCourseId(
         subjectId,
         tipo,
@@ -91,7 +88,7 @@ export class GetDocumentsBySubjectUseCase {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
       throw new Error(
-        `Error al obtener documentos de la materia ${subjectId}: ${errorMessage}`,
+        `Error getting documents for subject ${subjectId}: ${errorMessage}`,
       );
     }
   }
