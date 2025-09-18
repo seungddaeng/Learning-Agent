@@ -92,7 +92,7 @@ export class PrismaDocumentRepositoryAdapter implements DocumentRepositoryPort {
       const document = await this.prisma.document.findFirst({
         where: {
           fileHash,
-          status: { not: 'DELETED' }, // excluir documentos eliminados
+          status: { not: 'DELETED' }, // exclude deleted documents
         },
       });
 
@@ -110,7 +110,7 @@ export class PrismaDocumentRepositoryAdapter implements DocumentRepositoryPort {
       const document = await this.prisma.document.findFirst({
         where: {
           textHash,
-          status: { not: 'DELETED' }, // excluir documentos eliminados
+          status: { not: 'DELETED' }, // exclude deleted documents
         },
       });
 
@@ -283,8 +283,12 @@ export class PrismaDocumentRepositoryAdapter implements DocumentRepositoryPort {
 
       return documents.map((doc) => this.mapToDomain(doc));
     } catch (error) {
-      this.logger.error(`Error finding documents with filters: ${error.message}`);
-      throw new Error(`Failed to find documents with filters: ${error.message}`);
+      this.logger.error(
+        `Error finding documents with filters: ${error.message}`,
+      );
+      throw new Error(
+        `Failed to find documents with filters: ${error.message}`,
+      );
     }
   }
 
@@ -311,7 +315,7 @@ export class PrismaDocumentRepositoryAdapter implements DocumentRepositoryPort {
   }
 
   /**
-   * Convierte un documento de Prisma a entidad de dominio
+   * Converts a Prisma document to a domain entity
    */
   private mapToDomain(prismaDocument: any): Document {
     return new Document(
@@ -352,7 +356,7 @@ export class PrismaDocumentRepositoryAdapter implements DocumentRepositoryPort {
         },
       };
 
-      // Filtrar por tipo si se proporciona
+      // Filter by type if provided
       if (tipo) {
         where.contentType = {
           contains: tipo,
@@ -385,7 +389,7 @@ export class PrismaDocumentRepositoryAdapter implements DocumentRepositoryPort {
         },
       };
 
-      // Filtrar por tipo si se proporciona
+      // Filter by type if provided
       if (tipo) {
         where.contentType = {
           contains: tipo,
@@ -400,7 +404,9 @@ export class PrismaDocumentRepositoryAdapter implements DocumentRepositoryPort {
       this.logger.error(
         `Error counting documents by courseId ${courseId}: ${error.message}`,
       );
-      throw new Error(`Failed to count documents by courseId: ${error.message}`);
+      throw new Error(
+        `Failed to count documents by courseId: ${error.message}`,
+      );
     }
   }
 
@@ -426,10 +432,10 @@ export class PrismaDocumentRepositoryAdapter implements DocumentRepositoryPort {
   }
 
   /**
-   * Construye la URL del documento basada en la configuración de S3
+   * Constructs the document URL based on the S3 configuration
    */
   private buildDocumentUrl(s3Key: string): string {
-    // En un entorno real, esto vendría de la configuración
+    // In a real environment, this would come from the configuration
     const endpoint = process.env.MINIO_ENDPOINT || 'http://localhost:9000';
     const bucketName = process.env.MINIO_BUCKET_NAME || 'documents';
     return `${endpoint}/${bucketName}/${s3Key}`;

@@ -72,7 +72,7 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
         );
       }
 
-      // ULTRA conservative batch processing for quota limits
+      // Ultra conservative batch processing for quota limits
       let batchSize = isLargeDocument ? 3 : 5; // Start with very small batches
       const maxChaptersPerBatch = 1;
       const allChapters: IndexChapter[] = [];
@@ -217,7 +217,7 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
       model: config.model!,
       generationConfig: {
         temperature: config.temperature,
-        maxOutputTokens: this.getMaxOutputTokens(), // Made configurable via GEMINI_MAX_OUTPUT_TOKENS env var
+        maxOutputTokens: this.getMaxOutputTokens(),
       },
     });
 
@@ -236,7 +236,7 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
     // explicit timeout
     const timeout = new Promise<never>((_, reject) =>
       setTimeout(
-        () => reject(new Error('Timeout: El modelo tomó demasiado tiempo')),
+        () => reject(new Error('Timeout: Model took too long to respond')),
         45000,
       ),
     );
@@ -461,33 +461,33 @@ export class GeminiIndexGeneratorAdapter implements DocumentIndexGeneratorPort {
     batchText: string,
     batchNumber: number,
     totalBatches: number,
-    config: IndexGenerationConfig,
-    maxChaptersPerBatch: number = 2,
+    _config: IndexGenerationConfig,
+    _maxChaptersPerBatch: number = 2,
   ): string {
     return `
-Analiza el contenido y genera UN ÍNDICE MUY SIMPLE.
+Analyze the content and generate a VERY SIMPLE INDEX.
 
-DOCUMENTO: "${documentTitle}"
-LOTE: ${batchNumber} de ${totalBatches}
+DOCUMENT: "${documentTitle}"
+BATCH: ${batchNumber} of ${totalBatches}
 
-CONTENIDO:
+CONTENT:
 ${batchText}
 
-REGLAS ESTRICTAS:
-1. MÁXIMO 1 capítulo por lote
-2. MÁXIMO 1 subtema por capítulo
-3. Títulos MUY breves (máximo 20 caracteres)
-4. SIN descripciones largas
-5. JSON máximo 12 líneas TOTAL
-6. SI el documento es grande, crear índice MUY básico
-7. NUNCA exceder 12 líneas de JSON
+STRICT RULES:
+1. MAXIMUM 1 chapter per batch
+2. MAXIMUM 1 subtopic per chapter
+3. VERY brief titles (maximum 20 characters)
+4. NO long descriptions
+5. JSON maximum 12 lines TOTAL
+6. IF the document is large, create VERY basic index
+7. NEVER exceed 12 lines of JSON
 
-Responde SOLO con este JSON compacto:
+Respond ONLY with this compact JSON:
 {
-  "title": "Breve",
+  "title": "Brief",
   "chapters": [
     {
-      "title": "Cap1",
+      "title": "Ch1",
       "description": "",
       "subtopics": [
         {"title": "Sub1", "description": "", "exercises": []}
@@ -505,43 +505,43 @@ Responde SOLO con este JSON compacto:
     config: IndexGenerationConfig,
   ): string {
     return `
-Eres un experto en análisis de documentos académicos y generación de contenido educativo. 
+You are an expert in academic document analysis and educational content generation.
 
-TAREA: Analiza el siguiente documento y genera un índice estructurado con ejercicios educativos.
+TASK: Analyze the following document and generate a structured index with educational exercises.
 
-DOCUMENTO: "${documentTitle}"
+DOCUMENT: "${documentTitle}"
 
-CONTENIDO:
+CONTENT:
 ${fullText}
 
-INSTRUCCIONES:
-1. Analiza todo el contenido del documento
-2. Identifica los temas principales y subtemas
-3. Para cada tema, crea ejercicios educativos relevantes
-4. Los ejercicios NO deben ser de opción múltiple
-5. Incluye diferentes tipos: conceptuales, prácticos, de análisis, aplicación, resolución de problemas
-6. Asigna dificultad: BASIC, INTERMEDIATE, ADVANCED
-7. Estima tiempo de resolución cuando sea apropiado
+INSTRUCTIONS:
+1. Analyze all document content
+2. Identify main topics and subtopics
+3. For each topic, create relevant educational exercises
+4. Exercises should NOT be multiple choice
+5. Include different types: conceptual, practical, analysis, application, problem solving
+6. Assign difficulty: BASIC, INTERMEDIATE, ADVANCED
+7. Estimate resolution time when appropriate
 
-FORMATO DE RESPUESTA (JSON estricto):
+RESPONSE FORMAT (strict JSON):
 {
-  "title": "Título del documento",
+  "title": "Document title",
   "chapters": [
     {
-      "title": "Nombre del capítulo",
-      "description": "Descripción breve del capítulo",
+      "title": "Chapter name",
+      "description": "Brief chapter description",
       "subtopics": [
         {
-          "title": "Nombre del subtema",
-          "description": "Descripción del subtema",
+          "title": "Subtopic name",
+          "description": "Subtopic description",
           "exercises": [
             {
               "type": "CONCEPTUAL|PRACTICAL|ANALYSIS|APPLICATION|PROBLEM_SOLVING",
-              "title": "Título del ejercicio",
-              "description": "Descripción detallada del ejercicio o problema a resolver",
+              "title": "Exercise title",
+              "description": "Detailed description of the exercise or problem to solve",
               "difficulty": "BASIC|INTERMEDIATE|ADVANCED",
-              "estimatedTime": "15 minutos",
-              "keywords": ["palabra1", "palabra2"]
+              "estimatedTime": "15 minutes",
+              "keywords": ["keyword1", "keyword2"]
             }
           ]
         }
@@ -549,23 +549,23 @@ FORMATO DE RESPUESTA (JSON estricto):
       "exercises": [
         {
           "type": "CONCEPTUAL|PRACTICAL|ANALYSIS|APPLICATION|PROBLEM_SOLVING",
-          "title": "Título del ejercicio",
-          "description": "Descripción detallada del ejercicio",
+          "title": "Exercise title",
+          "description": "Detailed exercise description",
           "difficulty": "BASIC|INTERMEDIATE|ADVANCED",
-          "estimatedTime": "30 minutos",
-          "keywords": ["palabra1", "palabra2"]
+          "estimatedTime": "30 minutes",
+          "keywords": ["keyword1", "keyword2"]
         }
       ]
     }
   ]
 }
 
-IMPORTANTE: 
-- Responde ÚNICAMENTE con el JSON válido
-- No incluyas texto adicional antes o después del JSON
-- Asegúrate de que el JSON sea válido y parseable
-- Incluye al menos 2-3 ejercicios por tema principal
-- Los ejercicios deben ser específicos y aplicables al contenido
+IMPORTANT: 
+- Respond ONLY with valid JSON
+- Do not include additional text before or after the JSON
+- Make sure the JSON is valid and parseable
+- Include at least 2-3 exercises per main topic
+- Exercises should be specific and applicable to the content
 `;
   }
 

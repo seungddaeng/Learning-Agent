@@ -12,7 +12,7 @@ export class DocumentListItem {
   ) {}
 
   /**
-   * Convierte el objeto a un formato plano para la respuesta JSON
+   * Convert the object to a flat format for the JSON response.
    */
   toJSON() {
     return {

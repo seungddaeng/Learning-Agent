@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { DocumentEmbeddingService } from '../../domain/services/document-embedding.service';
 import type {
   DocumentEmbeddingOptions,
@@ -63,6 +63,8 @@ export interface GenerateDocumentEmbeddingsResponse {
  */
 @Injectable()
 export class GenerateDocumentEmbeddingsUseCase {
+  private readonly logger = new Logger(GenerateDocumentEmbeddingsUseCase.name);
+
   constructor(
     private readonly documentEmbeddingService: DocumentEmbeddingService,
   ) {}
@@ -102,7 +104,7 @@ export class GenerateDocumentEmbeddingsUseCase {
 
       // 4. Check for partial errors
       if (result.chunksWithErrors > 0) {
-        console.warn(
+        this.logger.warn(
           `Some chunks had errors: ${result.chunksWithErrors}/${result.totalChunksProcessed + result.chunksWithErrors}`,
         );
       }
@@ -114,7 +116,7 @@ export class GenerateDocumentEmbeddingsUseCase {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
-      console.error(
+      this.logger.error(
         'Error in GenerateDocumentEmbeddingsUseCase:',
         errorMessage,
       );

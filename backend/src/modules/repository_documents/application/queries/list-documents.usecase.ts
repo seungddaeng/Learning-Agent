@@ -1,10 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import type { DocumentStoragePort } from '../../domain/ports/document-storage.port';
 import type { DocumentRepositoryPort } from '../../domain/ports/document-repository.port';
-import { DocumentListResponse, DocumentListItem } from '../../domain/value-objects/upload-document.vo';
+import {
+  DocumentListResponse,
+  DocumentListItem,
+} from '../../domain/value-objects/upload-document.vo';
 
 @Injectable()
 export class ListDocumentsUseCase {
+  private readonly logger = new Logger(ListDocumentsUseCase.name);
+
   constructor(
     private readonly documentStorage: DocumentStoragePort,
     private readonly documentRepository: DocumentRepositoryPort,
@@ -13,11 +18,15 @@ export class ListDocumentsUseCase {
   /**
    * Executes use case to list documents
    */
-  async execute(filters?: { courseId?: string; classId?: string }): Promise<DocumentListResponse> {
+  async execute(filters?: {
+    courseId?: string;
+    classId?: string;
+  }): Promise<DocumentListResponse> {
     try {
-      const dbDocuments = filters?.courseId || filters?.classId 
-        ? await this.documentRepository.findWithFilters(filters)
-        : await this.documentRepository.findAll();
+      const dbDocuments =
+        filters?.courseId || filters?.classId
+          ? await this.documentRepository.findWithFilters(filters)
+          : await this.documentRepository.findAll();
       const documents: DocumentListItem[] = [];
 
       for (const doc of dbDocuments) {
@@ -45,7 +54,7 @@ export class ListDocumentsUseCase {
             ),
           );
         } catch (error) {
-          console.error(`Error processing document ${doc.id}:`, error);
+          this.logger.error(`Error processing document ${doc.id}:`, error);
         }
       }
 
@@ -67,9 +76,7 @@ export class ListDocumentsUseCase {
         errorMessage.includes('connection') ||
         errorMessage.includes('ECONNREFUSED')
       ) {
-        throw new Error(
-          'MinIO connection error. Verify service is available.',
-        );
+        throw new Error('MinIO connection error. Verify service is available.');
       }
       throw new Error(`Error listing documents: ${errorMessage}`);
     }
