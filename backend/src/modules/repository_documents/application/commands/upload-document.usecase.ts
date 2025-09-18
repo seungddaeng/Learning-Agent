@@ -37,41 +37,29 @@ export class UploadDocumentUseCase {
     uploadedBy: string,
     options?: UploadWithPreGeneratedDataOptions,
   ): Promise<Document> {
-    console.log(' Starting upload use case:', {
-      fileName: file.originalname,
-      mimeType: file.mimetype,
-      size: file.size,
-      uploadedBy,
-      hasBuffer: !!file.buffer,
-      bufferLength: file.buffer?.length,
-      reusingData: options?.reuseGeneratedData || false,
-      preGeneratedChunks: options?.preGeneratedChunks?.length || 0,
-      preGeneratedEmbeddings: options?.preGeneratedEmbeddings?.length || 0,
-    });
-
-    // Validar que sea un PDF
+    // Validate PDF file type
     if (file.mimetype !== 'application/pdf') {
-      throw new BadRequestException('Solo se permiten archivos PDF');
+      throw new BadRequestException('Only PDF files are allowed');
     }
 
-    const maxSize = 100 * 1024 * 1024; // 100MB en bytes
+    const maxSize = 100 * 1024 * 1024; // 100MB in bytes
     if (file.size > maxSize) {
-      throw new BadRequestException('El archivo no puede ser mayor a 100MB');
+      throw new BadRequestException('File cannot be larger than 100MB');
     }
 
-    // Generar hash SHA-256 del archivo
+    // Generate SHA-256 hash of the file
     const fileHash = this.generateFileHash(file.buffer);
-    // Verificar si ya existe un archivo con el mismo hash
+    // Check if a file with the same hash already exists
     const existingDocument =
       await this.documentRepository.findByFileHash(fileHash);
     if (existingDocument) {
-      throw new BadRequestException('Este archivo ya existe en el sistema');
+      throw new BadRequestException('This file already exists in the system');
     }
 
-    // Generar ID único para el documento
+    // Generate unique ID for the document
     const documentId = uuidv4();
 
-    // Subir archivo a storage
+    // Upload file to storage
     const uploadRequest = new UploadDocumentRequest(
       file.buffer,
       file.originalname,
@@ -79,109 +67,85 @@ export class UploadDocumentUseCase {
       file.size,
     );
 
-    try {
-      const storageResult =
-        await this.storageAdapter.uploadDocument(uploadRequest);
+    const storageResult =
+      await this.storageAdapter.uploadDocument(uploadRequest);
 
-      // Crear entidad de documento para base de datos
-      console.log(' Creating document entity...');
-      const document = DocumentService.create(
-        documentId,
-        storageResult.fileName, // storedName
-        file.originalname, // originalName
-        file.mimetype,
-        file.size,
-        storageResult.url,
-        storageResult.fileName, // s3Key (mismo que fileName en este caso)
-        fileHash,
-        uploadedBy,
-        options?.courseId,
-        options?.classId,
-      );
+    // Create document entity for database
+    const document = DocumentService.create(
+      documentId,
+      storageResult.fileName, // storedName
+      file.originalname, // originalName
+      file.mimetype,
+      file.size,
+      storageResult.url,
+      storageResult.fileName, // s3Key (same as fileName in this case)
+      fileHash,
+      uploadedBy,
+      options?.courseId,
+      options?.classId,
+    );
 
-      // Guardar en base de datos
-      const savedDocument = await this.documentRepository.save(document);
+    // Save to database
+    const savedDocument = await this.documentRepository.save(document);
 
-      console.log(' Document saved successfully:', savedDocument.id);
+    // If we have pre-generated data, save it to avoid regeneration
+    if (
+      options?.reuseGeneratedData &&
+      options.preGeneratedChunks &&
+      options.preGeneratedEmbeddings
+    ) {
+      try {
+        // Convert pre-generated chunks to DocumentChunk entities
+        const documentChunks = options.preGeneratedChunks.map(
+          (chunk, index) =>
+            DocumentChunkService.create(
+              uuidv4(), // New unique ID for each chunk
+              documentId, // Document ID
+              chunk.content, // Chunk content
+              index, // Chunk index
+              'text', // Default type
+              chunk.metadata || {}, // Chunk metadata
+            ),
+        );
 
-      // Si tenemos datos pre-generados, guardarlos para evitar regeneración
-      if (
-        options?.reuseGeneratedData &&
-        options.preGeneratedChunks &&
-        options.preGeneratedEmbeddings
-      ) {
-        console.log(' Saving pre-generated data:', {
-          chunks: options.preGeneratedChunks.length,
-          embeddings: options.preGeneratedEmbeddings.length,
-        });
-
-        try {
-          // Convertir chunks pre-generados a entidades DocumentChunk
-          const documentChunks = options.preGeneratedChunks.map(
-            (chunk, index) =>
-              DocumentChunkService.create(
-                uuidv4(), // Nuevo ID único para cada chunk
-                documentId, // ID del documento
-                chunk.content, // Contenido del chunk
-                index, // Índice del chunk
-                'text', // Tipo por defecto
-                chunk.metadata || {}, // Metadata del chunk
-              ),
+        // Use chunking service to save chunks
+        const savedChunks =
+          await this.chunkingService['chunkRepository'].saveMany(
+            documentChunks,
           );
 
-          // Usar el servicio de chunking para guardar los chunks
-          const savedChunks =
-            await this.chunkingService['chunkRepository'].saveMany(
-              documentChunks,
-            );
-
-          console.log(
-            ` Pre-generated chunks saved successfully: ${savedChunks.length} chunks`,
+        // Save embeddings for each chunk
+        if (options.preGeneratedEmbeddings && options.preGeneratedEmbeddings.length === savedChunks.length) {
+          const embeddingUpdates = savedChunks.map((chunk, index) => ({
+            chunkId: chunk.id,
+            embedding: options.preGeneratedEmbeddings![index]
+          }));
+          
+          await this.chunkingService['chunkRepository'].updateBatchEmbeddings(
+            embeddingUpdates,
           );
-
-          // NUEVO: Guardar los embeddings para cada chunk
-          if (options.preGeneratedEmbeddings && options.preGeneratedEmbeddings.length === savedChunks.length) {
-            console.log(' 🔄 Saving pre-generated embeddings...');
-            
-            const embeddingUpdates = savedChunks.map((chunk, index) => ({
-              chunkId: chunk.id,
-              embedding: options.preGeneratedEmbeddings![index]
-            }));
-            
-            await this.chunkingService['chunkRepository'].updateBatchEmbeddings(embeddingUpdates);
-            
-            console.log(` ✅ Pre-generated embeddings saved successfully: ${embeddingUpdates.length} embeddings`);
-          } else {
-            console.log(` ⚠️ Warning: Embeddings count (${options.preGeneratedEmbeddings?.length || 0}) doesn't match chunks count (${savedChunks.length})`);
-          }
-
-          // Actualizar el documento para marcar que tiene texto extraído
-          if (options.extractedText) {
-            let updatedDocument = DocumentService.withExtractedText(
-              savedDocument,
-              options.extractedText
-            );
-            updatedDocument = DocumentService.withStatus(updatedDocument, DocumentStatus.PROCESSED);
-
-            await this.documentRepository.save(updatedDocument);
-
-            console.log('Document marked as processed with extracted text');
-          }
-        } catch (error) {
-          console.log('Error saving pre-generated chunks:', error);
-          // No fallar la subida completa por esto, solo loggearlo
         }
-      }
 
-      return savedDocument;
-    } catch (error) {
-      console.log(' Upload failed:', error);
-      throw error;
+        // Update document to mark it has extracted text
+        if (options.extractedText) {
+          let updatedDocument = DocumentService.withExtractedText(
+            savedDocument,
+            options.extractedText
+          );
+          updatedDocument = DocumentService.withStatus(updatedDocument, DocumentStatus.PROCESSED);
+
+          await this.documentRepository.save(updatedDocument);
+        }
+      } catch {
+        // Don't fail the complete upload for this, just log it
+      }
     }
+
+    return savedDocument;
   }
 
   /**
-   * Genera hash SHA-256 del archivo
+   * Generate SHA-256 hash of the file
    */
   private generateFileHash(fileBuffer: Buffer): string {
     return createHash('sha256').update(fileBuffer).digest('hex');

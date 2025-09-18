@@ -178,7 +178,7 @@ export class EmbeddingsController {
   ) {
     try {
       this.logger.log(
-        ` Iniciando generación de embeddings para documento: ${documentId}`,
+        `Iniciando generación de embeddings para documento: ${documentId}`,
       );
       const startTime = Date.now();
 
@@ -312,19 +312,8 @@ export class EmbeddingsController {
   })
   async searchDocuments(@Body() dto: SemanticSearchDto) {
     try {
-      // Debug: Ver qué está llegando
-      this.logger.log(` DTO recibido:`, JSON.stringify(dto, null, 2));
-      this.logger.log(` Tipo de dto:`, typeof dto);
-      this.logger.log(` Tipo de query:`, typeof dto?.query);
-      this.logger.log(` Query value:`, dto?.query);
-
       // Validación adicional de entrada
       if (!dto || !dto.query || typeof dto.query !== 'string') {
-        this.logger.error(`Validación fallida:`, {
-          dto: !!dto,
-          query: dto?.query,
-          queryType: typeof dto?.query,
-        });
         throw new HttpException(
           {
             message:
@@ -361,7 +350,7 @@ export class EmbeddingsController {
       }
 
       this.logger.log(
-        ` Búsqueda completada: ${result.result?.totalResults || 0} resultados en ${processingTime}ms`,
+        `Búsqueda completada: ${result.result?.totalResults || 0} resultados en ${processingTime}ms`,
       );
 
       return {
@@ -392,8 +381,6 @@ export class EmbeddingsController {
       );
     }
   }
-
-  // ============ MÉTODOS PRIVADOS ============
 
   /**
    * Convierte códigos de error a códigos HTTP apropiados

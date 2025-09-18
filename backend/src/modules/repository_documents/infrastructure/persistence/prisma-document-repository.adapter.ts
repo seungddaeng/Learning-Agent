@@ -14,15 +14,15 @@ export class PrismaDocumentRepositoryAdapter implements DocumentRepositoryPort {
 
   async save(document: Document): Promise<Document> {
     try {
-      // Log para verificar valores de courseId y classId
-      this.logger.log('Guardando documento con values:', {
+      // Log to verify courseId and classId values
+      this.logger.log('Saving document with values:', {
         documentId: document.id,
         fileName: document.fileName,
         courseId: document.courseId,
         classId: document.classId,
       });
 
-      // Usar upsert para manejar casos donde el documento pueda existir
+      // Use upsert to handle cases where document might exist
       const savedDocument = await this.prisma.document.upsert({
         where: { id: document.id },
         update: {

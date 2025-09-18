@@ -73,7 +73,6 @@ export class DocumentsController {
 
       const result = await this.listDocumentsUseCase.execute(filters);
 
-      // Mapear la respuesta del dominio a DTOs
       const documents = result.docs.map(
         (doc) =>
           new DocumentListItemDto(
@@ -113,7 +112,6 @@ export class DocumentsController {
         },
       );
 
-      // Manejar diferentes tipos de errores
       if (errorMessage.includes('Bucket de documentos no encontrado')) {
         throw new HttpException(
           {
@@ -138,7 +136,6 @@ export class DocumentsController {
         );
       }
 
-      // Error genérico
       throw new HttpException(
         {
           statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -161,7 +158,6 @@ export class DocumentsController {
       const result = await this.deleteDocumentUseCase.execute(documentId);
 
       if (!result.success) {
-        // Documento no encontrado
         if (result.error === 'DOCUMENT_NOT_FOUND') {
           this.logger.warn('Document not found for deletion', {
             documentId,
@@ -178,7 +174,6 @@ export class DocumentsController {
           );
         }
 
-        // Otros errores
         this.logger.error('Document deletion failed', result.message, {
           documentId,
           errorType: result.error,
@@ -205,12 +200,10 @@ export class DocumentsController {
         result.deletedAt!,
       );
     } catch (error) {
-      // Si ya es una HttpException, re-lanzarla
       if (error instanceof HttpException) {
         throw error;
       }
 
-      // Error inesperado
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
 
@@ -285,7 +278,6 @@ export class DocumentsController {
         throw new UnauthorizedException('Usuario no autenticado');
       }
 
-      // LOG CRÍTICO: Verificar qué datos llegan del frontend
       this.logger.log('DATOS RECIBIDOS DEL FRONTEND:', {
         fileName: file.originalname,
         fileSize: file.size,
@@ -314,7 +306,6 @@ export class DocumentsController {
         options: options,
       });
 
-      // PASO 1 - VERIFICACIÓN DE DOCUMENTOS ELIMINADOS
       // Check for reusable deleted documents
       this.logger.log('Checking for reusable deleted documents...', {
         fileName: file.originalname,
@@ -330,14 +321,13 @@ export class DocumentsController {
         userId,
         {
           skipTextExtraction: false,
-          autoRestore: true, // Siempre activar auto-restauración por defecto
+          autoRestore: true,
         },
       );
 
       const deletedResult =
         await this.checkDeletedDocumentUseCase.execute(deletedCheckRequest);
 
-      // Log específico del resultado de la verificación de eliminados
       this.logger.log(
         `Deleted document check result: ${deletedResult.status}`,
         {
@@ -356,10 +346,10 @@ export class DocumentsController {
       ) {
         const matchType =
           deletedResult.status === 'exact_match'
-            ? 'HASH BINARIO'
+            ? 'BINARY HASH'
             : deletedResult.status === 'text_match'
-              ? 'HASH DE TEXTO'
-              : 'RESTAURACIÓN';
+              ? 'TEXT HASH'
+              : 'RESTORATION';
 
         this.logger.log(
           `Found reusable deleted document (${matchType}): ${deletedResult.deletedDocument?.id}`,
@@ -386,7 +376,7 @@ export class DocumentsController {
           );
           return new UnifiedUploadResponseDto(
             'restored',
-            `Documento restaurado automáticamente. El archivo "${file.originalname}" ya existía en el sistema y fue restaurado.`,
+            `Document automatically restored. The file "${file.originalname}" already existed in the system and was restored.`,
             {
               id: deletedResult.restoredDocument.id,
               fileName: deletedResult.restoredDocument.fileName,
@@ -418,13 +408,11 @@ export class DocumentsController {
         );
       }
 
-      // PASO 2 - VERIFICACIÓN DE SIMILITUD
       // Check for duplicates in active documents
       let preGeneratedChunks: any[] = [];
       let preGeneratedEmbeddings: number[][] = [];
       let extractedText: string = '';
 
-      // Always run similarity check as verification is enabled
       this.logger.log('Checking for document similarity and duplicates...', {
         fileName: file.originalname,
         fileSize: file.size,
@@ -443,7 +431,7 @@ export class DocumentsController {
           similarityThreshold: options.similarityThreshold || 0.7,
           maxCandidates: options.maxSimilarCandidates || 10,
           useSampling: true,
-          returnGeneratedData: true, // Para reutilizar chunks y embeddings
+          returnGeneratedData: true,
         },
       );
 
@@ -452,7 +440,6 @@ export class DocumentsController {
           similarityCheckRequest,
         );
 
-      // Log del resultado de verificación de similitud
       this.logger.log(`Similarity check result: ${similarityResult.status}`, {
         status: similarityResult.status,
         exactMatchFound: !!similarityResult.existingDocument,
@@ -461,7 +448,6 @@ export class DocumentsController {
         fileName: file.originalname,
       });
 
-      // Manejar duplicados exactos
       if (
         similarityResult.status === 'exact_match' &&
         similarityResult.existingDocument
@@ -477,7 +463,6 @@ export class DocumentsController {
           },
         );
 
-        // Always reject duplicates with verification enabled
         return new UnifiedUploadResponseDto(
           'duplicate_found',
           `Este archivo ya existe en el sistema. Tipo de coincidencia: ${similarityResult.existingDocument.matchType === 'binary_hash' ? 'Hash binario idéntico' : 'Contenido de texto idéntico'}.`,
@@ -496,7 +481,6 @@ export class DocumentsController {
         );
       }
 
-      // Manejar documentos similares
       if (
         similarityResult.status === 'candidates' &&
         similarityResult.similarCandidates &&
@@ -515,7 +499,6 @@ export class DocumentsController {
           },
         );
 
-        // Always reject similar documents with verification enabled
         return new UnifiedUploadResponseDto(
           'similar_found',
           `Se encontraron ${similarityResult.similarCandidates.length} documentos similares. Revisa si ya existe el documento que intentas subir.`,
@@ -539,7 +522,6 @@ export class DocumentsController {
         );
       }
 
-      // Reutilizar datos generados si están disponibles
       if (similarityResult.generatedData) {
         preGeneratedChunks = similarityResult.generatedData.chunks || [];
         preGeneratedEmbeddings =
@@ -558,19 +540,6 @@ export class DocumentsController {
         { fileName: file.originalname },
       );
 
-      this.logger.log(
-        'PASO 3 - Procediendo con subida normal del documento (con verificaciones completas)...',
-        {
-          fileName: file.originalname,
-          userId: userId,
-          courseIdFromOptions: options.courseId,
-          classIdFromOptions: options.classId,
-          courseIdFromBody: courseId,
-          classIdFromBody: classId,
-        },
-      );
-
-      // Usar courseId y classId directos o fallback a options
       const finalCourseId = courseId || options.courseId;
       const finalClassId = classId || options.classId;
 
@@ -583,19 +552,6 @@ export class DocumentsController {
         classId: finalClassId,
       });
 
-      this.logger.log('PASO 3 - ÉXITO: Documento subido exitosamente', {
-        uploadedDocumentId: document.id,
-        fileName: document.fileName,
-        originalName: document.originalName,
-        mimeType: document.mimeType,
-        size: document.size,
-        uploadedAt: document.uploadedAt,
-        optimizationUsed: preGeneratedChunks.length > 0,
-        chunksReused: preGeneratedChunks.length,
-        embeddingsReused: preGeneratedEmbeddings.length,
-        extractedTextReused: extractedText.length > 0,
-        uploadFlow: 'normal_upload',
-      });
 
       this.logger.log('Documento subido exitosamente', {
         documentId: document.id,
@@ -892,7 +848,6 @@ export class DocumentsController {
 
       this.logger.logChunkOperation('retrieve', documentId);
 
-      // usar el servicio de chunking para obtener chunks con estadísticas
       const result =
         await this.processDocumentChunksUseCase[
           'chunkingService'

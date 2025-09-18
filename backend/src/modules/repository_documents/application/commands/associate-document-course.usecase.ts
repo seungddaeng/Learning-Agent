@@ -25,23 +25,23 @@ export class AssociateDocumentToCourseUseCase {
     const { documentId, courseId } = request;
 
     try {
-      // Verificar que el documento existe
+      // Verify that document exists
       const document = await this.documentRepository.findById(documentId);
       if (!document) {
         return {
           success: false,
-          message: `Documento con ID ${documentId} no encontrado`,
+          message: `Document with ID ${documentId} not found`,
           documentId,
           courseId,
         };
       }
 
-      // Asociar el documento con el curso
+      // Associate document with course
       await this.documentRepository.associateWithCourse(documentId, courseId);
 
       return {
         success: true,
-        message: 'Documento asociado exitosamente con el curso',
+        message: 'Document successfully associated with course',
         documentId,
         courseId,
       };
@@ -51,7 +51,7 @@ export class AssociateDocumentToCourseUseCase {
       
       return {
         success: false,
-        message: `Error al asociar documento con curso: ${errorMessage}`,
+        message: `Error associating document with course: ${errorMessage}`,
         documentId,
         courseId,
       };

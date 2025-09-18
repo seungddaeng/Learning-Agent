@@ -93,7 +93,6 @@ export class ContractDocumentsController {
         limit: query.limit || 10,
       });
 
-      // Map the domain response to contract DTOs
       const documentos = result.docs.map(
         (doc) =>
           new ContractDocumentItemDto(
@@ -131,7 +130,6 @@ export class ContractDocumentsController {
         },
       );
 
-      // handle different types of errors
       if (errorMessage.includes('no encontrado')) {
         throw new HttpException(
           {
@@ -191,9 +189,7 @@ export class ContractDocumentsController {
         );
       }
 
-      // 1. Removed basicResult as it's no longer needed
-
-      // 2. Verificar que el documento existe
+      // Verificar que el documento existe
       const document = await this.documentRepository.findById(docId.trim());
       if (!document) {
         throw new HttpException(
@@ -206,10 +202,10 @@ export class ContractDocumentsController {
         );
       }
 
-      // 3. Obtener todos los chunks del documento (sin límite)
+      // Obtener todos los chunks del documento
       const chunksResult = await this.chunkRepository.findByDocumentId(
         docId.trim(),
-        { limit: 10000 }, // Límite alto para documentos grandes
+        { limit: 10000 },
       );
       if (
         !chunksResult ||
@@ -229,20 +225,16 @@ export class ContractDocumentsController {
       const chunks = chunksResult.chunks;
       this.logger.log(`Se encontraron ${chunks.length} chunks para procesar`);
 
-      // 4. Generar el índice usando Gemini
       const documentIndex = await this.generateDocumentIndex(
         docId.trim(),
         document.documentTitle || document.originalName,
         chunks,
       );
 
-      // 5. Formatear el índice como string numerado
       const formattedIndex = this.formatIndexAsString(documentIndex);
 
-      // 6. Generar resumen a partir de los chunks
       const summary = this.generateSummaryFromChunks(chunks);
 
-      // 7. Obtener número de páginas del documento
       const pageCount = document.pageCount || Math.ceil(chunks.length / 2) || 1;
 
       return new DocumentContentResponseDto(
@@ -262,7 +254,6 @@ export class ContractDocumentsController {
         },
       );
 
-      // Handle different types of errors
       if (errorMessage.includes('no encontrado')) {
         throw new HttpException(
           {
@@ -309,17 +300,15 @@ export class ContractDocumentsController {
     chunks: any[],
   ): Promise<DocumentIndex> {
     try {
-  this.logger.log(`Generating index for document: ${documentTitle}`);
-  this.logger.log(`Processing all ${chunks.length} chunks in batches`);
+      this.logger.log(`Generating index for document: ${documentTitle}`);
+      this.logger.log(`Processing all ${chunks.length} chunks in batches`);
 
       // Process all chunks in small batches
-      const batchSize = 50; // Batch size to avoid token limits
+      const batchSize = 50;
       const allChapters: IndexChapter[] = [];
 
-      // Sort chunks by index
       const sortedChunks = chunks.sort((a, b) => a.chunkIndex - b.chunkIndex);
 
-      // Process in batches
       for (let i = 0; i < sortedChunks.length; i += batchSize) {
         const batch = sortedChunks.slice(i, i + batchSize);
         const batchNumber = Math.floor(i / batchSize) + 1;
@@ -339,7 +328,6 @@ export class ContractDocumentsController {
 
           allChapters.push(...batchChapters);
 
-          // Short pause between batches to avoid rate limits
           if (i + batchSize < sortedChunks.length) {
             await new Promise((resolve) => setTimeout(resolve, 1000));
           }
@@ -352,7 +340,6 @@ export class ContractDocumentsController {
             batchNumber,
           });
 
-          // Generate basic chapters for this batch
           const fallbackChapters = this.generateFallbackChaptersForBatch(
             batch,
             batchNumber,
@@ -361,7 +348,6 @@ export class ContractDocumentsController {
         }
       }
 
-      // Create the final index
       const documentIndex = new DocumentIndex(
         this.generateId(),
         documentId,
@@ -382,7 +368,6 @@ export class ContractDocumentsController {
         error instanceof Error ? error : String(error),
       );
 
-      // Fallback: generar índice básico sin AI
       return this.generateFallbackIndex(documentId, documentTitle, chunks);
     }
   }
@@ -404,7 +389,6 @@ export class ContractDocumentsController {
       },
     });
 
-    // Combinar chunks del lote en texto
     const batchText = batch.map((chunk) => chunk.content).join('\n\n');
 
     const prompt = this.buildBatchPrompt(
@@ -414,7 +398,6 @@ export class ContractDocumentsController {
       totalBatches,
     );
 
-    // explicit timeout
     const timeout = new Promise<never>((_, reject) =>
       setTimeout(
         () => reject(new Error('Timeout: El modelo tomó demasiado tiempo')),
@@ -423,19 +406,17 @@ export class ContractDocumentsController {
     );
 
     const generation = model.generateContent(prompt);
-    
+
     try {
       const result = await Promise.race([generation, timeout]);
       const response = result.response;
       const text = response.text();
 
-      // Validate response is not too long
       if (text.length > 25000) {
         this.logger.warn(
           `Response too long (${text.length} chars), truncating...`,
         );
         const truncatedText = text.substring(0, 25000);
-        // Ensure valid JSON ending
         const lastBrace = truncatedText.lastIndexOf('}');
         if (lastBrace > 0) {
           const validJson = truncatedText.substring(0, lastBrace + 1);
@@ -446,7 +427,6 @@ export class ContractDocumentsController {
         }
       }
 
-      // Parse batch JSON response
       const batchData: any = this.parseGeminiResponse(text);
       return (
         batchData.chapters?.map((chapter: any) => this.mapChapter(chapter)) || []
@@ -456,7 +436,6 @@ export class ContractDocumentsController {
         'Error in contract generation:',
         error instanceof Error ? error : String(error),
       );
-      // Return empty array on error
       return [];
     }
   }
@@ -514,9 +493,8 @@ export class ContractDocumentsController {
     documentTitle: string,
     chunks: any[],
   ): DocumentIndex {
-  this.logger.log('Generating fallback index without AI');
+    this.logger.log('Generating fallback index without AI');
 
-    // Create basic chapters based on the content
     const chapters: IndexChapter[] = [];
     const chunkGroups = Math.ceil(chunks.length / 10);
 
@@ -525,7 +503,6 @@ export class ContractDocumentsController {
       const endChunk = Math.min((i + 1) * 10, chunks.length);
       const groupChunks = chunks.slice(startChunk, endChunk);
 
-      // Extract keywords from the first chunk of the group
       const firstChunkContent: string = groupChunks[0]?.content || '';
       const words: string[] = firstChunkContent
         .split(' ')
@@ -652,10 +629,8 @@ Responde SOLO con este JSON compacto:
    */
   private parseGeminiResponse(response: string): any {
     try {
-      // Clean the response of any extra characters.
       let cleanResponse = response.trim();
 
-      // Find the JSON in the response
       const jsonStart = cleanResponse.indexOf('{');
       const jsonEnd = cleanResponse.lastIndexOf('}') + 1;
 
@@ -667,8 +642,8 @@ Responde SOLO con este JSON compacto:
 
       return JSON.parse(cleanResponse);
     } catch (error) {
-  this.logger.error('Error parsing Gemini response:', error instanceof Error ? error.message : String(error));
-  this.logger.error('Response received:', response);
+      this.logger.error('Error parsing Gemini response:', error instanceof Error ? error.message : String(error));
+      this.logger.error('Response received:', response);
       throw new Error('La respuesta de Gemini no es un JSON válido');
     }
   }
@@ -700,18 +675,16 @@ Responde SOLO con este JSON compacto:
    */
   private generateSummaryFromChunks(chunks: any[]): string {
     try {
-      // Take the first few sections for the summary (maximum 3)
       const firstChunks = chunks.slice(0, 3);
       const combinedContent = firstChunks
         .map((chunk) => (chunk.content || chunk.text || '') as string)
         .join(' ')
-        .substring(0, 1000); // Limit to 1000 characters
+        .substring(0, 1000);
 
       if (!combinedContent.trim()) {
         return 'Documento técnico especializado';
       }
 
-      // Create a more complete summary based on the content
       const sentences = combinedContent
         .split(/[.!?]+/)
         .filter((s) => s.trim().length > 20);
@@ -719,7 +692,6 @@ Responde SOLO con este JSON compacto:
         .split(' ')
         .filter((word) => word.length > 4);
 
-      // Try to create a summary using the first 2-3 sentences.
       if (sentences.length >= 2) {
         const summary = sentences.slice(0, 2).join('. ').trim();
         if (summary.length > 50 && summary.length < 300) {
@@ -727,7 +699,6 @@ Responde SOLO con este JSON compacto:
         }
       }
 
-      // Fallback: use the first sentence if it is descriptive
       if (sentences.length >= 1) {
         const firstSentence = sentences[0].trim();
         if (firstSentence.length > 30 && firstSentence.length < 200) {
@@ -735,7 +706,6 @@ Responde SOLO con este JSON compacto:
         }
       }
 
-      // Last fallback option using keywords
       const keyWords = words.slice(0, 3).join(', ');
       return `Documento técnico especializado que aborda temas relacionados con ${keyWords || 'metodologías avanzadas'}.`;
     } catch (error) {
@@ -755,10 +725,8 @@ Responde SOLO con este JSON compacto:
     documentIndex.chapters.forEach((chapter, chapterIndex) => {
       const chapterNumber = chapterIndex + 1;
 
-      // Chapter title
       result += `${chapterNumber}. ${chapter.title}\n\n`;
 
-      // Subtopics of the chapter
       chapter.subtopics.forEach((subtopic, subtopicIndex) => {
         const subtopicNumber = subtopicIndex + 1;
         result += `${chapterNumber}.${subtopicNumber} ${subtopic.title}\n`;
