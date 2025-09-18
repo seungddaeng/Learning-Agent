@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import type { DocumentRepositoryPort } from '../../domain/ports/document-repository.port';
 import type { DocumentStoragePort } from '../../domain/ports/document-storage.port';
 import { ContractDocumentListItem } from '../../domain/entities/contract-document-list-item';
@@ -18,6 +18,8 @@ export interface GetDocumentsBySubjectResponse {
 
 @Injectable()
 export class GetDocumentsBySubjectUseCase {
+  private readonly logger = new Logger(GetDocumentsBySubjectUseCase.name);
+
   constructor(
     private readonly documentRepository: DocumentRepositoryPort,
     private readonly documentStorage: DocumentStoragePort,
@@ -72,7 +74,7 @@ export class GetDocumentsBySubjectUseCase {
           );
         } catch (error) {
           // if there's an error with a specific document, we skip it but continue
-          console.warn(
+          this.logger.warn(
             `Error processing document ${doc.id}: ${error instanceof Error ? error.message : 'Unknown error'}`,
           );
           continue;

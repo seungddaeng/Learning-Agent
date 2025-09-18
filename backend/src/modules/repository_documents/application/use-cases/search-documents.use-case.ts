@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { DocumentEmbeddingService } from '../../domain/services/document-embedding.service';
 import type {
   VectorSearchOptions,
@@ -38,50 +38,52 @@ export interface SearchDocumentsRequest {
 }
 
 /**
- * Resultado de la búsqueda semántica
+ * Semantic search result
  */
 export interface SearchDocumentsResponse {
-  /** Indica si la búsqueda fue exitosa */
+  /** Indicates if the search was successful */
   success: boolean;
 
-  /** Resultado de la búsqueda */
+  /** Search result */
   result?: SemanticSearchResult;
 
-  /** Mensaje de error si falló */
+  /** Error message if failed */
   error?: string;
 
-  /** Código de error */
+  /** Error code */
   errorCode?: string;
 
-  /** Información adicional sobre la búsqueda */
+  /** Additional information about the search */
   searchInfo?: {
-    /** Tiempo de procesamiento en ms */
+    /** Processing time in ms */
     processingTimeMs: number;
 
-    /** Términos de búsqueda procesados */
+    /** Processed search terms */
     processedQuery: string;
 
-    /** Configuración aplicada */
+    /** Applied configuration */
     appliedOptions: VectorSearchOptions;
   };
 }
 
 /**
- * Caso de uso para búsqueda semántica de documentos
+ * Use case for semantic document search
  *
- * Permite realizar búsquedas por similaridad semántica en la base
- * de conocimientos de documentos usando embeddings vectoriales
+ * Allows performing semantic similarity searches in the document
+ * knowledge base using vector embeddings
  */
 @Injectable()
 export class SearchDocumentsUseCase {
+  private readonly logger = new Logger(SearchDocumentsUseCase.name);
+
   constructor(
     private readonly documentEmbeddingService: DocumentEmbeddingService,
   ) {}
 
   /**
-   * Ejecuta una búsqueda semántica en los documentos
+   * Execute a semantic search in documents
    *
-   * @param request - Solicitud con parámetros de búsqueda
+   * @param request - Request with search parameters
    */
   async execute(
     request: SearchDocumentsRequest,
@@ -89,13 +91,13 @@ export class SearchDocumentsUseCase {
     const startTime = Date.now();
 
     try {
-      // 1. Validar entrada
+      // 1. Validate input
       this.validateRequest(request);
 
-      // 2. Preparar opciones de búsqueda
+      // 2. Prepare search options
       const searchOptions = this.prepareSearchOptions(request);
 
-      // 3. Ejecutar búsqueda
+      // 3. Execute search
       const result = await this.documentEmbeddingService.searchDocuments(
         request.query,
         searchOptions,
@@ -115,7 +117,7 @@ export class SearchDocumentsUseCase {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
-      console.error('Error in SearchDocumentsUseCase:', errorMessage);
+      this.logger.error('Error in SearchDocumentsUseCase:', errorMessage);
 
       return {
         success: false,

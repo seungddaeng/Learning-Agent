@@ -2,28 +2,28 @@ import { DocumentChunk } from '../entities/document-chunk.entity';
 
 export class DocumentChunkService {
   /**
-   * Verifica si el chunk tiene contenido válido
+   * Check if the chunk contains valid content.
    */
   static isValid(chunk: DocumentChunk): boolean {
     return chunk.content.trim().length > 0 && chunk.chunkIndex >= 0;
   }
 
   /**
-   * Obtiene la longitud del contenido del chunk
+   * Gets the length of the chunk content.
    */
   static getContentLength(chunk: DocumentChunk): number {
     return chunk.content.length;
   }
 
   /**
-   * Verifica si el chunk es del tipo especificado
+   * Checks if the chunk is of the specified type.
    */
   static isOfType(chunk: DocumentChunk, type: string): boolean {
     return chunk.type === type;
   }
 
   /**
-   * Crea un nuevo chunk con validaciones
+   * Creates a new chunk with validations.
    */
   static create(
     id: string,
@@ -47,14 +47,16 @@ export class DocumentChunkService {
     );
 
     if (!this.isValid(chunk)) {
-      throw new Error('Invalid chunk: content must not be empty and chunkIndex must be >= 0');
+      throw new Error(
+        'Invalid chunk: content must not be empty and chunkIndex must be >= 0',
+      );
     }
 
     return chunk;
   }
 
   /**
-   * Valida que un chunk tenga el contenido mínimo requerido
+   * Validates that a chunk has the minimum required content.
    */
   static validateContent(content: string): void {
     if (!content || content.trim().length === 0) {
@@ -63,7 +65,7 @@ export class DocumentChunkService {
   }
 
   /**
-   * Valida que el índice del chunk sea válido
+   * Validates that the chunk index is valid.
    */
   static validateChunkIndex(chunkIndex: number): void {
     if (chunkIndex < 0) {

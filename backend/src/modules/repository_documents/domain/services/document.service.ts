@@ -149,18 +149,37 @@ export class DocumentService {
    * Checks if document has extracted text
    */
   static hasExtractedText(document: Document): boolean {
-    return Boolean(document.extractedText && document.extractedText.trim().length > 0);
+    return Boolean(
+      document.extractedText && document.extractedText.trim().length > 0,
+    );
   }
 
   /**
    * Validates if document can change status
    */
-  static canChangeStatus(document: Document, newStatus: DocumentStatus): boolean {
+  static canChangeStatus(
+    document: Document,
+    newStatus: DocumentStatus,
+  ): boolean {
     const validTransitions: Record<DocumentStatus, DocumentStatus[]> = {
-      [DocumentStatus.UPLOADED]: [DocumentStatus.PROCESSING, DocumentStatus.ERROR, DocumentStatus.DELETED],
-      [DocumentStatus.PROCESSING]: [DocumentStatus.PROCESSED, DocumentStatus.ERROR, DocumentStatus.DELETED],
-      [DocumentStatus.PROCESSED]: [DocumentStatus.PROCESSING, DocumentStatus.DELETED],
-      [DocumentStatus.ERROR]: [DocumentStatus.PROCESSING, DocumentStatus.DELETED],
+      [DocumentStatus.UPLOADED]: [
+        DocumentStatus.PROCESSING,
+        DocumentStatus.ERROR,
+        DocumentStatus.DELETED,
+      ],
+      [DocumentStatus.PROCESSING]: [
+        DocumentStatus.PROCESSED,
+        DocumentStatus.ERROR,
+        DocumentStatus.DELETED,
+      ],
+      [DocumentStatus.PROCESSED]: [
+        DocumentStatus.PROCESSING,
+        DocumentStatus.DELETED,
+      ],
+      [DocumentStatus.ERROR]: [
+        DocumentStatus.PROCESSING,
+        DocumentStatus.DELETED,
+      ],
       [DocumentStatus.DELETED]: [],
     };
 

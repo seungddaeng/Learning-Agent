@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import type { DocumentChunk } from '../entities/document-chunk.entity';
 import type {
   EmbeddingGeneratorPort,
@@ -62,6 +62,8 @@ export interface DocumentEmbeddingResult {
 
 @Injectable()
 export class DocumentEmbeddingService {
+  private readonly logger = new Logger(DocumentEmbeddingService.name);
+
   constructor(
     private readonly embeddingGenerator: EmbeddingGeneratorPort,
     private readonly vectorSearch: VectorSearchPort,
@@ -80,9 +82,7 @@ export class DocumentEmbeddingService {
       let chunks = chunksResult.chunks;
 
       if (chunks.length === 0) {
-        throw new Error(
-          `No chunks found for document ${documentId}`,
-        );
+        throw new Error(`No chunks found for document ${documentId}`);
       }
 
       chunks = this.applyChunkFilters(chunks, options.chunkFilters);
@@ -172,10 +172,7 @@ export class DocumentEmbeddingService {
     return this.vectorSearch.findSimilarChunks(chunkId, options);
   }
 
- findSimilarDocuments(
-    documentId: string,
-    options?: VectorSearchOptions,
-  ) {
+  findSimilarDocuments(documentId: string, options?: VectorSearchOptions) {
     return this.vectorSearch.findSimilarDocuments(documentId, options);
   }
 
@@ -239,9 +236,8 @@ export class DocumentEmbeddingService {
       }));
 
       await this.chunkRepository.updateBatchEmbeddings(updates);
-
     } catch (error) {
-      console.error('Error storing embeddings:', error);
+      this.logger.error('Error storing embeddings:', error);
       throw new Error(`Error storing embeddings: ${error}`);
     }
   }

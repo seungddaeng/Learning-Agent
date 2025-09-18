@@ -21,7 +21,11 @@ export class CheckDeletedDocumentRequest {
  */
 export class DeletedDocumentCheckResult {
   constructor(
-    public readonly status: 'exact_match' | 'text_match' | 'no_match' | 'restored',
+    public readonly status:
+      | 'exact_match'
+      | 'text_match'
+      | 'no_match'
+      | 'restored',
     public readonly deletedDocument?: Document,
     public readonly restoredDocument?: Document,
     public readonly message?: string,

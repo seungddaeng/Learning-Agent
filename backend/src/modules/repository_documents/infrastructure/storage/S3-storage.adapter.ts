@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import {
   S3Client,
@@ -20,6 +20,7 @@ import { minioConfig } from '../config/minio.config';
 
 @Injectable()
 export class S3StorageAdapter implements DocumentStoragePort {
+  private readonly logger = new Logger(S3StorageAdapter.name);
   private readonly s3Client: S3Client;
   private readonly bucketName: string;
   private readonly endpoint: string;
@@ -46,12 +47,12 @@ export class S3StorageAdapter implements DocumentStoragePort {
    */
   async uploadDocument(req: UploadDocumentRequest): Promise<Document> {
     try {
-      console.log(' MinIO Config:', {
+      this.logger.debug('MinIO Config:', {
         endpoint: this.endpoint,
         bucketName: this.bucketName,
         region: minioConfig.region,
       });
-      console.log(' Upload Request:', {
+      this.logger.debug('Upload Request:', {
         originalName: req.originalName,
         mimeType: req.mimeType,
         size: req.size,
@@ -75,7 +76,7 @@ export class S3StorageAdapter implements DocumentStoragePort {
       // Upload file to MinIO
       await this.s3Client.send(putObjectCommand);
       const url = `${this.endpoint}/${this.bucketName}/${fileName}`;
-      console.log(`Document uploaded successfully to ${url}`);
+      this.logger.log(`Document uploaded successfully to ${url}`);
       // Create Document entity (simple version for compatibility)
       const document = new Document(
         '', // id - it will be assigned based on the use case
@@ -175,7 +176,7 @@ export class S3StorageAdapter implements DocumentStoragePort {
             ),
           );
         } catch {
-          console.error(`Error fetching metadata for ${object.Key}`);
+          this.logger.error(`Error fetching metadata for ${object.Key}`);
         }
       }
 

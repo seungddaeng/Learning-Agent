@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../../core/prisma/prisma.service';
 import { DocumentIndexRepositoryPort } from '../../domain/ports/document-index-repository.port';
 import {
@@ -14,6 +14,10 @@ import { randomUUID } from 'crypto';
 export class PrismaDocumentIndexRepositoryAdapter
   implements DocumentIndexRepositoryPort
 {
+  private readonly logger = new Logger(
+    PrismaDocumentIndexRepositoryAdapter.name,
+  );
+
   constructor(private readonly prisma: PrismaService) {}
 
   async save(documentIndex: DocumentIndex): Promise<DocumentIndex> {
@@ -97,17 +101,17 @@ export class PrismaDocumentIndexRepositoryAdapter
         },
       });
 
-      console.log('Document index saved successfully:', {
+      this.logger.log('Document index saved successfully:', {
         id: savedIndex.id,
         documentId: savedIndex.documentId,
         title: savedIndex.title,
-        chaptersCount: savedIndex.chapters.length,
+        chaptersCount: savedIndex.chapters?.length || 0,
         status: savedIndex.status,
       });
 
       return this.mapToDomainEntity(savedIndex);
     } catch (error) {
-      console.error('Error saving document index:', error);
+      this.logger.error('Error saving document index:', error);
       throw new Error(`Error saving index: ${error.message}`);
     }
   }
@@ -140,7 +144,11 @@ export class PrismaDocumentIndexRepositoryAdapter
 
       return this.mapToDomainEntity(documentIndex);
     } catch (error) {
-      console.error('Error searching index for document:', documentId, error);
+      this.logger.error(
+        'Error searching index for document:',
+        documentId,
+        error,
+      );
       throw new Error(`Error searching index: ${error.message}`);
     }
   }
@@ -173,7 +181,7 @@ export class PrismaDocumentIndexRepositoryAdapter
 
       return this.mapToDomainEntity(documentIndex);
     } catch (error) {
-      console.error('Error searching index by ID:', id, error);
+      this.logger.error('Error searching index by ID:', id, error);
       throw new Error(`Error searching index: ${(error as Error).message}`);
     }
   }
@@ -210,7 +218,7 @@ export class PrismaDocumentIndexRepositoryAdapter
 
       return this.mapToDomainEntity(updatedIndex);
     } catch (error) {
-      console.error('Error updating index:', id, error);
+      this.logger.error('Error updating index:', id, error);
       throw new Error(`Error updating index: ${(error as Error).message}`);
     }
   }
@@ -220,9 +228,13 @@ export class PrismaDocumentIndexRepositoryAdapter
       await this.prisma.documentIndex.deleteMany({
         where: { documentId },
       });
-      console.log('Index deleted for document:', documentId);
+      this.logger.log('Index deleted for document:', documentId);
     } catch (error) {
-      console.error('Error deleting index for document:', documentId, error);
+      this.logger.error(
+        'Error deleting index for document:',
+        documentId,
+        error,
+      );
       throw new Error(`Error deleting index: ${(error as Error).message}`);
     }
   }
@@ -268,7 +280,7 @@ export class PrismaDocumentIndexRepositoryAdapter
         total,
       };
     } catch (error) {
-      console.error('Error listing indices:', error);
+      this.logger.error('Error listing indices:', error);
       throw new Error(`Error listing indices: ${(error as Error).message}`);
     }
   }

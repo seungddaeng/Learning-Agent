@@ -254,7 +254,7 @@ export class DocumentsController {
     @Body('classId') classId?: string,
   ): Promise<UnifiedUploadResponseDto> {
     try {
-      console.log(' Upload request received:', {
+      this.logger.log('Upload request received:', {
         hasFile: !!file,
         fileInfo: file
           ? {
