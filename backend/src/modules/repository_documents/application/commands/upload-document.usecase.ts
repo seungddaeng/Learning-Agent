@@ -3,7 +3,10 @@ import { createHash } from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import type { DocumentStoragePort } from '../../domain/ports/document-storage.port';
 import type { DocumentRepositoryPort } from '../../domain/ports/document-repository.port';
-import { Document, DocumentStatus } from '../../domain/entities/document.entity';
+import {
+  Document,
+  DocumentStatus,
+} from '../../domain/entities/document.entity';
 import { UploadDocumentRequest } from '../../domain/value-objects/upload-document.vo';
 import { DocumentChunkingService } from '../../domain/services/document-chunking.service';
 import { DocumentService } from '../../domain/services/document.service';
@@ -96,16 +99,15 @@ export class UploadDocumentUseCase {
     ) {
       try {
         // Convert pre-generated chunks to DocumentChunk entities
-        const documentChunks = options.preGeneratedChunks.map(
-          (chunk, index) =>
-            DocumentChunkService.create(
-              uuidv4(), // New unique ID for each chunk
-              documentId, // Document ID
-              chunk.content, // Chunk content
-              index, // Chunk index
-              'text', // Default type
-              chunk.metadata || {}, // Chunk metadata
-            ),
+        const documentChunks = options.preGeneratedChunks.map((chunk, index) =>
+          DocumentChunkService.create(
+            uuidv4(), // New unique ID for each chunk
+            documentId, // Document ID
+            chunk.content, // Chunk content
+            index, // Chunk index
+            'text', // Default type
+            chunk.metadata || {}, // Chunk metadata
+          ),
         );
 
         // Use chunking service to save chunks
@@ -115,12 +117,15 @@ export class UploadDocumentUseCase {
           );
 
         // Save embeddings for each chunk
-        if (options.preGeneratedEmbeddings && options.preGeneratedEmbeddings.length === savedChunks.length) {
+        if (
+          options.preGeneratedEmbeddings &&
+          options.preGeneratedEmbeddings.length === savedChunks.length
+        ) {
           const embeddingUpdates = savedChunks.map((chunk, index) => ({
             chunkId: chunk.id,
-            embedding: options.preGeneratedEmbeddings![index]
+            embedding: options.preGeneratedEmbeddings![index],
           }));
-          
+
           await this.chunkingService['chunkRepository'].updateBatchEmbeddings(
             embeddingUpdates,
           );
@@ -130,9 +135,12 @@ export class UploadDocumentUseCase {
         if (options.extractedText) {
           let updatedDocument = DocumentService.withExtractedText(
             savedDocument,
-            options.extractedText
+            options.extractedText,
           );
-          updatedDocument = DocumentService.withStatus(updatedDocument, DocumentStatus.PROCESSED);
+          updatedDocument = DocumentService.withStatus(
+            updatedDocument,
+            DocumentStatus.PROCESSED,
+          );
 
           await this.documentRepository.save(updatedDocument);
         }

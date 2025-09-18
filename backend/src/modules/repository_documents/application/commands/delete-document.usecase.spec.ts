@@ -14,7 +14,7 @@ describe('DeleteDocumentUseCase', () => {
     };
     repoMock = {
       findById: jest.fn(),
-      updateStatus: jest.fn(), // ¡CORRECCIÓN: Cambiado de delete a updateStatus!
+      updateStatus: jest.fn(),
     };
 
     useCase = new DeleteDocumentUseCase(storageMock, repoMock);
@@ -23,20 +23,23 @@ describe('DeleteDocumentUseCase', () => {
   });
 
   it('should delete document successfully', async () => {
-    const document = { 
-      fileName: 'file.pdf', 
+    const document = {
+      fileName: 'file.pdf',
       originalName: 'File.pdf',
-      status: DocumentStatus.PROCESSED, // Agregar status para logging
-      fileHash: 'hash123' // Agregar hash para logging
+      status: DocumentStatus.PROCESSED,
+      fileHash: 'hash123',
     };
     repoMock.findById.mockResolvedValue(document);
     storageMock.documentExists.mockResolvedValue(true);
-    repoMock.updateStatus.mockResolvedValue(undefined); // Mockear updateStatus
+    repoMock.updateStatus.mockResolvedValue(undefined);
 
     const result = await useCase.execute('doc-1');
 
     expect(storageMock.softDeleteDocument).toHaveBeenCalledWith('file.pdf');
-    expect(repoMock.updateStatus).toHaveBeenCalledWith('doc-1', DocumentStatus.DELETED); // ¡CORRECCIÓN: Cambiado a updateStatus!
+    expect(repoMock.updateStatus).toHaveBeenCalledWith(
+      'doc-1',
+      DocumentStatus.DELETED,
+    );
     expect(result.success).toBe(true);
   });
 
@@ -54,7 +57,7 @@ describe('DeleteDocumentUseCase', () => {
       fileName: 'file.pdf',
       originalName: 'File.pdf',
       status: DocumentStatus.PROCESSED,
-      fileHash: 'hash123'
+      fileHash: 'hash123',
     });
     storageMock.documentExists.mockResolvedValue(false);
 
@@ -64,13 +67,12 @@ describe('DeleteDocumentUseCase', () => {
     expect(result.error).toBe('DOCUMENT_NOT_FOUND');
   });
 
-  // Test adicional para verificar manejo de errores
   it('should handle errors during updateStatus', async () => {
-    const document = { 
-      fileName: 'file.pdf', 
+    const document = {
+      fileName: 'file.pdf',
       originalName: 'File.pdf',
       status: DocumentStatus.PROCESSED,
-      fileHash: 'hash123'
+      fileHash: 'hash123',
     };
     repoMock.findById.mockResolvedValue(document);
     storageMock.documentExists.mockResolvedValue(true);

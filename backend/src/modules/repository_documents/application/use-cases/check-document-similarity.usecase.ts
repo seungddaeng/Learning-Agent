@@ -52,9 +52,7 @@ export class CheckDocumentSimilarityUseCase {
           // Don't consider as match if deleted
           // Continue with text hash verification
         } else {
-          this.logger.log(
-            `ACTIVE document found, considering as duplicate`,
-          );
+          this.logger.log(`ACTIVE document found, considering as duplicate`);
           return new DocumentSimilarityResult(
             'exact_match',
             new DocumentMatch(
@@ -184,12 +182,9 @@ export class CheckDocumentSimilarityUseCase {
         },
       );
 
-      // Step 2: Process all chunks (100%) for fully accurate verification
-      // Use 100% of chunks instead of sampling for maximum precision
-      const samplingPercentage = 1.0; // 100% of chunks
-      const maxSampleCount = chunkingResult.chunks.length; // All chunks
+      // Step 2: Process all chunks for fully accurate verification
 
-      const chunksToProcess = chunkingResult.chunks; // Use ALL chunks
+      const chunksToProcess = chunkingResult.chunks;
 
       this.logger.log(
         `Processing ${chunksToProcess.length} of ${chunkingResult.chunks.length} chunks (100% - all chunks for maximum precision)`,
@@ -346,9 +341,7 @@ export class CheckDocumentSimilarityUseCase {
         }
       }
 
-      this.logger.log(
-        `Final candidates found: ${candidatesList.length}`,
-      );
+      this.logger.log(`Final candidates found: ${candidatesList.length}`);
 
       // Sort by score (highest first) and limit results
       const finalCandidates = candidatesList

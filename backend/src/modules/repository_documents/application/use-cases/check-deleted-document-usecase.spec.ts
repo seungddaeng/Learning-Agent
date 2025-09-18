@@ -1,5 +1,4 @@
 import { CheckDeletedDocumentUseCase } from './check-deleted-document.usecase';
-import { DeletedDocumentCheckResult } from '../../domain/value-objects/deleted-document-check.vo';
 import { DocumentStatus } from '../../domain/entities/document.entity';
 
 describe('CheckDeletedDocumentUseCase', () => {
@@ -57,7 +56,9 @@ describe('CheckDeletedDocumentUseCase', () => {
 
   it('retorna textMatch si encuentra documento eliminado por hash de texto', async () => {
     mockDeletedDocumentRepository.findDeletedByFileHash.mockResolvedValue(null);
-    mockTextExtraction.extractTextFromPdf.mockResolvedValue({ content: 'contenido' });
+    mockTextExtraction.extractTextFromPdf.mockResolvedValue({
+      content: 'contenido',
+    });
     mockDeletedDocumentRepository.findDeletedByTextHash.mockResolvedValue({
       id: 'doc2',
       fileName: 'test2.pdf',
@@ -73,7 +74,9 @@ describe('CheckDeletedDocumentUseCase', () => {
 
   it('retorna noMatch si no encuentra documentos eliminados', async () => {
     mockDeletedDocumentRepository.findDeletedByFileHash.mockResolvedValue(null);
-    mockTextExtraction.extractTextFromPdf.mockResolvedValue({ content: 'contenido' });
+    mockTextExtraction.extractTextFromPdf.mockResolvedValue({
+      content: 'contenido',
+    });
     mockDeletedDocumentRepository.findDeletedByTextHash.mockResolvedValue(null);
 
     const result = await useCase.execute(fakeRequest);
@@ -88,8 +91,10 @@ describe('CheckDeletedDocumentUseCase', () => {
       s3Key: 'test.pdf',
       status: DocumentStatus.DELETED,
     };
-    
-    mockDeletedDocumentRepository.findDeletedByFileHash.mockResolvedValue(deletedDoc);
+
+    mockDeletedDocumentRepository.findDeletedByFileHash.mockResolvedValue(
+      deletedDoc,
+    );
     mockDocumentStorage.exists.mockResolvedValue(true);
     mockDocumentStorage.moveFile.mockResolvedValue(undefined);
     mockDeletedDocumentRepository.restoreDocument.mockResolvedValue({
@@ -114,14 +119,18 @@ describe('CheckDeletedDocumentUseCase', () => {
       s3Key: 'test.pdf',
       status: DocumentStatus.DELETED,
     };
-    
-    mockDeletedDocumentRepository.findDeletedByFileHash.mockResolvedValue(deletedDoc);
+
+    mockDeletedDocumentRepository.findDeletedByFileHash.mockResolvedValue(
+      deletedDoc,
+    );
     mockDocumentStorage.exists.mockResolvedValue(false);
 
-    await expect(useCase.execute({
-      ...fakeRequest,
-      options: { autoRestore: true },
-    })).rejects.toThrow('archivo eliminado no encontrado en storage');
+    await expect(
+      useCase.execute({
+        ...fakeRequest,
+        options: { autoRestore: true },
+      }),
+    ).rejects.toThrow('archivo eliminado no encontrado en storage');
   });
 
   it('restaura documento por ID correctamente', async () => {
@@ -131,7 +140,7 @@ describe('CheckDeletedDocumentUseCase', () => {
       s3Key: 'test.pdf',
       status: DocumentStatus.DELETED,
     };
-    
+
     mockDocumentRepository.findById.mockResolvedValue(deletedDoc);
     mockDocumentStorage.exists.mockResolvedValue(true);
     mockDocumentStorage.moveFile.mockResolvedValue(undefined);
