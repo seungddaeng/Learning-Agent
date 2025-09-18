@@ -27,14 +27,12 @@ export class CheckDeletedDocumentUseCase {
     request: CheckDeletedDocumentRequest,
   ): Promise<DeletedDocumentCheckResult> {
     try {
-      this.logger.log(
-
-      );
+      this.logger.log('Checking deleted document');
 
       // Step 1: Check exact binary hash against deleted documents
       const fileHash = this.generateFileHash(request.file);
       this.logger.log(`Generated file hash: ${fileHash}`);
-      
+
       const exactDeletedMatch =
         await this.deletedDocumentRepository.findDeletedByFileHash(fileHash);
 
@@ -53,7 +51,9 @@ export class CheckDeletedDocumentUseCase {
 
         return DeletedDocumentCheckResult.exactMatch(exactDeletedMatch);
       } else {
-        this.logger.log(`No deleted document found with binary hash: ${fileHash}`);
+        this.logger.log(
+          `No deleted document found with binary hash: ${fileHash}`,
+        );
       }
 
       // Step 2: Check text hash if text extraction should not be skipped
@@ -88,9 +88,7 @@ export class CheckDeletedDocumentUseCase {
       this.logger.log('No reusable deleted documents found');
       return DeletedDocumentCheckResult.noMatch();
     } catch (error) {
-      this.logger.error(
-        `Error checking deleted document: ${error.message}`,
-      );
+      this.logger.error(`Error checking deleted document: ${error.message}`);
       throw error;
     }
   }
@@ -100,12 +98,10 @@ export class CheckDeletedDocumentUseCase {
    */
   async restoreDeletedDocument(
     deletedDocument: any,
-    restoredBy: string,
+    _restoredBy: string,
   ): Promise<DeletedDocumentCheckResult> {
     try {
-      this.logger.log(
-        `Starting document restoration: ${deletedDocument.id}`,
-      );
+      this.logger.log(`Starting document restoration: ${deletedDocument.id}`);
       this.logger.debug('Document to restore:', {
         id: deletedDocument.id,
         fileName: deletedDocument.fileName,
@@ -115,19 +111,13 @@ export class CheckDeletedDocumentUseCase {
 
       // Step 1: Verify that file still exists in deleted folder of bucket
       const deletedS3Key = `deleted/${deletedDocument.fileName}`; // Use fileName instead of s3Key
-      this.logger.log(
-        `Checking deleted file existence: ${deletedS3Key}`,
-      );
-      
+      this.logger.log(`Checking deleted file existence: ${deletedS3Key}`);
+
       const exists = await this.documentStorage.exists(deletedS3Key);
 
       if (!exists) {
-        this.logger.error(
-          `Deleted file not found in storage: ${deletedS3Key}`,
-        );
-        throw new Error(
-          `Deleted file not found in storage: ${deletedS3Key}`,
-        );
+        this.logger.error(`Deleted file not found in storage: ${deletedS3Key}`);
+        throw new Error(`Deleted file not found in storage: ${deletedS3Key}`);
       }
 
       this.logger.log(`Deleted file found, proceeding to move`);
@@ -135,21 +125,21 @@ export class CheckDeletedDocumentUseCase {
       // Step 2: Move file from deleted/ back to original location
       const originalS3Key = deletedDocument.fileName; // Original location is fileName directly
       this.logger.log(`Moving file from ${deletedS3Key} to ${originalS3Key}`);
-      
+
       await this.documentStorage.moveFile(deletedS3Key, originalS3Key);
       this.logger.log(`File moved successfully`);
 
       // Step 3: Update document status to UPLOADED
-      this.logger.log(
-        `Updating document status in DB: ${deletedDocument.id}`,
-      );
+      this.logger.log(`Updating document status in DB: ${deletedDocument.id}`);
       const restoredDocument =
         await this.deletedDocumentRepository.restoreDocument(
           deletedDocument.id,
         );
 
       // Step 4: Restore deleted chunks
-      this.logger.log(`Restoring deleted chunks for document: ${deletedDocument.id}`);
+      this.logger.log(
+        `Restoring deleted chunks for document: ${deletedDocument.id}`,
+      );
       await this.chunkRepository.restoreByDocumentId(deletedDocument.id);
       this.logger.log(`Chunks restored successfully`);
 
@@ -157,14 +147,10 @@ export class CheckDeletedDocumentUseCase {
         this.logger.error(
           `Failed updating document status: ${deletedDocument.id}`,
         );
-        throw new Error(
-          `Could not restore document: ${deletedDocument.id}`,
-        );
+        throw new Error(`Could not restore document: ${deletedDocument.id}`);
       }
 
-      this.logger.log(
-        `Document restored successfully: ${restoredDocument.id}`,
-      );
+      this.logger.log(`Document restored successfully: ${restoredDocument.id}`);
       this.logger.debug(`Restored document:`, {
         id: restoredDocument.id,
         fileName: restoredDocument.fileName,
@@ -216,9 +202,13 @@ export class CheckDeletedDocumentUseCase {
 
       // Find deleted document using general repository
       // (since we have documents with DELETED status)
-      const deletedDocument = await this.documentRepository.findById(documentId);
+      const deletedDocument =
+        await this.documentRepository.findById(documentId);
 
-      if (!deletedDocument || deletedDocument.status !== DocumentStatus.DELETED) {
+      if (
+        !deletedDocument ||
+        deletedDocument.status !== DocumentStatus.DELETED
+      ) {
         this.logger.warn(`Document not found or not deleted: ${documentId}`);
         return {
           success: false,
@@ -226,10 +216,15 @@ export class CheckDeletedDocumentUseCase {
         };
       }
 
-      this.logger.log(`Deleted document found, starting restoration: ${documentId}`);
+      this.logger.log(
+        `Deleted document found, starting restoration: ${documentId}`,
+      );
 
       // Use complete restoration logic
-      const result = await this.restoreDeletedDocument(deletedDocument, restoredBy);
+      const result = await this.restoreDeletedDocument(
+        deletedDocument,
+        restoredBy,
+      );
 
       if (result.status === 'restored' && result.restoredDocument) {
         return {

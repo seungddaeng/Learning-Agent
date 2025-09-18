@@ -43,9 +43,7 @@ export class DeleteDocumentUseCase {
         document.fileName,
       );
       if (!exists) {
-        this.logger.warn(
-          `File not found in storage: ${document.fileName}`,
-        );
+        this.logger.warn(`File not found in storage: ${document.fileName}`);
         return {
           success: false,
           message: `Document file '${document.fileName}' not found in storage`,

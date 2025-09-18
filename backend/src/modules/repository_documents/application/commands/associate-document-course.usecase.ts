@@ -15,9 +15,7 @@ export interface AssociateDocumentToCourseResponse {
 
 @Injectable()
 export class AssociateDocumentToCourseUseCase {
-  constructor(
-    private readonly documentRepository: DocumentRepositoryPort,
-  ) {}
+  constructor(private readonly documentRepository: DocumentRepositoryPort) {}
 
   async execute(
     request: AssociateDocumentToCourseRequest,
@@ -48,7 +46,7 @@ export class AssociateDocumentToCourseUseCase {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
-      
+
       return {
         success: false,
         message: `Error associating document with course: ${errorMessage}`,
