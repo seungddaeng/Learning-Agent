@@ -2,7 +2,7 @@ import { Document, DocumentStatus } from '../entities/document.entity';
 
 export class DocumentService {
   /**
-   * Crea un nuevo documento
+   * Creates a new document
    */
   static create(
     id: string,
@@ -40,7 +40,7 @@ export class DocumentService {
   }
 
   /**
-   * Actualiza el texto extraído del documento
+   * Updates document with extracted text
    */
   static withExtractedText(
     document: Document,
@@ -76,7 +76,7 @@ export class DocumentService {
   }
 
   /**
-   * Actualiza el estado del documento
+   * Updates document status
    */
   static withStatus(document: Document, status: DocumentStatus): Document {
     return new Document(
@@ -104,7 +104,7 @@ export class DocumentService {
   }
 
   /**
-   * Actualiza el hash del texto del documento
+   * Updates document text hash
    */
   static withTextHash(document: Document, textHash: string): Document {
     return new Document(
@@ -132,28 +132,28 @@ export class DocumentService {
   }
 
   /**
-   * Verifica si el documento está listo para procesamiento
+   * Checks if document is ready for processing
    */
   static isReadyForProcessing(document: Document): boolean {
     return document.status === DocumentStatus.UPLOADED;
   }
 
   /**
-   * Verifica si el documento ha sido procesado completamente
+   * Checks if document has been fully processed
    */
   static isProcessed(document: Document): boolean {
     return document.status === DocumentStatus.PROCESSED;
   }
 
   /**
-   * Verifica si el documento tiene texto extraído
+   * Checks if document has extracted text
    */
   static hasExtractedText(document: Document): boolean {
     return Boolean(document.extractedText && document.extractedText.trim().length > 0);
   }
 
   /**
-   * Valida que el documento pueda cambiar de estado
+   * Validates if document can change status
    */
   static canChangeStatus(document: Document, newStatus: DocumentStatus): boolean {
     const validTransitions: Record<DocumentStatus, DocumentStatus[]> = {
@@ -168,7 +168,7 @@ export class DocumentService {
   }
 
   /**
-   * Valida los datos básicos del documento
+   * Validates basic document data
    */
   static validateDocumentData(
     fileName: string,

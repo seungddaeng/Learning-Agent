@@ -1,7 +1,7 @@
 import { Document } from '../entities/document.entity';
 
 /**
- * solicitud para verificar documentos eliminados reutilizables
+ * Request to check reusable deleted documents
  */
 export class CheckDeletedDocumentRequest {
   constructor(
@@ -17,7 +17,7 @@ export class CheckDeletedDocumentRequest {
 }
 
 /**
- * resultado de la verificación de documentos eliminados
+ * Deleted documents check result
  */
 export class DeletedDocumentCheckResult {
   constructor(
@@ -32,7 +32,7 @@ export class DeletedDocumentCheckResult {
       'exact_match',
       deletedDocument,
       undefined,
-      'encontrado documento eliminado con hash binario exacto',
+      'found deleted document with exact binary hash',
     );
   }
 
@@ -41,7 +41,7 @@ export class DeletedDocumentCheckResult {
       'text_match',
       deletedDocument,
       undefined,
-      'encontrado documento eliminado con contenido textual idéntico',
+      'found deleted document with identical text content',
     );
   }
 
@@ -50,7 +50,7 @@ export class DeletedDocumentCheckResult {
       'no_match',
       undefined,
       undefined,
-      'no se encontraron documentos eliminados similares',
+      'no similar deleted documents found',
     );
   }
 
@@ -62,13 +62,13 @@ export class DeletedDocumentCheckResult {
       'restored',
       deletedDocument,
       restoredDocument,
-      'documento eliminado restaurado exitosamente',
+      'deleted document restored successfully',
     );
   }
 }
 
 /**
- * candidato de documento eliminado para restauración
+ * Deleted document candidate for restoration
  */
 export class DeletedDocumentCandidate {
   constructor(
