@@ -98,7 +98,7 @@ export class DocumentsController {
       return new DocumentListResponseDto(
         documents,
         result.total,
-        'Documentos recuperados exitosamente',
+        'Documents retrieved successfully',
       );
     } catch (error: unknown) {
       const errorMessage =
@@ -112,11 +112,11 @@ export class DocumentsController {
         },
       );
 
-      if (errorMessage.includes('Bucket de documentos no encontrado')) {
+      if (errorMessage.includes('Document bucket not found')) {
         throw new HttpException(
           {
             statusCode: HttpStatus.SERVICE_UNAVAILABLE,
-            message: 'Servicio de almacenamiento no disponible',
+            message: 'Storage service temporarily unavailable',
             error: 'Bucket Configuration Error',
             details: errorMessage,
           },
@@ -124,11 +124,11 @@ export class DocumentsController {
         );
       }
 
-      if (errorMessage.includes('Error de conexión con MinIO')) {
+      if (errorMessage.includes('Connection error with MinIO')) {
         throw new HttpException(
           {
             statusCode: HttpStatus.SERVICE_UNAVAILABLE,
-            message: 'Servicio de almacenamiento temporalmente no disponible',
+            message: 'Storage service temporarily unavailable',
             error: 'Storage Connection Error',
             details: errorMessage,
           },
@@ -139,7 +139,7 @@ export class DocumentsController {
       throw new HttpException(
         {
           statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: 'Error interno del servidor al obtener documentos',
+          message: 'Error internal server while retrieving documents',
           error: 'Internal Server Error',
           details: errorMessage,
         },
@@ -219,7 +219,7 @@ export class DocumentsController {
       throw new HttpException(
         new DeleteDocumentErrorDto(
           'Internal Server Error',
-          `Error interno del servidor al eliminar documento: ${errorMessage}`,
+          `Error deleting document: ${errorMessage}`,
           documentId,
         ),
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -232,12 +232,12 @@ export class DocumentsController {
     FileInterceptor('file', {
       storage: memoryStorage(),
       limits: {
-        fileSize: 100 * 1024 * 1024, // 100MB en bytes
+        fileSize: 100 * 1024 * 1024,
       },
       fileFilter: (req, file, callback) => {
         if (file.mimetype !== 'application/pdf') {
           callback(
-            new BadRequestException('Solo se permiten archivos PDF'),
+            new BadRequestException('Only PDF files are allowed'),
             false,
           );
         } else {
@@ -270,15 +270,15 @@ export class DocumentsController {
       });
 
       if (!file) {
-        throw new BadRequestException('No se ha proporcionado ningún archivo');
+        throw new BadRequestException('No file provided');
       }
 
       const userId = req.user?.id;
       if (!userId) {
-        throw new UnauthorizedException('Usuario no autenticado');
+        throw new UnauthorizedException('User not authenticated');
       }
 
-      this.logger.log('DATOS RECIBIDOS DEL FRONTEND:', {
+      this.logger.log('DATA RECEIVED FROM THE FRONTEND:', {
         fileName: file.originalname,
         fileSize: file.size,
         mimeType: file.mimetype,
@@ -465,7 +465,7 @@ export class DocumentsController {
 
         return new UnifiedUploadResponseDto(
           'duplicate_found',
-          `Este archivo ya existe en el sistema. Tipo de coincidencia: ${similarityResult.existingDocument.matchType === 'binary_hash' ? 'Hash binario idéntico' : 'Contenido de texto idéntico'}.`,
+          `This file already exists in the system. Match type: ${similarityResult.existingDocument.matchType === 'binary_hash' ? 'Binary hash identical' : 'Text content identical'}.`,
           undefined,
           {
             id: similarityResult.existingDocument.id,
@@ -501,7 +501,7 @@ export class DocumentsController {
 
         return new UnifiedUploadResponseDto(
           'similar_found',
-          `Se encontraron ${similarityResult.similarCandidates.length} documentos similares. Revisa si ya existe el documento que intentas subir.`,
+          `Found ${similarityResult.similarCandidates.length} similar documents. Check if the document you are trying to upload already exists.`,
           undefined,
           undefined,
           similarityResult.similarCandidates.map((candidate) => ({
@@ -552,8 +552,7 @@ export class DocumentsController {
         classId: finalClassId,
       });
 
-
-      this.logger.log('Documento subido exitosamente', {
+      this.logger.log('Document uploaded successfully', {
         documentId: document.id,
         fileName: document.fileName,
         originalName: document.originalName,
@@ -565,7 +564,7 @@ export class DocumentsController {
 
       return new UnifiedUploadResponseDto(
         'uploaded',
-        'Documento subido exitosamente',
+        'Document uploaded successfully',
         {
           id: document.id,
           fileName: document.fileName,
@@ -600,7 +599,7 @@ export class DocumentsController {
       throw new HttpException(
         {
           statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: 'Error interno del servidor al procesar el archivo',
+          message: 'Internal server error while processing file',
           error: 'Internal Server Error',
           details: errorMessage,
         },
@@ -615,9 +614,7 @@ export class DocumentsController {
   ): Promise<{ downloadUrl: string }> {
     try {
       if (!documentId) {
-        throw new BadRequestException(
-          'No se ha proporcionado el ID del documento',
-        );
+        throw new BadRequestException('Document ID required');
       }
 
       this.logger.logDocumentOperation('download', documentId);
@@ -654,7 +651,7 @@ export class DocumentsController {
       throw new HttpException(
         {
           statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: 'Error interno del servidor al generar URL de descarga',
+          message: 'Internal server error while generating download URL',
           error: 'Internal Server Error',
           details: errorMessage,
         },
@@ -682,7 +679,7 @@ export class DocumentsController {
 
         return {
           success: true,
-          message: 'Texto extraído exitosamente del documento',
+          message: 'Text extracted successfully from document',
         };
       } else {
         this.logger.warn('Document text processing failed', {
@@ -693,7 +690,7 @@ export class DocumentsController {
         throw new HttpException(
           {
             statusCode: HttpStatus.BAD_REQUEST,
-            message: 'No se pudo procesar el documento',
+            message: 'Document processing failed',
             error: 'Processing Failed',
           },
           HttpStatus.BAD_REQUEST,
@@ -720,7 +717,7 @@ export class DocumentsController {
       throw new HttpException(
         {
           statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: 'Error interno del servidor al procesar documento',
+          message: 'Internal server error while processing document',
           error: 'Internal Server Error',
           details: errorMessage,
         },
@@ -730,7 +727,7 @@ export class DocumentsController {
   }
 
   /**
-   * Procesa chunks de un documento específico
+   * Processes chunks of a specific document
    */
   @Post(':documentId/process-chunks')
   async processDocumentChunks(
@@ -750,7 +747,7 @@ export class DocumentsController {
   ) {
     try {
       if (!documentId) {
-        throw new BadRequestException('ID de documento requerido');
+        throw new BadRequestException('Document ID required');
       }
 
       this.logger.logChunkOperation('process', documentId, undefined, {
@@ -779,7 +776,7 @@ export class DocumentsController {
 
         return {
           success: true,
-          message: 'Chunks procesados exitosamente',
+          message: 'Chunks processed successfully',
           data: {
             totalChunks: result.savedChunks.length,
             processingTimeMs: result.processingTimeMs,
@@ -799,7 +796,7 @@ export class DocumentsController {
 
         return {
           success: false,
-          message: 'Error procesando chunks',
+          message: 'Error processing chunks',
           errors: result.errors,
         };
       }
@@ -827,7 +824,7 @@ export class DocumentsController {
       throw new HttpException(
         {
           statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: 'Error interno del servidor al procesar chunks',
+          message: 'Internal server error while processing chunks',
           error: 'Internal Server Error',
           details: errorMessage,
         },
@@ -837,13 +834,13 @@ export class DocumentsController {
   }
 
   /**
-   * Obtiene los chunks de un documento
+   * Gets the chunks of a document
    */
   @Get(':documentId/chunks')
   async getDocumentChunks(@Param('documentId') documentId: string) {
     try {
       if (!documentId) {
-        throw new BadRequestException('ID de documento requerido');
+        throw new BadRequestException('Document ID required');
       }
 
       this.logger.logChunkOperation('retrieve', documentId);
@@ -862,7 +859,7 @@ export class DocumentsController {
 
       return {
         success: true,
-        message: 'Chunks recuperados exitosamente',
+        message: 'Chunks retrieved successfully',
         data: {
           chunks: result.chunks.map((chunk) => ({
             id: chunk.id,
@@ -903,7 +900,7 @@ export class DocumentsController {
       throw new HttpException(
         {
           statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: 'Error interno del servidor al obtener chunks',
+          message: 'Internal server error while retrieving chunks',
           error: 'Internal Server Error',
           details: errorMessage,
         },
@@ -913,7 +910,7 @@ export class DocumentsController {
   }
 
   /**
-   * Genera un índice con ejercicios para un documento
+   * Generates an index with exercises for a document
    */
   @Post(':documentId/generate-index')
   async generateDocumentIndex(
@@ -922,10 +919,10 @@ export class DocumentsController {
   ): Promise<GenerateDocumentIndexResponseDto> {
     try {
       if (!documentId) {
-        throw new BadRequestException('ID de documento requerido');
+        throw new BadRequestException('Document ID required');
       }
 
-      this.logger.log(`Generando índice para documento: ${documentId}`);
+      this.logger.log(`Generating index for document: ${documentId}`);
 
       const result = await this.generateDocumentIndexUseCase.execute({
         documentId,
@@ -995,7 +992,7 @@ export class DocumentsController {
       throw new HttpException(
         {
           statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: 'Error interno del servidor al generar índice',
+          message: 'Internal server error while generating index.',
           error: 'Internal Server Error',
           details: errorMessage,
         },
@@ -1004,7 +1001,7 @@ export class DocumentsController {
     }
   }
   /**
-   * Obtiene el índice guardado de un documento
+   * Gets the saved index of a document
    */
   @Get(':documentId/index')
   async getDocumentIndex(
@@ -1012,24 +1009,24 @@ export class DocumentsController {
   ): Promise<GenerateDocumentIndexResponseDto | { message: string }> {
     try {
       if (!documentId) {
-        throw new BadRequestException('ID de documento requerido');
+        throw new BadRequestException('Document ID required');
       }
 
-      this.logger.log(`Obteniendo índice para documento: ${documentId}`);
+      this.logger.log(`Getting index for document: ${documentId}`);
 
       const result = await this.getDocumentIndexUseCase.execute({
         documentId,
       });
 
       if (!result) {
-        this.logger.warn(`No se encontró índice para documento: ${documentId}`);
+        this.logger.warn(`No index was found for document: ${documentId}`);
         return {
-          message: 'No se encontró un índice generado para este documento',
+          message: 'No index was found for this document.',
         };
       }
 
       this.logger.log(
-        `Índice obtenido exitosamente para documento: ${documentId}`,
+        `Index retrieved successfully for document: ${documentId}`,
       );
 
       return {
@@ -1065,7 +1062,7 @@ export class DocumentsController {
           generatedAt: result.generatedAt.toISOString(),
           status: result.status,
         },
-        message: 'Índice obtenido exitosamente',
+        message: 'Index retrieved successfully',
       };
     } catch (error) {
       if (
@@ -1091,7 +1088,7 @@ export class DocumentsController {
       throw new HttpException(
         {
           statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: 'Error interno del servidor al obtener índice',
+          message: 'Internal server error while retrieving index.',
           error: 'Internal Server Error',
           details: errorMessage,
         },

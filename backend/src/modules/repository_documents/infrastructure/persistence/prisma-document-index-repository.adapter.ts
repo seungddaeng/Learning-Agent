@@ -6,7 +6,6 @@ import {
   IndexChapter,
   IndexSubtopic,
   Exercise,
-  IndexStatus,
 } from '../../domain/entities/document-index.entity';
 import { IndexStatus as PrismaIndexStatus } from '@prisma/client';
 import { randomUUID } from 'crypto';
@@ -19,17 +18,17 @@ export class PrismaDocumentIndexRepositoryAdapter
 
   async save(documentIndex: DocumentIndex): Promise<DocumentIndex> {
     try {
-      // Verificar si ya existe un índice para este documento
+      // Check if an index already exists for this document
       const existingIndex = await this.prisma.documentIndex.findUnique({
         where: { documentId: documentIndex.documentId },
       });
 
       if (existingIndex) {
-        // Si existe, eliminarlo primero para evitar conflictos
+        // If it exists, delete it first to avoid conflicts
         await this.deleteByDocumentId(documentIndex.documentId);
       }
 
-      // Crear el índice con todos sus capítulos, subtemas y ejercicios
+      // Create the index with all its chapters, subtopics and exercises
       const savedIndex = await this.prisma.documentIndex.create({
         data: {
           id: documentIndex.id,
@@ -98,7 +97,7 @@ export class PrismaDocumentIndexRepositoryAdapter
         },
       });
 
-      console.log('Índice de documento guardado exitosamente:', {
+      console.log('Document index saved successfully:', {
         id: savedIndex.id,
         documentId: savedIndex.documentId,
         title: savedIndex.title,
@@ -108,8 +107,8 @@ export class PrismaDocumentIndexRepositoryAdapter
 
       return this.mapToDomainEntity(savedIndex);
     } catch (error) {
-      console.error('Error guardando índice de documento:', error);
-      throw new Error(`Error guardando índice: ${error.message}`);
+      console.error('Error saving document index:', error);
+      throw new Error(`Error saving index: ${error.message}`);
     }
   }
 
@@ -141,8 +140,8 @@ export class PrismaDocumentIndexRepositoryAdapter
 
       return this.mapToDomainEntity(documentIndex);
     } catch (error) {
-      console.error('Error buscando índice para documento:', documentId, error);
-      throw new Error(`Error buscando índice: ${error.message}`);
+      console.error('Error searching index for document:', documentId, error);
+      throw new Error(`Error searching index: ${error.message}`);
     }
   }
 
@@ -174,8 +173,8 @@ export class PrismaDocumentIndexRepositoryAdapter
 
       return this.mapToDomainEntity(documentIndex);
     } catch (error) {
-      console.error('Error buscando índice por ID:', id, error);
-      throw new Error(`Error buscando índice: ${(error as Error).message}`);
+      console.error('Error searching index by ID:', id, error);
+      throw new Error(`Error searching index: ${(error as Error).message}`);
     }
   }
 
@@ -211,8 +210,8 @@ export class PrismaDocumentIndexRepositoryAdapter
 
       return this.mapToDomainEntity(updatedIndex);
     } catch (error) {
-      console.error('Error actualizando índice:', id, error);
-      throw new Error(`Error actualizando índice: ${(error as Error).message}`);
+      console.error('Error updating index:', id, error);
+      throw new Error(`Error updating index: ${(error as Error).message}`);
     }
   }
 
@@ -221,14 +220,10 @@ export class PrismaDocumentIndexRepositoryAdapter
       await this.prisma.documentIndex.deleteMany({
         where: { documentId },
       });
-      console.log('Índice eliminado para documento:', documentId);
+      console.log('Index deleted for document:', documentId);
     } catch (error) {
-      console.error(
-        'Error eliminando índice para documento:',
-        documentId,
-        error,
-      );
-      throw new Error(`Error eliminando índice: ${(error as Error).message}`);
+      console.error('Error deleting index for document:', documentId, error);
+      throw new Error(`Error deleting index: ${(error as Error).message}`);
     }
   }
 
@@ -273,12 +268,12 @@ export class PrismaDocumentIndexRepositoryAdapter
         total,
       };
     } catch (error) {
-      console.error('Error listando índices:', error);
-      throw new Error(`Error listando índices: ${(error as Error).message}`);
+      console.error('Error listing indices:', error);
+      throw new Error(`Error listing indices: ${(error as Error).message}`);
     }
   }
 
-  // Métodos privados
+  // Private methods
   private generateChapterId(): string {
     return randomUUID();
   }

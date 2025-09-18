@@ -55,7 +55,7 @@ export class ContractDocumentsController {
   ) {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
     if (!apiKey) {
-      throw new Error('GEMINI_API_KEY no está configurada');
+      throw new Error('GEMINI_API_KEY is not configured');
     }
     this.genAI = new GoogleGenerativeAI(apiKey);
   }
@@ -79,7 +79,7 @@ export class ContractDocumentsController {
         throw new HttpException(
           {
             statusCode: HttpStatus.BAD_REQUEST,
-            message: 'ID de materia es requerido',
+            message: 'Subject ID is required',
             error: 'Bad Request',
           },
           HttpStatus.BAD_REQUEST,
@@ -130,11 +130,11 @@ export class ContractDocumentsController {
         },
       );
 
-      if (errorMessage.includes('no encontrado')) {
+      if (errorMessage.includes('not found')) {
         throw new HttpException(
           {
             statusCode: HttpStatus.NOT_FOUND,
-            message: 'Materia no encontrada',
+            message: 'Subject not found',
             error: 'Not Found',
             details: errorMessage,
           },
@@ -142,11 +142,11 @@ export class ContractDocumentsController {
         );
       }
 
-      if (errorMessage.includes('Servicio de almacenamiento')) {
+      if (errorMessage.includes('storage service')) {
         throw new HttpException(
           {
             statusCode: HttpStatus.SERVICE_UNAVAILABLE,
-            message: 'Servicio de almacenamiento no disponible',
+            message: 'Storage service unavailable',
             error: 'Service Unavailable',
             details: errorMessage,
           },
@@ -158,7 +158,7 @@ export class ContractDocumentsController {
       throw new HttpException(
         {
           statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: 'Error interno del servidor al obtener documentos',
+          message: 'Error internal server while getting documents',
           error: 'Internal Server Error',
           details: errorMessage,
         },
@@ -182,27 +182,27 @@ export class ContractDocumentsController {
         throw new HttpException(
           {
             statusCode: HttpStatus.BAD_REQUEST,
-            message: 'ID de documento es requerido',
+            message: 'Document ID is required',
             error: 'Bad Request',
           },
           HttpStatus.BAD_REQUEST,
         );
       }
 
-      // Verificar que el documento existe
+      // Verify that the document exists
       const document = await this.documentRepository.findById(docId.trim());
       if (!document) {
         throw new HttpException(
           {
             statusCode: HttpStatus.NOT_FOUND,
-            message: 'Documento no encontrado',
+            message: 'Document not found',
             error: 'Not Found',
           },
           HttpStatus.NOT_FOUND,
         );
       }
 
-      // Obtener todos los chunks del documento
+      // Get all the chunks of the document
       const chunksResult = await this.chunkRepository.findByDocumentId(
         docId.trim(),
         { limit: 10000 },
@@ -215,7 +215,7 @@ export class ContractDocumentsController {
         throw new HttpException(
           {
             statusCode: HttpStatus.BAD_REQUEST,
-            message: 'No se encontraron chunks para el documento',
+            message: 'No chunks found for the document',
             error: 'Bad Request',
           },
           HttpStatus.BAD_REQUEST,
@@ -223,7 +223,7 @@ export class ContractDocumentsController {
       }
 
       const chunks = chunksResult.chunks;
-      this.logger.log(`Se encontraron ${chunks.length} chunks para procesar`);
+      this.logger.log(`Found ${chunks.length} chunks to process`);
 
       const documentIndex = await this.generateDocumentIndex(
         docId.trim(),
@@ -254,11 +254,11 @@ export class ContractDocumentsController {
         },
       );
 
-      if (errorMessage.includes('no encontrado')) {
+      if (errorMessage.includes('not found')) {
         throw new HttpException(
           {
             statusCode: HttpStatus.NOT_FOUND,
-            message: 'Documento no encontrado',
+            message: 'Document not found',
             error: 'Not Found',
             details: errorMessage,
           },
@@ -270,7 +270,7 @@ export class ContractDocumentsController {
         throw new HttpException(
           {
             statusCode: HttpStatus.BAD_REQUEST,
-            message: 'El documento no tiene contenido procesado',
+            message: 'The document does not have processed content',
             error: 'Bad Request',
             details: errorMessage,
           },
@@ -282,7 +282,7 @@ export class ContractDocumentsController {
       throw new HttpException(
         {
           statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: 'Error interno del servidor al generar índice',
+          message: 'Internal server error while generating index',
           error: 'Internal Server Error',
           details: errorMessage,
         },
@@ -373,7 +373,7 @@ export class ContractDocumentsController {
   }
 
   /**
-   * Procesa un lote de chunks con Gemini AI
+   * Processes a batch of chunks with Gemini AI
    */
   private async processBatch(
     batch: any[],
@@ -400,7 +400,7 @@ export class ContractDocumentsController {
 
     const timeout = new Promise<never>((_, reject) =>
       setTimeout(
-        () => reject(new Error('Timeout: El modelo tomó demasiado tiempo')),
+        () => reject(new Error('Timeout: The model took too much time.')),
         45000,
       ),
     );
@@ -422,14 +422,17 @@ export class ContractDocumentsController {
           const validJson = truncatedText.substring(0, lastBrace + 1);
           const batchData: any = this.parseGeminiResponse(validJson);
           return (
-            batchData.chapters?.map((chapter: any) => this.mapChapter(chapter)) || []
+            batchData.chapters?.map((chapter: any) =>
+              this.mapChapter(chapter),
+            ) || []
           );
         }
       }
 
       const batchData: any = this.parseGeminiResponse(text);
       return (
-        batchData.chapters?.map((chapter: any) => this.mapChapter(chapter)) || []
+        batchData.chapters?.map((chapter: any) => this.mapChapter(chapter)) ||
+        []
       );
     } catch (error) {
       this.logger.error(
@@ -463,8 +466,8 @@ export class ContractDocumentsController {
 
       const chapterTitle: string =
         words.length > 0
-          ? `Lote ${batchNumber} - Sección ${chapterNumber}: ${words.join(', ')}`
-          : `Lote ${batchNumber} - Sección ${chapterNumber}`;
+          ? `Batch ${batchNumber} - Section ${chapterNumber}: ${words.join(', ')}`
+          : `Batch ${batchNumber} - Section ${chapterNumber}`;
 
       // Create basic subtopics
       const subtopics: IndexSubtopic[] = chapterChunks
@@ -473,7 +476,7 @@ export class ContractDocumentsController {
           const content: string = chunk.content || '';
           const firstWords: string = content.split(' ').slice(0, 4).join(' ');
           return new IndexSubtopic(
-            `${batchNumber}.${chapterNumber}.${idx + 1} ${firstWords || 'Contenido'}`,
+            `${batchNumber}.${chapterNumber}.${idx + 1} ${firstWords || 'Content'}`,
             '',
             [],
           );
@@ -510,8 +513,8 @@ export class ContractDocumentsController {
         .slice(0, 3);
       const chapterTitle: string =
         words.length > 0
-          ? `Sección ${i + 1}: ${words.join(', ')}`
-          : `Sección ${i + 1}`;
+          ? `Section ${i + 1}: ${words.join(', ')}`
+          : `Section ${i + 1}`;
 
       // Create basic subtopics
       const subtopics: IndexSubtopic[] = groupChunks
@@ -520,7 +523,7 @@ export class ContractDocumentsController {
           const content: string = chunk.content || '';
           const firstWords: string = content.split(' ').slice(0, 4).join(' ');
           return new IndexSubtopic(
-            `${i + 1}.${idx + 1} ${firstWords || 'Contenido'}`,
+            `${i + 1}.${idx + 1} ${firstWords || 'Content'}`,
             '',
             [],
           );
@@ -549,74 +552,32 @@ export class ContractDocumentsController {
     totalBatches: number,
   ): string {
     return `
-Analiza el contenido y genera UN ÍNDICE MUY SIMPLE.
+Analyze the content and generate a VERY SIMPLE INDEX.
 
-DOCUMENTO: "${documentTitle}"
-LOTE: ${batchNumber} de ${totalBatches}
+DOCUMENT: "${documentTitle}"
+BATCH: ${batchNumber} of ${totalBatches}
 
-CONTENIDO:
+CONTENT:
 ${batchText}
 
-REGLAS ESTRICTAS:
-1. MÁXIMO 1 capítulo por lote
-2. MÁXIMO 1 subtema por capítulo
-3. Títulos MUY breves (máximo 20 caracteres)
-4. SIN descripciones largas
-5. JSON máximo 10 líneas TOTAL
-6. SI el documento es grande, crear índice MUY básico
-7. NUNCA exceder 10 líneas de JSON
+STRICT RULES:
+1. MAXIMUM 1 chapter per batch
+2. MAXIMUM 1 subtopic per chapter
+3. VERY brief titles (maximum 20 characters)
+4. NO long descriptions
+5. JSON maximum 10 lines TOTAL
+6. IF the document is large, create VERY basic index
+7. NEVER exceed 10 lines of JSON
 
-Responde SOLO con este JSON compacto:
+Respond ONLY with this compact JSON:
 {
-  "title": "Breve",
+  "title": "Brief",
   "chapters": [
     {
-      "title": "Cap1",
+      "title": "Ch1",
       "description": "",
       "subtopics": [
         {"title": "Sub1", "description": ""}
-      ]
-    }
-  ]
-}
-`;
-  }
-
-  /**
-   * create the prompt for Gemini
-   */
-  private buildPrompt(documentTitle: string, fullText: string): string {
-    return `
-DOCUMENTO: "${documentTitle}"
-
-CONTENIDO:
-${fullText}
-
-REGLAS ESTRICTAS:
-1. MÁXIMO 2 capítulos total
-2. MÁXIMO 1 subtema por capítulo
-3. Títulos MUY breves (máximo 15 caracteres)
-4. SIN descripciones largas
-5. JSON máximo 15 líneas TOTAL
-6. Para documentos grandes: crear índice MUY básico
-7. NUNCA exceder 15 líneas de JSON
-
-Responde SOLO con este JSON compacto:
-{
-  "title": "Breve",
-  "chapters": [
-    {
-      "title": "Cap1",
-      "description": "",
-      "subtopics": [
-        {"title": "Sub1", "description": ""}
-      ]
-    },
-    {
-      "title": "Cap2", 
-      "description": "",
-      "subtopics": [
-        {"title": "Sub2", "description": ""}
       ]
     }
   ]
@@ -635,16 +596,19 @@ Responde SOLO con este JSON compacto:
       const jsonEnd = cleanResponse.lastIndexOf('}') + 1;
 
       if (jsonStart === -1 || jsonEnd === 0) {
-        throw new Error('No se encontró JSON válido en la respuesta');
+        throw new Error('No valid JSON was found in the response');
       }
 
       cleanResponse = cleanResponse.substring(jsonStart, jsonEnd);
 
       return JSON.parse(cleanResponse);
     } catch (error) {
-      this.logger.error('Error parsing Gemini response:', error instanceof Error ? error.message : String(error));
+      this.logger.error(
+        'Error parsing Gemini response:',
+        error instanceof Error ? error.message : String(error),
+      );
       this.logger.error('Response received:', response);
-      throw new Error('La respuesta de Gemini no es un JSON válido');
+      throw new Error("Gemini's response is not valid JSON.");
     }
   }
 
@@ -663,11 +627,7 @@ Responde SOLO con este JSON compacto:
    * Map a subtopic from Gemini's response
    */
   private mapSubtopic(subtopicData: any): IndexSubtopic {
-    return new IndexSubtopic(
-      subtopicData.title || 'Contenido específico',
-      '',
-      [],
-    );
+    return new IndexSubtopic(subtopicData.title || 'Specific content', '', []);
   }
 
   /**
@@ -682,7 +642,7 @@ Responde SOLO con este JSON compacto:
         .substring(0, 1000);
 
       if (!combinedContent.trim()) {
-        return 'Documento técnico especializado';
+        return 'Specialized technical document';
       }
 
       const sentences = combinedContent
@@ -707,12 +667,12 @@ Responde SOLO con este JSON compacto:
       }
 
       const keyWords = words.slice(0, 3).join(', ');
-      return `Documento técnico especializado que aborda temas relacionados con ${keyWords || 'metodologías avanzadas'}.`;
+      return `Specialized technical document that addresses topics related to ${keyWords || 'advanced methodologies'}.`;
     } catch (error) {
       this.logger.warn('Error generating summary from chunks', {
         error: String(error),
       });
-      return 'Documento técnico especializado';
+      return 'Specialized technical document';
     }
   }
 
@@ -720,7 +680,7 @@ Responde SOLO con este JSON compacto:
    * Format the index as a numbered string (1.1, 1.2, 2.1, etc.)
    */
   private formatIndexAsString(documentIndex: DocumentIndex): string {
-    let result = `ÍNDICE DEL DOCUMENTO: ${documentIndex.title}\n\n`;
+    let result = `INDEX OF DOCUMENT: ${documentIndex.title}\n\n`;
 
     documentIndex.chapters.forEach((chapter, chapterIndex) => {
       const chapterNumber = chapterIndex + 1;
@@ -751,8 +711,8 @@ Responde SOLO con este JSON compacto:
    */
   private extractFileType(mimeType: string): string {
     if (mimeType.includes('pdf')) return 'pdf';
-    if (mimeType.includes('word')) return 'documento';
-    if (mimeType.includes('text')) return 'texto';
-    return 'documento';
+    if (mimeType.includes('word')) return 'document';
+    if (mimeType.includes('text')) return 'text';
+    return 'document';
   }
 }
