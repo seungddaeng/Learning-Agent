@@ -21,12 +21,12 @@ export class DeleteDocumentUseCase {
     error?: string;
   }> {
     try {
-      this.logger.log(`Iniciando eliminación de documento: ${documentId}`);
+      this.logger.log(`Starting document deletion: ${documentId}`);
 
-      // Buscar el documento por ID en la base de datos
+      // Find document by ID in database
       const document = await this.documentRepository.findById(documentId);
       if (!document) {
-        this.logger.warn(`Documento no encontrado: ${documentId}`);
+        this.logger.warn(`Document not found: ${documentId}`);
         return {
           success: false,
           message: `Document with ID '${documentId}' not found`,
@@ -35,17 +35,15 @@ export class DeleteDocumentUseCase {
       }
 
       this.logger.log(
-        `Documento encontrado: ${document.originalName}, Status actual: ${document.status}, Hash: ${document.fileHash}`,
+        `Document found: ${document.originalName}, Current status: ${document.status}, Hash: ${document.fileHash}`,
       );
 
-      // Validar que el archivo existe en el storage antes de borrarlo
+      // Validate that file exists in storage before deleting
       const exists = await this.storageAdapter.documentExists(
         document.fileName,
       );
       if (!exists) {
-        this.logger.warn(
-          `Archivo no encontrado en storage: ${document.fileName}`,
-        );
+        this.logger.warn(`File not found in storage: ${document.fileName}`);
         return {
           success: false,
           message: `Document file '${document.fileName}' not found in storage`,
@@ -53,28 +51,28 @@ export class DeleteDocumentUseCase {
         };
       }
 
-      this.logger.log(`Archivo existe en storage: ${document.fileName}`);
+      this.logger.log(`File exists in storage: ${document.fileName}`);
 
-      // Realizar el soft delete en el storage
-      this.logger.log(`Iniciando soft delete en storage...`);
+      // Perform soft delete in storage
+      this.logger.log(`Starting soft delete in storage...`);
       await this.storageAdapter.softDeleteDocument(document.fileName);
-      this.logger.log(`Soft delete en storage completado`);
-      // Realizar soft delete de los chunks asociados PRIMERO
-      this.logger.log(`Marcando chunks como eliminados...`);
+      this.logger.log(`Soft delete in storage completed`);
+      // Perform soft delete of associated chunks FIRST
+      this.logger.log(`Marking chunks as deleted...`);
       await this.chunkRepository.softDeleteByDocumentId(documentId);
-      this.logger.log(`Chunks marcados como eliminados`);
+      this.logger.log(`Chunks marked as deleted`);
 
-      // Cambiar status del documento a DELETED (soft delete)
-      this.logger.log(`Marcando documento como eliminado en base de datos...`);
+      // Change document status to DELETED (soft delete)
+      this.logger.log(`Marking document as deleted in database...`);
 
       await this.documentRepository.updateStatus(
         documentId,
         DocumentStatus.DELETED,
       );
-      this.logger.log(`Documento marcado como eliminado`);
+      this.logger.log(`Document marked as deleted`);
 
       this.logger.log(
-        `Eliminación completada exitosamente: ${document.originalName}`,
+        `Deletion completed successfully: ${document.originalName}`,
       );
 
       return {
@@ -83,8 +81,7 @@ export class DeleteDocumentUseCase {
         deletedAt: new Date().toISOString(),
       };
     } catch (error) {
-      this.logger.error(`Error eliminando documento ${documentId}:`, error);
-      console.error('Error deleting document:', error);
+      this.logger.error(`Error deleting document ${documentId}:`, error);
       return {
         success: false,
         message: `Failed to delete document with ID '${documentId}'`,

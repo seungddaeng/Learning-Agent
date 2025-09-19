@@ -8,12 +8,10 @@ describe('UploadDocumentUseCase', () => {
   let chunkingServiceMock: any;
 
   beforeEach(() => {
-    // limpiar mocks previos
     jest.clearAllMocks();
 
     storageMock = { uploadDocument: jest.fn() };
     repoMock = { findByFileHash: jest.fn(), save: jest.fn() };
-    // ajusta el nombre del método si tu chunking service usa otro
     chunkingServiceMock = { chunkDocument: jest.fn().mockResolvedValue([]) };
 
     useCase = new UploadDocumentUseCase(
@@ -22,7 +20,6 @@ describe('UploadDocumentUseCase', () => {
       chunkingServiceMock,
     );
 
-    // silenciar logs para que los tests no impriman en consola
     jest.spyOn(Logger.prototype, 'log').mockImplementation(() => {});
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
   });
@@ -41,7 +38,7 @@ describe('UploadDocumentUseCase', () => {
       url: 'http://url',
     });
     repoMock.save.mockImplementation((d: any) => Promise.resolve(d));
-    chunkingServiceMock.chunkDocument.mockResolvedValue([]); // por si execute lo llama
+    chunkingServiceMock.chunkDocument.mockResolvedValue([]);
 
     const doc = await useCase.execute(file, 'user-1');
 

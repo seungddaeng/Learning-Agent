@@ -1,5 +1,5 @@
 import { ProcessDocumentChunksUseCase } from './process-document-chunks.usecase';
-import { Logger, NotFoundException } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 
 describe('ProcessDocumentChunksUseCase', () => {
   let useCase: ProcessDocumentChunksUseCase;

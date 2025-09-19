@@ -33,7 +33,6 @@ import { useDocuments } from '../../hooks/useDocuments';
 
 const { Title, Text, Paragraph } = Typography;
 
-// Traducciones directas de status
 const getStatusInSpanish = (status: string): string => {
   switch (status) {
     case 'GENERATING': return 'Generando';
@@ -45,7 +44,6 @@ const getStatusInSpanish = (status: string): string => {
 const { TabPane } = Tabs;
 const { useBreakpoint } = Grid;
 
-// Constants
 const MIN_DRAWER_HEIGHT = 220;
 const MAX_DRAWER_HEIGHT_RATIO = 0.98;
 const INITIAL_DRAWER_HEIGHT_RATIO = 0.75;
@@ -66,7 +64,6 @@ export const DocumentDataSidebar: React.FC<DocumentDataSidebarProps> = ({ docume
   const screens = useBreakpoint();
   const isMobile = !screens.md;
 
-  // bottom-sheet (mobile)
   const initialHeight = Math.round(window.innerHeight * INITIAL_DRAWER_HEIGHT_RATIO);
   const [drawerHeight, setDrawerHeight] = useState<number>(initialHeight);
 
@@ -74,17 +71,14 @@ export const DocumentDataSidebar: React.FC<DocumentDataSidebarProps> = ({ docume
   const startYRef = useRef(0);
   const startHeightRef = useRef(drawerHeight);
 
-  // extracted data state
   const [extractedData, setExtractedData] = useState<DocumentExtractedData | null>(null);
   const [activeTab, setActiveTab] = useState<string>('metadata');
   const [retryCount, setRetryCount] = useState<number>(0);
 
-  // index state
   const [indexData, setIndexData] = useState<any>(null);
   const [indexLoading, setIndexLoading] = useState<boolean>(false);
   const [indexError, setIndexError] = useState<string | null>(null);
   
-  // Cache para índices por documento ID para evitar recargas innecesarias
   const indexCacheRef = useRef<Map<string, any>>(new Map());
 
   const documentId = document?.id;
@@ -104,7 +98,6 @@ export const DocumentDataSidebar: React.FC<DocumentDataSidebarProps> = ({ docume
     }
   }, [document?.id, getDocumentExtractedData]);
 
-  // Index functions con cache optimizado
   const loadIndexData = useCallback(async () => {
     if (!document?.id) {
       console.log('No document ID, setting indexData to null');
@@ -112,7 +105,6 @@ export const DocumentDataSidebar: React.FC<DocumentDataSidebarProps> = ({ docume
       return;
     }
 
-    // Verificar si ya tenemos el índice en cache
     const cachedIndex = indexCacheRef.current.get(document.id);
     if (cachedIndex) {
       console.log('Index loaded from cache for document:', document.id);
@@ -131,7 +123,6 @@ export const DocumentDataSidebar: React.FC<DocumentDataSidebarProps> = ({ docume
         throw new Error(data.message || 'Error desconocido al cargar el índice');
       }
       
-      // Guardar en cache
       indexCacheRef.current.set(document.id, data);
       setIndexData(data);
       
@@ -140,7 +131,6 @@ export const DocumentDataSidebar: React.FC<DocumentDataSidebarProps> = ({ docume
       let errorMessage = 'Error al cargar el índice';
       
       if (err?.response?.status === 404) {
-        // Si es 404, probablemente no existe índice aún
         console.log('Index not found, this is normal for documents without generated index');
         setIndexData(null);
         setIndexError(null);
@@ -171,39 +161,32 @@ export const DocumentDataSidebar: React.FC<DocumentDataSidebarProps> = ({ docume
     setIndexLoading(true);
     setIndexError(null);
     
-    // Mostrar mensaje de progreso
     message.info('Generando índice del documento... Esto puede tomar unos minutos.');
     
     try {
-      // Crear un timeout para la operación
       const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Timeout: La generación del índice está tomando demasiado tiempo')), 120000) // 2 minutos
       );
       
       const generatePromise = generateDocumentIndex(document.id);
-      
-      // Ejecutar con timeout
+
       const generateResult = await Promise.race([generatePromise, timeoutPromise]) as any;
       console.log('Generate result:', generateResult);
       
-      // Verificar si la generación fue exitosa
       if (!generateResult?.success) {
         throw new Error(generateResult?.message || 'Error desconocido al generar el índice');
       }
       
-      // Invalidar cache para este documento ya que se generó un nuevo índice
       if (document?.id) {
         indexCacheRef.current.delete(document.id);
       }
       
-      // Recargar datos del índice después de generar
       await loadIndexData();
       message.success('Índice generado exitosamente');
       
     } catch (err: any) {
       console.error('Error generating index:', err);
       
-      // Determinar el mensaje de error más específico
       let errorMessage = 'Error al generar el índice';
       
       if (err?.message?.includes('Timeout')) {
@@ -234,12 +217,10 @@ export const DocumentDataSidebar: React.FC<DocumentDataSidebarProps> = ({ docume
     }
   }, [document?.id, generateDocumentIndex, loadIndexData]);
 
-  // Función para procesar los chapters en elementos planos con useMemo para optimización
   const processFlatIndex = useCallback((chapters: any[]) => {
     const flatItems: any[] = [];
     
     chapters.forEach((chapter, chapterIndex) => {
-      // Agregar el capítulo principal
       flatItems.push({
         id: `chapter-${chapterIndex}`,
         title: chapter.title,
@@ -248,7 +229,6 @@ export const DocumentDataSidebar: React.FC<DocumentDataSidebarProps> = ({ docume
         type: 'chapter'
       });
       
-      // Agregar subtemas
       if (chapter.subtopics && chapter.subtopics.length > 0) {
         chapter.subtopics.forEach((subtopic: any, subtopicIndex: number) => {
           flatItems.push({
@@ -261,7 +241,6 @@ export const DocumentDataSidebar: React.FC<DocumentDataSidebarProps> = ({ docume
         });
       }
       
-      // Agregar ejercicios
       if (chapter.exercises && chapter.exercises.length > 0) {
         chapter.exercises.forEach((exercise: any, exerciseIndex: number) => {
           flatItems.push({
@@ -281,7 +260,6 @@ export const DocumentDataSidebar: React.FC<DocumentDataSidebarProps> = ({ docume
     return flatItems;
   }, []);
 
-  // Memoizar el índice procesado para evitar recalcular en cada render
   const processedIndexItems = useMemo(() => {
     if (!indexData?.data?.chapters || !Array.isArray(indexData.data.chapters)) {
       return [];
@@ -289,7 +267,6 @@ export const DocumentDataSidebar: React.FC<DocumentDataSidebarProps> = ({ docume
     return processFlatIndex(indexData.data.chapters);
   }, [indexData?.data?.chapters, processFlatIndex]);
 
-  // Memoizar estadísticas del índice para evitar recálculos
   const indexStats = useMemo(() => {
     if (!indexData?.data?.chapters) return { chapters: 0, subtopics: 0, exercises: 0 };
     
@@ -310,7 +287,6 @@ export const DocumentDataSidebar: React.FC<DocumentDataSidebarProps> = ({ docume
   useEffect(() => {
     if (document?.id && visible) {
       loadExtractedData();
-      // Siempre cargar datos del índice cuando se cambie a esa pestaña
       if (activeTab === 'index') {
         console.log('Changing to index tab, loading index data...');
         loadIndexData();
@@ -322,7 +298,6 @@ export const DocumentDataSidebar: React.FC<DocumentDataSidebarProps> = ({ docume
     }
   }, [document?.id, visible, activeTab, loadExtractedData, loadIndexData]);
 
-  // copy to clipboard util
   const copyToClipboard = useCallback(async (text: string, label = 'Texto') => {
     try {
       await navigator.clipboard.writeText(text);
@@ -345,7 +320,6 @@ export const DocumentDataSidebar: React.FC<DocumentDataSidebarProps> = ({ docume
     }
   }, [document?.id, getDocumentExtractedData]);
 
-  // Resize and drag handlers for mobile drawer
   useEffect(() => {
     const onResize = () => {
       const newMax = Math.round(window.innerHeight * MAX_DRAWER_HEIGHT_RATIO);
@@ -379,7 +353,6 @@ export const DocumentDataSidebar: React.FC<DocumentDataSidebarProps> = ({ docume
     window.addEventListener('pointerup', onPointerUp);
   }, [drawerHeight]);
 
-  // ui
   const Header = (
     <div
       style={{
@@ -715,7 +688,6 @@ export const DocumentDataSidebar: React.FC<DocumentDataSidebarProps> = ({ docume
     </div>
   );
 
-  // Mobile: bottom-sheet Drawer
   if (isMobile) {
     return (
       <Drawer
@@ -742,7 +714,6 @@ export const DocumentDataSidebar: React.FC<DocumentDataSidebarProps> = ({ docume
     );
   }
 
-  // Desktop / tablet
   return (
     <div
       style={{

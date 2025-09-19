@@ -3,7 +3,7 @@ import { DocumentChunk } from '../entities/document-chunk.entity';
 
 export interface DocumentIndexGeneratorPort {
   /**
-   * Genera un índice con ejercicios a partir de los chunks de un documento
+   * Generate an index with exercises from the chunks of a document
    */
   generateDocumentIndex(
     documentId: string,
@@ -14,21 +14,21 @@ export interface DocumentIndexGeneratorPort {
 }
 
 export interface IndexGenerationConfig {
-  /** Modelo de LLM a utilizar */
+  /** Model of LLM to use */
   model?: string;
 
-  /** Temperatura para la generación */
+  /** Temperature for generation */
   temperature?: number;
 
-  /** Número máximo de tokens por respuesta */
+  /** Maximum number of tokens per response */
   maxTokens?: number;
 
-  /** Idioma del contenido */
+  /** Language of the content */
   language?: string;
 
-  /** Nivel de detalle deseado */
+  /** Detail level desired */
   detailLevel?: 'basic' | 'intermediate' | 'advanced';
 
-  /** Tipos de ejercicios a incluir */
+  /** Types of exercises to include */
   exerciseTypes?: string[];
 }

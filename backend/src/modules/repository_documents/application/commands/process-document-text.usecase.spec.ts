@@ -34,7 +34,6 @@ describe('ProcessDocumentTextUseCase', () => {
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
     jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => {});
 
-    // Limpiar mocks antes de cada test
     jest.clearAllMocks();
   });
 
@@ -43,12 +42,11 @@ describe('ProcessDocumentTextUseCase', () => {
       id: 'doc-1',
       s3Key: 'file.pdf',
       originalName: 'File.pdf',
-      status: DocumentStatus.UPLOADED, // Estado correcto para procesamiento
+      status: DocumentStatus.UPLOADED,
     };
-    
-    // Mock de DocumentService para que devuelva true
+
     (DocumentService.isReadyForProcessing as jest.Mock).mockReturnValue(true);
-    
+
     repoMock.findById.mockResolvedValue(doc);
     storageMock.downloadFileBuffer.mockResolvedValue(Buffer.from('data'));
     textExtractionMock.extractTextFromPdf.mockResolvedValue({
@@ -62,33 +60,38 @@ describe('ProcessDocumentTextUseCase', () => {
     });
 
     const result = await useCase.execute('doc-1');
-    
+
     expect(result).toBe(true);
-    expect(repoMock.updateStatus).toHaveBeenCalledWith('doc-1', DocumentStatus.PROCESSING);
-    expect(repoMock.updateStatus).toHaveBeenCalledWith('doc-1', DocumentStatus.PROCESSED);
+    expect(repoMock.updateStatus).toHaveBeenCalledWith(
+      'doc-1',
+      DocumentStatus.PROCESSING,
+    );
+    expect(repoMock.updateStatus).toHaveBeenCalledWith(
+      'doc-1',
+      DocumentStatus.PROCESSED,
+    );
     expect(repoMock.updateExtractedText).toHaveBeenCalledWith(
       'doc-1',
       'extracted text content',
       1,
       'Title',
       'Author',
-      'en'
+      'en',
     );
   });
 
   it('should return false if document not ready', async () => {
     const doc = {
       id: 'doc-1',
-      status: DocumentStatus.PROCESSED, // Estado que no permite procesamiento
+      status: DocumentStatus.PROCESSED,
     };
-    
-    // Mock de DocumentService para que devuelva false
+
     (DocumentService.isReadyForProcessing as jest.Mock).mockReturnValue(false);
-    
+
     repoMock.findById.mockResolvedValue(doc);
 
     const result = await useCase.execute('doc-1');
-    
+
     expect(result).toBe(false);
     expect(repoMock.updateStatus).not.toHaveBeenCalled();
   });
@@ -97,7 +100,7 @@ describe('ProcessDocumentTextUseCase', () => {
     repoMock.findById.mockResolvedValue(null);
 
     const result = await useCase.execute('doc-1');
-    
+
     expect(result).toBe(false);
     expect(repoMock.updateStatus).not.toHaveBeenCalled();
   });
@@ -109,16 +112,24 @@ describe('ProcessDocumentTextUseCase', () => {
       originalName: 'File.pdf',
       status: DocumentStatus.UPLOADED,
     };
-    
+
     (DocumentService.isReadyForProcessing as jest.Mock).mockReturnValue(true);
     repoMock.findById.mockResolvedValue(doc);
-    storageMock.downloadFileBuffer.mockRejectedValue(new Error('Download failed'));
+    storageMock.downloadFileBuffer.mockRejectedValue(
+      new Error('Download failed'),
+    );
 
     const result = await useCase.execute('doc-1');
-    
+
     expect(result).toBe(false);
-    expect(repoMock.updateStatus).toHaveBeenCalledWith('doc-1', DocumentStatus.PROCESSING);
-    expect(repoMock.updateStatus).toHaveBeenCalledWith('doc-1', DocumentStatus.ERROR);
+    expect(repoMock.updateStatus).toHaveBeenCalledWith(
+      'doc-1',
+      DocumentStatus.PROCESSING,
+    );
+    expect(repoMock.updateStatus).toHaveBeenCalledWith(
+      'doc-1',
+      DocumentStatus.ERROR,
+    );
   });
 
   it('should handle text extraction errors and mark as ERROR', async () => {
@@ -128,16 +139,24 @@ describe('ProcessDocumentTextUseCase', () => {
       originalName: 'File.pdf',
       status: DocumentStatus.UPLOADED,
     };
-    
+
     (DocumentService.isReadyForProcessing as jest.Mock).mockReturnValue(true);
     repoMock.findById.mockResolvedValue(doc);
     storageMock.downloadFileBuffer.mockResolvedValue(Buffer.from('data'));
-    textExtractionMock.extractTextFromPdf.mockRejectedValue(new Error('Extraction failed'));
+    textExtractionMock.extractTextFromPdf.mockRejectedValue(
+      new Error('Extraction failed'),
+    );
 
     const result = await useCase.execute('doc-1');
-    
+
     expect(result).toBe(false);
-    expect(repoMock.updateStatus).toHaveBeenCalledWith('doc-1', DocumentStatus.PROCESSING);
-    expect(repoMock.updateStatus).toHaveBeenCalledWith('doc-1', DocumentStatus.ERROR);
+    expect(repoMock.updateStatus).toHaveBeenCalledWith(
+      'doc-1',
+      DocumentStatus.PROCESSING,
+    );
+    expect(repoMock.updateStatus).toHaveBeenCalledWith(
+      'doc-1',
+      DocumentStatus.ERROR,
+    );
   });
 });
