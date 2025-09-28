@@ -5,12 +5,16 @@ import type { Dayjs } from 'dayjs';
 import { useState } from 'react';
 import { useExamsStore, type ExamSummary, type ExamsState } from '../../store/examsStore';
 import { readJSON } from '../../services/storage/localStorage';
+import { updateExamStatus, deleteExamAny } from '../../services/exams.service'; // ← integrado
+import { useNavigate } from 'react-router-dom';
 
 const { Text } = Typography;
 
 type Props = {
   data: ExamSummary[];
   onEdit?: (exam?: ExamSummary) => void;
+  onDelete?: (id: string) => Promise<void> | void;
+  disableStatusControls?: boolean;
 };
 
 function fmt(dateIso?: string) {
@@ -197,8 +201,21 @@ function openPrint(html: string) {
 }
 
 function loadPrintableExam(exam: ExamSummary): PrintableExam | null {
-  const stored = readJSON<PrintableExam>(`exam:content:${exam.id}`);
-  if (!stored || !Array.isArray(stored.questions) || stored.questions.length === 0) return null;
+  let stored = readJSON<PrintableExam>(`exam:content:${exam.id}`);
+  
+  if (!stored) {
+    const index = readJSON<string[]>('exam:content:index') || [];
+    const examId = index.find(id => id.includes(exam.id));
+    if (examId) {
+      stored = readJSON<PrintableExam>(`exam:content:${examId}`);
+    }
+  }
+
+  if (!stored || !Array.isArray(stored.questions) || stored.questions.length === 0) {
+    console.log('No se encontró el examen:', exam.id);
+    return null;
+  }
+
   return {
     examId: stored.examId || exam.id,
     title: stored.title || exam.title,
@@ -220,12 +237,13 @@ function handleDownloadPdf(exam: ExamSummary, mode: PrintMode) {
 }
 /* =========================== FIN helpers =========================== */
 
-export default function ExamTable({ data, onEdit }: Props) {
+export default function ExamTable({ data, onEdit, onDelete, disableStatusControls = true }: Props) {
   const toggleVisibility = useExamsStore((s: ExamsState) => s.toggleVisibility);
-  const setVisibility = useExamsStore((s: ExamsState) => s.setVisibility);
-  const setStatus = useExamsStore((s: ExamsState) => s.setStatus);
-  const removeExam = useExamsStore((s: ExamsState) => s.removeExam);
-  const { token } = theme.useToken();
+  const setVisibility    = useExamsStore((s: ExamsState) => s.setVisibility);
+  const setStatus        = useExamsStore((s: ExamsState) => s.setStatus);
+  const removeExam       = useExamsStore((s: ExamsState) => s.removeExam);
+  const { token }        = theme.useToken();
+  const navigate         = useNavigate();
 
   const [publishOpen, setPublishOpen] = useState(false);
   const [publishMode, setPublishMode] = useState<'now' | 'schedule' | 'draft'>('now');
@@ -259,6 +277,17 @@ export default function ExamTable({ data, onEdit }: Props) {
     }
     setPublishOpen(false);
     setTarget(null);
+  };
+
+  const handleToggleVisibility = async (record: ExamSummary) => {
+    toggleVisibility(record.id);
+    try {
+      const to = record.visibility === 'visible' ? 'hidden' : 'visible';
+      await updateExamStatus(record.id, to);
+      message.success(to === 'visible' ? 'Examen hecho público' : 'Examen marcado como privado');
+    } catch {
+      message.warning('No se pudo actualizar en el servidor. Cambio local aplicado.');
+    }
   };
 
   const columns: ColumnsType<ExamSummary> = [
@@ -297,13 +326,60 @@ export default function ExamTable({ data, onEdit }: Props) {
       align: 'right',
       render: (_, record) => {
         const menuItems = [
-          { key: 'q', label: 'Descargar — Solo preguntas', onClick: () => handleDownloadPdf(record, 'questions_only') },
-          { key: 'qa', label: 'Descargar — Preguntas y respuestas', onClick: () => handleDownloadPdf(record, 'questions_answers') },
+          { key: 'q',  label: 'Descargar — Solo preguntas',           onClick: () => handleDownloadPdf(record, 'questions_only') },
+          { key: 'qa', label: 'Descargar — Preguntas y respuestas',   onClick: () => handleDownloadPdf(record, 'questions_answers') },
         ];
         return (
           <Space size={6} wrap={false} style={{ whiteSpace: 'nowrap' }}>
             <Tooltip title="Editar">
-              <Button type="text" style={{ paddingInline: 6 }} icon={<EditOutlined style={{ fontSize: 18 }} />} onClick={() => onEdit?.(record)} aria-label="Editar" />
+              <Button 
+                type="text" 
+                style={{ paddingInline: 6 }} 
+                icon={<EditOutlined style={{ fontSize: 18 }} />} 
+                onClick={() => {
+                  const examContent = loadPrintableExam(record);
+                  if (!examContent) {
+                    message.error('No se encontró el contenido del examen. Vuelve a guardarlo desde la pantalla de resultados.');
+                    return;
+                  }
+
+                  const mcCount = examContent.questions.filter(q => q.type === 'multiple_choice').length;
+                  const tfCount = examContent.questions.filter(q => q.type === 'true_false').length;
+                  const anCount = examContent.questions.filter(q => q.type === 'open_analysis').length;
+                  const oeCount = examContent.questions.filter(q => q.type === 'open_exercise').length;
+
+                  const formData = {
+                    id: record.id,
+                    title: record.title,
+                    subject: examContent.subject,
+                    difficulty: 'medio',
+                    timeMinutes: 45,
+                    attempts: '1',
+                    multipleChoice: String(mcCount),
+                    trueFalse: String(tfCount),
+                    analysis: String(anCount),
+                    openEnded: String(oeCount),
+                    questions: examContent.questions.map(q => ({
+                      id: q.id,
+                      type: q.type,
+                      text: q.text,
+                      options: q.options || [],
+                      correctOptionIndex: q.correctOptionIndex,
+                      correctBoolean: q.correctBoolean,
+                      expectedAnswer: q.expectedAnswer,
+                      answer: q.answer
+                    }))
+                  };
+
+                  navigate('/exams/create', { 
+                    state: { 
+                      editMode: true,
+                      examData: formData
+                    } 
+                  });
+                }} 
+                aria-label="Editar" 
+              />
             </Tooltip>
             <Tooltip title="Publicar / Programar / Borrador">
               <Button type="text" style={{ paddingInline: 6 }} icon={<UploadOutlined style={{ fontSize: 18 }} />} onClick={() => openPublishModal(record)} aria-label="Estado" />
@@ -313,8 +389,9 @@ export default function ExamTable({ data, onEdit }: Props) {
                 type="text"
                 style={{ paddingInline: 6 }}
                 icon={record.visibility === 'visible' ? <EyeInvisibleOutlined style={{ fontSize: 18 }} /> : <EyeOutlined style={{ fontSize: 18 }} />}
-                onClick={() => toggleVisibility(record.id)}
+                onClick={() => handleToggleVisibility(record)}
                 aria-label="Visibilidad"
+                disabled={disableStatusControls === true ? false : false} 
               />
             </Tooltip>
 
@@ -328,7 +405,7 @@ export default function ExamTable({ data, onEdit }: Props) {
                   <DownOutlined style={{ fontSize: 10, marginLeft: 4 }} />
                 </Button>
               </Tooltip>
-            </Dropdown>
+            </Dropdown>            
 
             <Popconfirm
               title="Eliminar examen"
@@ -336,7 +413,22 @@ export default function ExamTable({ data, onEdit }: Props) {
               okText="Eliminar"
               cancelText="Cancelar"
               okButtonProps={{ danger: true }}
-              onConfirm={() => { removeExam(record.id); message.success('Examen eliminado'); }}
+              onConfirm={async () => {
+                let serverOk = false;
+                try {
+                  await deleteExamAny(record.id); 
+                  serverOk = true;
+                } catch {
+                  serverOk = false;
+                }
+                if (onDelete) {
+                  try { await onDelete(record.id); } catch {}
+                } else {
+                  removeExam(record.id); 
+                }
+                if (serverOk) message.success('Examen eliminado');
+                else message.warning('No se pudo eliminar en el servidor. Se eliminó localmente en esta sesión.');
+              }}
             >
               <Tooltip title="Eliminar">
                 <Button type="text" danger style={{ paddingInline: 6 }} icon={<DeleteOutlined style={{ fontSize: 18 }} />} aria-label="Eliminar" />

@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Button, Typography, Empty } from 'antd';
-import { listCourseExams, type CourseExamRow } from '../../services/exams.service';
+import { listClassExams, deleteExamAny, type CourseExamRow } from '../../services/exams.service';
 import ExamTable from '../../components/exams/ExamTable';
-import { useNavigate } from 'react-router-dom';
 import type { ExamSummary } from '../../store/examsStore';
-
+import InlineExamCreator from '../exams/InlineExamCreator.tsx';
 
 const { Title, Text } = Typography;
 
 type Props = {
-  courseId: string;
+  courseId: string; // subject
+  classId: string;  // period
 };
 
 function extractIdCandidates(r: any, courseId: string): string[] {
@@ -44,15 +44,15 @@ function extractIdCandidates(r: any, courseId: string): string[] {
   return Array.from(vals);
 }
 
-export default function CourseExamsPanel({ courseId }: Props) {
+export default function CourseExamsPanel({ courseId, classId }: Props) {
   const [tableData, setTableData] = useState<ExamSummary[]>([]);
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  const [createOpen, setCreateOpen] = useState(false);
 
-  useEffect(() => {
-    if (!courseId) return;
+  const fetchList = () => {
+    if (!classId) return;
     setLoading(true);
-    listCourseExams(courseId)
+    listClassExams(classId)
       .then((rows: CourseExamRow[]) => {
         const mapped: ExamSummary[] = (rows || []).map((r) => {
           const candidates = extractIdCandidates(r as any, courseId);
@@ -71,17 +71,19 @@ export default function CourseExamsPanel({ courseId }: Props) {
             totalQuestions: Number((r as any)?.questionsCount ?? 0),
             counts: { multiple_choice: 0, true_false: 0, open_analysis: 0, open_exercise: 0 },
             __candidates: candidates,
-          } as any; 
+          } as any;
         });
         setTableData(mapped);
       })
       .finally(() => setLoading(false));
-  }, [courseId]);
+  };
+
+  useEffect(() => { fetchList(); }, [classId, courseId]);
 
   const Header = (
     <div className="flex items-center justify-between mb-2">
       <Title level={4} style={{ margin: 0 }}>Exámenes de esta materia</Title>
-      <Button type="primary" onClick={() => navigate(`/professor/exams/create?courseId=${courseId}`)}>
+      <Button type="primary" onClick={() => setCreateOpen(true)}>
         Crear examen
       </Button>
     </div>
@@ -91,25 +93,41 @@ export default function CourseExamsPanel({ courseId }: Props) {
 
   return (
     <div className="mt-4">
-      {tableData.length > 0 ? (
-        <>
-          {Header}
-          <div id="tabla-examenes-curso">
-            <ExamTable
-              data={tableData}
-              onEdit={() => navigate(`/professor/exams/create?courseId=${courseId}`)}
-            />
-          </div>
-        </>
-      ) : (
-        <div style={{ textAlign: 'center', padding: '64px 0' }}>
-          <Empty description="Aún no hay exámenes para este curso">
-            <Text style={{ fontSize: 14 }}>Los exámenes creados aparecerán aquí para su gestión.</Text>
-          </Empty>
-          <Button type="primary" style={{ marginTop: 16 }} onClick={() => navigate(`/professor/exams/create?courseId=${courseId}`)}>
-            Crear examen
-          </Button>
+      {Header}
+      {createOpen && (
+        <div style={{ marginBottom: 16 }}>
+          <InlineExamCreator
+            classId={classId}
+            courseId={courseId}
+            onClose={() => setCreateOpen(false)}
+            onCreated={() => {
+              setCreateOpen(false);
+              fetchList();
+            }}
+          />
         </div>
+      )}
+
+      {tableData.length > 0 ? (
+        <div id="tabla-examenes-curso">
+          <ExamTable
+            data={tableData}
+            disableStatusControls
+            onEdit={() => setCreateOpen(true)}
+            onDelete={async (id) => {
+              await deleteExamAny(id);
+              fetchList();
+            }}
+          />
+        </div>
+      ) : (
+        !createOpen && (
+          <div style={{ textAlign: 'center', padding: '64px 0' }}>
+            <Empty description="Aún no hay exámenes para este curso">
+            <Text style={{ fontSize: 14 }}>Los exámenes creados aparecerán aquí para su gestión.</Text>
+            </Empty>
+          </div>
+        )
       )}
     </div>
   );
