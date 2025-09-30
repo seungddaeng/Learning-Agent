@@ -6,6 +6,8 @@ import { createSignature } from '../../utils/createSignature';
 
 export type PublishInput = {
   text: string;
+  rawText?: string;
+  courseId?: string;
   options?: string[] | null;
   source?: string;
   rawMetadata?: Record<string, any>;
@@ -57,7 +59,7 @@ export class PublishGeneratedQuestionUseCase {
       normalized = normalized.substring(0, MAX_CONTENT_LENGTH);
     }
 
-    const signature = createSignature({ text: normalized, options: input.options ?? null });
+    const signature = createSignature({ text: normalized, options: input.options ?? null, examId: input.courseId ?? null });
     const existing = await this.questionRepo.findBySignature(signature);
     if (existing) {
       return { result: 'duplicate' };
@@ -65,6 +67,9 @@ export class PublishGeneratedQuestionUseCase {
 
     const question = Question.create(normalized, 'open_analysis', input.options ?? null);
     question.signature = signature;
+    (question as any).examId = input.courseId ?? null;
+    (question as any).rawText = input.rawText ?? input.text;
+    (question as any).metadata = input.rawMetadata ?? null;
     const saved = await this.questionRepo.save(question);
 
     return { result: 'created', questionId: saved.id };

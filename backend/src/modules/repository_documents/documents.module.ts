@@ -72,13 +72,10 @@ import { ContextualLoggerService } from './infrastructure/services/contextual-lo
     ContractDocumentsController,
   ],
   providers: [
-    // servicios de configuración
     AiConfigService,
 
-    // Servicios de logging
     ContextualLoggerService,
 
-    // adaptadores de infraestructura
     { provide: DOCUMENT_STORAGE_PORT, useClass: S3StorageAdapter },
     {
       provide: DOCUMENT_REPOSITORY_PORT,
@@ -99,7 +96,6 @@ import { ContextualLoggerService } from './infrastructure/services/contextual-lo
       useClass: PrismaDeletedDocumentRepositoryAdapter,
     },
 
-    // nuevos adaptadores para fase 3
     {
       provide: EMBEDDING_GENERATOR_PORT,
       useFactory: (aiConfig: AiConfigService) => {
@@ -120,7 +116,6 @@ import { ContextualLoggerService } from './infrastructure/services/contextual-lo
 
     { provide: FILE_STORAGE_REPO, useClass: S3StorageAdapter },
 
-    // servicios de dominio
     {
       provide: DocumentChunkingService,
       useFactory: (
@@ -151,7 +146,6 @@ import { ContextualLoggerService } from './infrastructure/services/contextual-lo
       ],
     },
 
-    // casos de uso
     {
       provide: ListDocumentsUseCase,
       useFactory: (
@@ -371,7 +365,6 @@ import { ContextualLoggerService } from './infrastructure/services/contextual-lo
     },
   ],
   exports: [
-    // casos de uso originales
     ListDocumentsUseCase,
     DeleteDocumentUseCase,
     UploadDocumentUseCase,
@@ -379,11 +372,9 @@ import { ContextualLoggerService } from './infrastructure/services/contextual-lo
     ProcessDocumentTextUseCase,
     ProcessDocumentChunksUseCase,
 
-    // Casos de uso para el contrato
     GetDocumentsBySubjectUseCase,
     GetDocumentContentUseCase,
 
-    // nuevos casos de uso para embeddings
     GenerateDocumentEmbeddingsUseCase,
     SearchDocumentsUseCase,
     CheckDocumentSimilarityUseCase,
@@ -391,11 +382,9 @@ import { ContextualLoggerService } from './infrastructure/services/contextual-lo
     GenerateDocumentIndexUseCase,
     GetDocumentIndexUseCase,
 
-    // servicios de dominio
     DocumentChunkingService,
     DocumentEmbeddingService,
 
-    // tokens de puertos (para testing o extensión)
     DOCUMENT_REPOSITORY_PORT,
     TEXT_EXTRACTION_PORT,
     DOCUMENT_STORAGE_PORT,
@@ -408,14 +397,12 @@ import { ContextualLoggerService } from './infrastructure/services/contextual-lo
 })
 export class DocumentsModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer;
-
     consumer
       .apply(LoggingMiddleware)
       .forRoutes(
         'api/documents',
         'api/repository-documents/embeddings',
-        'api/v1/documentos',
+        'api/v1/documents',
       );
 
     consumer.apply(AuthMiddleware).forRoutes(
@@ -423,10 +410,10 @@ export class DocumentsModule implements NestModule {
       { path: 'api/documents/:id', method: RequestMethod.DELETE },
       { path: 'api/documents/download/:id', method: RequestMethod.GET },
       {
-        path: 'api/v1/documentos/materias/*/documentos',
+        path: 'api/v1/documents/subject/*/documents',
         method: RequestMethod.GET,
       },
-      { path: 'api/v1/documentos/*/contenido', method: RequestMethod.GET },
+      { path: 'api/v1/documents/*/content', method: RequestMethod.GET },
       {
         path: 'api/documents/:documentId/process-text',
         method: RequestMethod.POST,

@@ -2,22 +2,22 @@ import { DocumentIndex } from '../entities/document-index.entity';
 
 export interface DocumentIndexRepositoryPort {
   /**
-   * Guarda un nuevo índice de documento en la base de datos
+   * Save a new document index in the database
    */
   save(documentIndex: DocumentIndex): Promise<DocumentIndex>;
 
   /**
-   * Busca un índice por ID de documento
+   * Find an index by document ID
    */
   findByDocumentId(documentId: string): Promise<DocumentIndex | null>;
 
   /**
-   * Busca un índice por su ID
+   * Find an index by ID
    */
   findById(id: string): Promise<DocumentIndex | null>;
 
   /**
-   * Actualiza un índice existente
+   * Update an existing index
    */
   update(
     id: string,
@@ -25,12 +25,12 @@ export interface DocumentIndexRepositoryPort {
   ): Promise<DocumentIndex>;
 
   /**
-   * Elimina un índice por ID de documento
+   * Delete an index by document ID
    */
   deleteByDocumentId(documentId: string): Promise<void>;
 
   /**
-   * Lista todos los índices con paginación
+   * List all indices with pagination
    */
   findAll(options?: {
     skip?: number;

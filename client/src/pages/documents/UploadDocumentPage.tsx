@@ -21,27 +21,21 @@ const { useBreakpoint } = Grid;
 
 const UploadDocumentPage: React.FC = () => {
   const { processDocumentComplete } = useChunkedDocumentUpload();
-  // Use only one source for user data
   const user = useUserStore((s) => s.user);
-  const { id: _userId } = useUser(); // Hook that internally uses the same store
+  const { id: _userId } = useUser();
   const isStudent = Boolean(user?.roles?.includes?.("estudiante"));
   const { courseId, id } = useParams<{ courseId: string; id: string }>();
   const location = useLocation();
   
-  // Memoize filters to prevent infinite re-renders
   const documentsFilters = useMemo(() => ({
     courseId,
     classId: id
   }), [courseId, id]);
   
-  // Now we can use the documents hook with stable filters
   const { documents, loading, downloadDocument, deleteDocument, loadDocuments } = useDocuments(documentsFilters);
-  
-  // Hooks to get course and period information
   const { actualCourse, getCourseByID } = useCourses();
   const { actualClass, fetchClassById } = useClasses();
 
-  // Get course and period information when necessary
   useEffect(() => {
     if (courseId && !actualCourse) {
       getCourseByID(courseId);
@@ -53,19 +47,15 @@ const UploadDocumentPage: React.FC = () => {
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const screens = useBreakpoint();
   
-  // Check if we're in the student reinforcement context
   const isInReinforcementContext = location.pathname.includes('/student/classes/') && location.pathname.includes('/reinforcement/documents');
   
-  // Theme
   const theme = useThemeStore((state: { theme: string }) => state.theme);
   const isDark = theme === "dark";
   const { token } = antTheme.useToken();
   
-  // State for preview sidebar
   const [previewSidebarVisible, setPreviewSidebarVisible] = useState<boolean>(false);
   const [documentToPreview, setDocumentToPreview] = useState<Document | null>(null);
   
-  // State for data sidebar
   const [dataSidebarVisible, setDataSidebarVisible] = useState<boolean>(false);
   const [documentToViewData, setDocumentToViewData] = useState<Document | null>(null);
 
@@ -77,7 +67,6 @@ const UploadDocumentPage: React.FC = () => {
     ? '50%'
     : '100%';
 
-  // Create dynamic breadcrumbs based on context
   const getBreadcrumbs = () => {
     if (isInReinforcementContext && id) {
       return [
@@ -88,7 +77,6 @@ const UploadDocumentPage: React.FC = () => {
       ];
     }
     
-    // Professor context: /professor/courses/:courseId/periods/:id/documents
     if (courseId && id && actualCourse && actualClass) {
       return [
         { label: "Inicio", href: "/" },
@@ -99,7 +87,6 @@ const UploadDocumentPage: React.FC = () => {
       ];
     }
     
-    // Professor context: /professor/courses/:courseId/documents (from course card)
     if (courseId && !id && actualCourse) {
       return [
         { label: "Inicio", href: "/" },
@@ -117,8 +104,8 @@ const UploadDocumentPage: React.FC = () => {
 
   const fileConfig = {
     accept: ".pdf",
-    maxSize: 100 * 1024 * 1024, // 100MB
-    chunkSize: 2 * 1024 * 1024, // 2MB chunks for better performance
+    maxSize: 100 * 1024 * 1024,
+    chunkSize: 2 * 1024 * 1024,
     validationMessage: "Solo se permiten archivos PDF de hasta 100MB"
   };
 
@@ -182,7 +169,6 @@ const UploadDocumentPage: React.FC = () => {
     setDocumentToPreview(null);
   }, []);
 
-  // Preview
   const handlePreview = useCallback(async (doc: Document) => {
     if (dataSidebarVisible) {
       setDataSidebarVisible(false);
