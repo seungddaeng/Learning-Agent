@@ -15,7 +15,7 @@ import { InterviewExamDbModule } from '../interview-exam-db/interview-exam-db.mo
 import { DocumentsModule } from '../repository_documents/documents.module';
 import { LlmModule } from '../llm/llm.module';
 
-// The following block references AiGenModule, which is not defined/imported. Commented out as per task instructions.
+// Bloque de AiGenModule comentado: no está definido ni importado.
 // const AiGeneratorClass =
 //   (AiGenModule as any).AIQuestionGenerator ??
 //   (AiGenModule as any).AiQuestionGenerator ??
@@ -55,4 +55,4 @@ import { LlmModule } from '../llm/llm.module';
     PublishGeneratedQuestionUseCase,
   ],
 })
-export class ExamsChatModule {}
+export class ExamsChatModule { }
