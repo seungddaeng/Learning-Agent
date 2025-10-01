@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, Logger } from '@nestjs/common';
 import type { LlmPort } from '../../../llm/domain/ports/llm.port';
 import { LLM_PORT } from '../../../llm/tokens';
 
@@ -14,6 +14,8 @@ export type GeneratedQuestion = {
 
 @Injectable()
 export class AIQuestionGenerator {
+  private readonly logger = new Logger(AIQuestionGenerator.name);
+
   constructor(@Inject(LLM_PORT) private readonly deepseek?: LlmPort) {}
 
   private normalizeLine(l: string) {
@@ -25,15 +27,16 @@ export class AIQuestionGenerator {
       return {
         text: 'Genera una pregunta sobre algoritmos de programación, de opción múltiple',
       };
-    
+
     const resp = await this.deepseek.complete(
       'Genera una pregunta sobre algoritmos de programación, de opción múltiple',
       { model: { provider: 'deepseek', name: 'deepseek-chat' } },
     );
-    
-    const text = resp?.text?.toString().trim() ?? 
+
+    const text =
+      resp?.text?.toString().trim() ??
       'Pregunta sobre algoritmos de programación, de opción múltiple';
-    
+
     return { text };
   }
 
@@ -42,21 +45,22 @@ export class AIQuestionGenerator {
       return {
         text: 'El algoritmo de Quicksort siempre es estable. (Verdadero o Falso)',
       };
-    
+
     const resp = await this.deepseek.complete(
       'Genera una pregunta de verdadero o falso sobre algoritmos de programación',
       { model: { provider: 'deepseek', name: 'deepseek-chat' } },
     );
-    
-    const text = resp?.text?.toString().trim() ?? 
+
+    const text =
+      resp?.text?.toString().trim() ??
       'Pregunta de verdadero o falso sobre algoritmos de programación';
-    
+
     return { text };
   }
 
   async generateOptions(questionText: string): Promise<GeneratedOptions> {
     if (!questionText?.trim()) throw new Error('Text required');
-    
+
     const fallback: GeneratedOptions = {
       options: [
         `${questionText} — opción A`,
@@ -71,16 +75,25 @@ export class AIQuestionGenerator {
     if (!this.deepseek) return fallback;
 
     const maxAttempts = 3;
-    
+
     for (let i = 0; i < maxAttempts; i++) {
       try {
         const resp = await this.deepseek.complete(
           `Genera 4 opciones distintas para esta pregunta: "${questionText}"`,
           { model: { provider: 'deepseek', name: 'deepseek-chat' } },
         );
-        
+
         const candidate = (resp?.text ?? '').toString().trim();
         if (!candidate) continue;
+
+        const parsed = this.parseCandidate(candidate);
+        if (parsed && parsed.length >= 4) {
+          return {
+            options: parsed.slice(0, 4),
+            correctIndex: null,
+            confidence: null,
+          };
+        }
 
         const lines = candidate
           .split(/\r?\n/)
@@ -100,7 +113,7 @@ export class AIQuestionGenerator {
           .split(/;|\/|\||\t/)
           .map((p) => p.trim())
           .filter(Boolean);
-          
+
         if (pieces.length >= 4) {
           return {
             options: pieces.slice(0, 4),
@@ -108,12 +121,30 @@ export class AIQuestionGenerator {
             confidence: null,
           };
         }
-
       } catch (err) {
         continue;
       }
     }
-    
+
     return fallback;
+  }
+
+  private parseCandidate(candidate: string): string[] {
+    if (!candidate) return [];
+
+    const lines = candidate
+      .split(/\r?\n/)
+      .map((l) => this.normalizeLine(l))
+      .filter(Boolean);
+    if (lines.length >= 4) return lines;
+
+    const pieces = candidate
+      .split(/;|\/|\||\t/)
+      .map((p) => p.trim())
+      .filter(Boolean);
+    if (pieces.length >= 4) return pieces;
+
+    this.logger.warn(`parseCandidate no pudo procesar: "${candidate}"`);
+    return [];
   }
 }
