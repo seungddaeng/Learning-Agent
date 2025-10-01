@@ -554,8 +554,6 @@ model Course {
   quizQuestions    QuizQuestion[]
   interviewQuestions  InterviewQuestion[]
 
-  quizQuestions QuizQuestion[]
-
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
 }

@@ -141,4 +141,23 @@ export class AIQuestionGenerator {
     this.logger.warn(`parseCandidate no pudo procesar: "${candidate}"`);
     return [];
   }
+
+  private parseCandidate(candidate: string): string[] {
+    if (!candidate) return [];
+
+    const lines = candidate
+      .split(/\r?\n/)
+      .map((l) => this.normalizeLine(l))
+      .filter(Boolean);
+    if (lines.length >= 4) return lines;
+
+    const pieces = candidate
+      .split(/;|\/|\||\t/)
+      .map((p) => p.trim())
+      .filter(Boolean);
+    if (pieces.length >= 4) return pieces;
+
+    this.logger.warn(`parseCandidate no pudo procesar: "${candidate}"`);
+    return [];
+  }
 }
