@@ -5,6 +5,10 @@ import type { TokenServicePort } from '../../domain/ports/token-service.port';
 import { HASHER, SESSION_REPO, TOKEN_SERVICE, USER_REPO } from '../../tokens';
 import type { SessionRepositoryPort } from '../../domain/ports/session.repository.port';
 import { JwtPayload } from 'jsonwebtoken';
+import {
+  InvalidCredentialsError,
+  InactiveUserError,
+} from '../../domain/exceptions/auth.exceptions';
 
 @Injectable()
 export class LoginUseCase {
@@ -22,22 +26,31 @@ export class LoginUseCase {
     userAgent?: string;
   }) {
     const user = await this.users.findByEmail(input.email);
-    if (!user || !user.isActive) throw new Error('Invalid credentials');
+
+    if (!user) {
+      throw new InvalidCredentialsError();
+    }
+
+    if (!user.isActive) {
+      throw new InactiveUserError();
+    }
 
     const ok = await this.hasher.compare(input.password, user.passwordHash);
-    if (!ok) throw new Error('Invalid credentials');
+    if (!ok) {
+      throw new InvalidCredentialsError();
+    }
 
-    // (Estrategia simple) revoca sesiones previas y crea una nueva
     await this.sessions.revokeAll(user.id);
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
     };
-    const accessToken = this.tokens.signAccess(payload); // TTL corto (p.ej. 15m)
+
+    const accessToken = this.tokens.signAccess(payload); // TTL corto (ej: 15m)
     const refreshToken = this.tokens.signRefresh(payload);
 
     const expiresAt = this.addTTLToDate(process.env.JWT_REFRESH_TTL || '7d');
-    const session = await this.sessions.createSession({
+    await this.sessions.createSession({
       userId: user.id,
       token: accessToken,
       refreshToken,
