@@ -2,8 +2,15 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { UserRepositoryPort } from '../../domain/ports/user.repository.port';
 import type { PasswordHasherPort } from '../../domain/ports/password-hasher.port';
 import type { TokenServicePort } from '../../domain/ports/token-service.port';
-import { HASHER, SESSION_REPO, TOKEN_SERVICE, USER_REPO } from '../../tokens';
 import type { SessionRepositoryPort } from '../../domain/ports/session.repository.port';
+import type { TokenExpirationService } from '../../domain/services/token-expiration.service';
+import { 
+  HASHER, 
+  SESSION_REPO, 
+  TOKEN_SERVICE, 
+  USER_REPO, 
+  TOKEN_EXPIRATION_SERVICE 
+} from '../../tokens';
 import { JwtPayload } from 'jsonwebtoken';
 import {
   InvalidCredentialsError,
@@ -17,6 +24,7 @@ export class LoginUseCase {
     @Inject(HASHER) private readonly hasher: PasswordHasherPort,
     @Inject(TOKEN_SERVICE) private readonly tokens: TokenServicePort,
     @Inject(SESSION_REPO) private readonly sessions: SessionRepositoryPort,
+    @Inject(TOKEN_EXPIRATION_SERVICE) private readonly tokenExpiration: TokenExpirationService,
   ) {}
 
   async execute(input: {
@@ -46,10 +54,12 @@ export class LoginUseCase {
       email: user.email,
     };
 
-    const accessToken = this.tokens.signAccess(payload); // TTL corto (ej: 15m)
+    const accessToken = this.tokens.signAccess(payload);
     const refreshToken = this.tokens.signRefresh(payload);
 
-    const expiresAt = this.addTTLToDate(process.env.JWT_REFRESH_TTL || '7d');
+    const refreshTTL = process.env.JWT_REFRESH_TTL || '7d';
+    const { expiresAt } = this.tokenExpiration.calculateExpiration(refreshTTL);
+
     await this.sessions.createSession({
       userId: user.id,
       token: accessToken,
@@ -60,14 +70,5 @@ export class LoginUseCase {
     });
 
     return { accessToken, refreshToken };
-  }
-
-  private addTTLToDate(ttl: string): Date {
-    const num = parseInt(ttl, 10);
-    const unit = ttl.replace(String(num), '');
-    const d = new Date();
-    const map: Record<string, number> = { m: 60000, h: 3600000, d: 86400000 };
-    d.setTime(d.getTime() + num * (map[unit] ?? 0));
-    return d;
   }
 }
