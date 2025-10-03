@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { App, Button, Checkbox, Form, Input } from "antd";
 import { Link, useNavigate } from "react-router-dom";
-import { login } from "../services/authService";
+import { login } from "../../services/authService";
 
 export type LoginValues = {
   email: string;
