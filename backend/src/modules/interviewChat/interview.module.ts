@@ -25,5 +25,8 @@ import { InterviewExamDbModule } from '../interview-exam-db/interview-exam-db.mo
     DeepseekAdapter,
     { provide: LLM_PORT, useExisting: DeepseekAdapter },
   ],
+  exports: [
+    DsIntService,
+  ],
 })
 export class InterviewModule {}
