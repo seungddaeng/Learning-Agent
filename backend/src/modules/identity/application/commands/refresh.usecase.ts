@@ -1,12 +1,15 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { SessionRepositoryPort } from '../../domain/ports/session.repository.port';
 import type { TokenServicePort } from '../../domain/ports/token-service.port';
-import { SESSION_REPO, TOKEN_SERVICE } from '../../tokens';
+import type { TokenExpirationService } from '../../domain/services/token-expiration.service';
+import { SESSION_REPO, TOKEN_SERVICE, TOKEN_EXPIRATION_SERVICE } from '../../tokens';
+
 @Injectable()
 export class RefreshUseCase {
   constructor(
     @Inject(SESSION_REPO) private readonly sessions: SessionRepositoryPort,
     @Inject(TOKEN_SERVICE) private readonly tokens: TokenServicePort,
+    @Inject(TOKEN_EXPIRATION_SERVICE) private readonly tokenExpiration: TokenExpirationService,
   ) {}
 
   async execute(input: { refreshToken: string }) {
@@ -34,7 +37,9 @@ export class RefreshUseCase {
       sub: payload.sub,
       email: payload.email,
     });
-    const expiresAt = new Date(Date.now() + 7 * 86400000);
+
+    const refreshTTL = process.env.JWT_REFRESH_TTL || '7d';
+    const { expiresAt } = this.tokenExpiration.calculateExpiration(refreshTTL);
 
     await this.sessions.createSession({
       userId: payload.sub,

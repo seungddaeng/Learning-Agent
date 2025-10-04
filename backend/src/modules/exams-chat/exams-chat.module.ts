@@ -15,26 +15,9 @@ import { InterviewExamDbModule } from '../interview-exam-db/interview-exam-db.mo
 import { DocumentsModule } from '../repository_documents/documents.module';
 import { LlmModule } from '../llm/llm.module';
 
-// Bloque de AiGenModule comentado: no está definido ni importado.
-// const AiGeneratorClass =
-//   (AiGenModule as any).AIQuestionGenerator ??
-//   (AiGenModule as any).AiQuestionGenerator ??
-//   (AiGenModule as any).default;
-
-// class AiGeneratorFallback {
-//   async generateOptions(_text: string): Promise<string[]> {
-//     throw new Error('AI generator not available');
-//   }
-// }
-
-// const AiProvider =
-//   typeof AiGeneratorClass === 'function'
-//     ? { provide: EXAM_AI_GENERATOR, useClass: AiGeneratorClass }
-//     : { provide: EXAM_AI_GENERATOR, useClass: AiGeneratorFallback };
-
 @Module({
   imports: [
-    InterviewModule,
+    InterviewModule, // ← Ya exporta DsIntService, NO agregar en providers
     PromptTemplateModule,
     InterviewExamDbModule,
     DocumentsModule,
@@ -42,6 +25,7 @@ import { LlmModule } from '../llm/llm.module';
   ],
   controllers: [ExamsChatController],
   providers: [
+    // REMOVER: DsIntService de aquí - ya viene de InterviewModule
     { provide: EXAM_AI_GENERATOR, useClass: AIQuestionGenerator },
     { provide: EXAM_QUESTION_REPO, useClass: PrismaQuestionRepositoryAdapter },
     { provide: 'AUDIT_REPO', useClass: PrismaAuditRepositoryAdapter },
@@ -55,4 +39,4 @@ import { LlmModule } from '../llm/llm.module';
     PublishGeneratedQuestionUseCase,
   ],
 })
-export class ExamsChatModule { }
+export class ExamsChatModule {}
