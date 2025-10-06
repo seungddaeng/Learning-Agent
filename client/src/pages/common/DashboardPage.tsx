@@ -1,6 +1,6 @@
 import PageTemplate from "../../components/PageTemplate";
 import { formatTodayEs } from "../../utils/date";
-import ProfessorHome from "../dashboard/ProfessorHome";
+import ProfessorHome from "../professor/dashboard/ProfessorHome";
 import StudentHome from "../student/dashboard/StudentHome";
 import { useUserStore } from "../../store/userStore";
 
