@@ -3,20 +3,20 @@ import PublicRoute from "./PublicRoute";
 import PrivateRoute from "./PrivateRoute";
 import RoleRoute from "./RoleRoute";
 import AppLayout from "../layouts/AppLayout";
-import StudentClasses from "../pages/periods-classes/StudentClasses";;
+import StudentClasses from "../pages/student/classes/StudentClasses";
+import Interview from "../pages/student/reinforcement/interview";
+import { Reinforcement } from "../pages/student/reinforcement/reinforcement";
+import Test from "../pages/student/reinforcement/test";
 import PeriodDetailPage from "../pages/periods-classes/PeriodDetailPage";
 import CoursePeriodsPage from "../pages/courses/CoursePeriodsPage";
-import DashboardPage from "../pages/dashboard/DashboardPage";
+import DashboardPage from "../pages/common/DashboardPage";
 import ExamsCreatePage from "../pages/exams/ExamCreatePage";
 import ExamManagementPage from "../pages/exams/ExamManagementPage";
-import ForgotPasswordPage from "../pages/ForgotPassword";
-import Interview from "../pages/reinforcement/interview";
-import Login from "../pages/Login";
-import { Reinforcement } from "../pages/reinforcement/reinforcement";
-import SettingsPage from "../pages/settings/SettingsPage";
+import ForgotPasswordPage from "../pages/common/ForgotPassword";
+import Login from "../pages/common/Login";
+import SettingsPage from "../pages/common/SettingsPage";
 import CoursesPage from "../pages/courses/CoursesPage";
-import Test from "../pages/reinforcement/test";
-import UploadDocumentPage from "../pages/documents/UploadDocumentPage";
+import UploadDocumentPage from "../pages/common/UploadDocumentPage";
 
 export const AppRoutes = () => {
   return (

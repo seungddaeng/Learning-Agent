@@ -1,11 +1,11 @@
 import { Space, Button, theme } from "antd";
 import { ReadOutlined } from "@ant-design/icons";
-import { ProgressCard } from "../../components/reinforcement/ProgressCard";
-import { CourseCards } from "../../components/reinforcement/CourseCards";
-import { ChatModal } from "../../components/reinforcement/ChatModal";
-import { useChatLogic } from "../../hooks/useReinforcementData";
-import { ChatFloatButton } from "../../components/reinforcement/ChatFloatButton";
-import PageTemplate from "../../components/PageTemplate";
+import { ProgressCard } from "../../../components/reinforcement/ProgressCard";
+import { CourseCards } from "../../../components/reinforcement/CourseCards";
+import { ChatModal } from "../../../components/reinforcement/ChatModal";
+import { useChatLogic } from "../../../hooks/useReinforcementData";
+import { ChatFloatButton } from "../../../components/reinforcement/ChatFloatButton";
+import PageTemplate from "../../../components/PageTemplate";
 import { useNavigate, useParams } from "react-router-dom";
 
 export function Reinforcement() {

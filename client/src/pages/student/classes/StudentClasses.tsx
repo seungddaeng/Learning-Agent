@@ -4,12 +4,12 @@ import { Input, Space, Empty } from "antd";
 import { SolutionOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 
-import AccessDenied from "../../components/shared/AccessDenied";
-import CustomCard from "../../components/shared/CustomCard";
-import type { Clase } from "../../interfaces/claseInterface";
-import PageTemplate from "../../components/PageTemplate";
-import useClasses from "../../hooks/useClasses";
-import { useUserStore } from "../../store/userStore";
+import AccessDenied from "../../../components/shared/AccessDenied";
+import CustomCard from "../../../components/shared/CustomCard";
+import type { Clase } from "../../../interfaces/claseInterface";
+import PageTemplate from "../../../components/PageTemplate";
+import useClasses from "../../../hooks/useClasses";
+import { useUserStore } from "../../../store/userStore";
 
 export default function StudentClasses() {
   const user = useUserStore((s) => s.user);
