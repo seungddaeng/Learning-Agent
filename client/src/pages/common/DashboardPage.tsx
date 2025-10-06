@@ -1,7 +1,7 @@
 import PageTemplate from "../../components/PageTemplate";
 import { formatTodayEs } from "../../utils/date";
 import ProfessorHome from "../dashboard/ProfessorHome";
-import StudentHome from "../dashboard/StudentHome";
+import StudentHome from "../student/dashboard/StudentHome";
 import { useUserStore } from "../../store/userStore";
 
 export default function DashboardPage() {
