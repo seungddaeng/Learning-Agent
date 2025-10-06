@@ -4,15 +4,15 @@ import { Button, Empty, Input, message } from "antd";
 import { PlusOutlined, ReadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 
-import AccessDenied from "../../components/shared/AccessDenied";
-import type { Clase, CreateClassDTO } from "../../interfaces/claseInterface";
-import CustomCard from "../../components/shared/CustomCard";
-import GlobalScrollbar from '../../components/GlobalScrollbar';
-import PageTemplate from "../../components/PageTemplate";
-import PeriodForm from "../../components/PeriodForm";
-import useClasses from "../../hooks/useClasses";
-import useCourses from "../../hooks/useCourses";
-import { useUserStore } from "../../store/userStore";
+import AccessDenied from "../../../components/shared/AccessDenied";
+import type { Clase, CreateClassDTO } from "../../../interfaces/claseInterface";
+import CustomCard from "../../../components/shared/CustomCard";
+import GlobalScrollbar from '../../../components/GlobalScrollbar';
+import PageTemplate from "../../../components/PageTemplate";
+import PeriodForm from "../../../components/PeriodForm";
+import useClasses from "../../../hooks/useClasses";
+import useCourses from "../../../hooks/useCourses";
+import { useUserStore } from "../../../store/userStore";
 
 export default function CoursePeriodsPage() {
   const { courseId } = useParams<{ courseId: string }>();
