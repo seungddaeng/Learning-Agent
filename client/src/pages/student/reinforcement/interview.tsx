@@ -1,15 +1,15 @@
 import { useState } from "react";
 import { useNavigate, useParams, generatePath } from "react-router-dom";
 import { Button, theme } from "antd";
-import PageTemplate from "../../components/PageTemplate";
-import InterviewModal from "../../components/interview/InterviewModal";
-import InterviewSummaryModal from "../../components/interview/InterviewFeedbackModal";
-import OpenQuestion from "../../components/interview/OpenQuestion";
-import TeoricQuestion from "../../components/interview/TeoricQuestion";
-import MultipleQuestion from "../../components/interview/MultipleQuestion";
-import useInterview from "../../hooks/useInterview";
-import type { DoubleOptionResponse, MultipleSelectionResponse } from '../../interfaces/interviewInt';
-import { usePdfGenerator } from '../../hooks/usePdfGenerator';
+import PageTemplate from "../../../components/PageTemplate";
+import InterviewModal from "../../../components/interview/InterviewModal";
+import InterviewSummaryModal from "../../../components/interview/InterviewFeedbackModal";
+import OpenQuestion from "../../../components/interview/OpenQuestion";
+import TeoricQuestion from "../../../components/interview/TeoricQuestion";
+import MultipleQuestion from "../../../components/interview/MultipleQuestion";
+import useInterview from "../../../hooks/useInterview";
+import type { DoubleOptionResponse, MultipleSelectionResponse } from '../../../interfaces/interviewInt';
+import { usePdfGenerator } from '../../../hooks/usePdfGenerator';
 export default function InterviewPage() {
   const navigate = useNavigate();
   const { id } = useParams();

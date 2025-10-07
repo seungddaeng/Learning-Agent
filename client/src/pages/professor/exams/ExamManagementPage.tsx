@@ -1,11 +1,11 @@
 import { Card, Typography, theme } from 'antd';
 import { useParams } from 'react-router-dom';
 import { useEffect } from 'react';
-import ExamTable from '../../components/exams/ExamTable';
-import { useExamsStore } from '../../store/examsStore';
-import PageTemplate from '../../components/PageTemplate';
-import GlobalScrollbar from '../../components/GlobalScrollbar';
-import useCourses from '../../hooks/useCourses'; 
+import ExamTable from '../../../components/exams/ExamTable';
+import { useExamsStore } from '../../../store/examsStore';
+import PageTemplate from '../../../components/PageTemplate';
+import GlobalScrollbar from '../../../components/GlobalScrollbar';
+import useCourses from '../../../hooks/useCourses'; 
 
 
 const { Title, Text } = Typography;
