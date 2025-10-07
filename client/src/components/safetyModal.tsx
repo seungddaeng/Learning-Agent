@@ -112,7 +112,7 @@ export const SafetyModal = ({
         <Button key="cancel" onClick={onCancel}>
           {cancelText}
         </Button>,
-        <Button key="confirm" danger type="primary" onClick={onConfirm}>
+        <Button key="confirm" danger={danger} type="primary" onClick={onConfirm}>
           {confirmText}
         </Button>,
       ]}

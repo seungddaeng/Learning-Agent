@@ -20,32 +20,28 @@ export class GetDocumentIndexUseCase {
     const { documentId } = command;
 
     try {
-      this.logger.log(
-        `Obteniendo índice guardado para documento: ${documentId}`,
-      );
+      this.logger.log(`Getting saved index for document: ${documentId}`);
 
       const documentIndex =
         await this.documentIndexRepository.findByDocumentId(documentId);
 
       if (!documentIndex) {
-        this.logger.warn(
-          `No se encontró índice para el documento: ${documentId}`,
-        );
+        this.logger.warn(`No index found for document: ${documentId}`);
         return null;
       }
 
       this.logger.log(
-        `Índice encontrado para documento ${documentId}: ${documentIndex.title} (${documentIndex.chapters.length} capítulos)`,
+        `Index found for document ${documentId}: ${documentIndex.title} (${documentIndex.chapters.length} chapters)`,
       );
 
       return documentIndex;
     } catch (error) {
       this.logger.error(
-        `Error obteniendo índice para documento ${documentId}:`,
+        `Error getting index for document ${documentId}:`,
         error instanceof Error ? error.stack : error,
       );
       throw new Error(
-        `Error obteniendo índice del documento: ${error instanceof Error ? error.message : 'Error desconocido'}`,
+        `Error getting document index: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
     }
   }

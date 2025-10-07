@@ -1,8 +1,12 @@
-import { ProcessingJob, ProcessingType, ProcessingStatus } from '../entities/processing-job.entity';
+import {
+  ProcessingJob,
+  ProcessingType,
+  ProcessingStatus,
+} from '../entities/processing-job.entity';
 
 export class ProcessingJobService {
   /**
-   * Crea un nuevo job de procesamiento
+   * Creates a new processing job
    */
   static create(
     id: string,
@@ -22,10 +26,13 @@ export class ProcessingJobService {
   }
 
   /**
-   * Marca el job como iniciado
+   * Marks the job as started
    */
   static start(job: ProcessingJob): ProcessingJob {
-    if (job.status !== ProcessingStatus.PENDING && job.status !== ProcessingStatus.RETRYING) {
+    if (
+      job.status !== ProcessingStatus.PENDING &&
+      job.status !== ProcessingStatus.RETRYING
+    ) {
       throw new Error(`Cannot start job in status: ${job.status}`);
     }
 
@@ -45,11 +52,13 @@ export class ProcessingJobService {
   }
 
   /**
-   * Actualiza el progreso del job
+   * Updates the job progress
    */
   static updateProgress(job: ProcessingJob, progress: number): ProcessingJob {
     if (!this.isRunning(job)) {
-      throw new Error(`Cannot update progress for job in status: ${job.status}`);
+      throw new Error(
+        `Cannot update progress for job in status: ${job.status}`,
+      );
     }
 
     const validProgress = Math.max(0, Math.min(100, progress));
@@ -70,9 +79,12 @@ export class ProcessingJobService {
   }
 
   /**
-   * Marca el job como completado exitosamente
+   * Marks the job as completed successfully
    */
-  static complete(job: ProcessingJob, result?: Record<string, any>): ProcessingJob {
+  static complete(
+    job: ProcessingJob,
+    result?: Record<string, any>,
+  ): ProcessingJob {
     if (!this.isRunning(job)) {
       throw new Error(`Cannot complete job in status: ${job.status}`);
     }
@@ -93,7 +105,7 @@ export class ProcessingJobService {
   }
 
   /**
-   * Marca el job como fallido
+   * Marks the job as failed
    */
   static fail(job: ProcessingJob, errorMessage: string): ProcessingJob {
     if (this.isTerminal(job)) {
@@ -116,7 +128,7 @@ export class ProcessingJobService {
   }
 
   /**
-   * Cancela el job
+   * Marks the job as cancelled
    */
   static cancel(job: ProcessingJob): ProcessingJob {
     if (this.isTerminal(job)) {
@@ -139,7 +151,7 @@ export class ProcessingJobService {
   }
 
   /**
-   * Marca el job para reintento
+   * Marks the job for retry
    */
   static retry(job: ProcessingJob): ProcessingJob {
     if (!this.canRetry(job)) {
@@ -162,7 +174,7 @@ export class ProcessingJobService {
   }
 
   /**
-   * Verifica si el job está en estado terminal (completado o fallido)
+   * Checks if the job is in a terminal state (completed or failed)
    */
   static isTerminal(job: ProcessingJob): boolean {
     return (
@@ -173,47 +185,63 @@ export class ProcessingJobService {
   }
 
   /**
-   * Verifica si el job está en ejecución
+   * Checks if the job is running
    */
   static isRunning(job: ProcessingJob): boolean {
     return job.status === ProcessingStatus.RUNNING;
   }
 
   /**
-   * Verifica si el job puede ser reintentado
+   * Checks if the job can be retried
    */
   static canRetry(job: ProcessingJob): boolean {
     return job.status === ProcessingStatus.FAILED;
   }
 
   /**
-   * Verifica si el job está pendiente
+   * Checks if the job is pending
    */
   static isPending(job: ProcessingJob): boolean {
-    return job.status === ProcessingStatus.PENDING || job.status === ProcessingStatus.RETRYING;
+    return (
+      job.status === ProcessingStatus.PENDING ||
+      job.status === ProcessingStatus.RETRYING
+    );
   }
 
   /**
-   * Calcula el tiempo de ejecución del job
+   * Calculates the execution time of the job
    */
   static getExecutionTime(job: ProcessingJob): number | null {
     if (!job.startedAt) return null;
-    
+
     const endTime = job.completedAt || new Date();
     return endTime.getTime() - job.startedAt.getTime();
   }
 
   /**
-   * Valida las transiciones de estado
+   * Validates state transitions
    */
-  static canTransitionTo(currentStatus: ProcessingStatus, newStatus: ProcessingStatus): boolean {
+  static canTransitionTo(
+    currentStatus: ProcessingStatus,
+    newStatus: ProcessingStatus,
+  ): boolean {
     const validTransitions: Record<ProcessingStatus, ProcessingStatus[]> = {
-      [ProcessingStatus.PENDING]: [ProcessingStatus.RUNNING, ProcessingStatus.CANCELLED],
-      [ProcessingStatus.RUNNING]: [ProcessingStatus.COMPLETED, ProcessingStatus.FAILED, ProcessingStatus.CANCELLED],
+      [ProcessingStatus.PENDING]: [
+        ProcessingStatus.RUNNING,
+        ProcessingStatus.CANCELLED,
+      ],
+      [ProcessingStatus.RUNNING]: [
+        ProcessingStatus.COMPLETED,
+        ProcessingStatus.FAILED,
+        ProcessingStatus.CANCELLED,
+      ],
       [ProcessingStatus.COMPLETED]: [],
       [ProcessingStatus.FAILED]: [ProcessingStatus.RETRYING],
       [ProcessingStatus.CANCELLED]: [],
-      [ProcessingStatus.RETRYING]: [ProcessingStatus.RUNNING, ProcessingStatus.CANCELLED],
+      [ProcessingStatus.RETRYING]: [
+        ProcessingStatus.RUNNING,
+        ProcessingStatus.CANCELLED,
+      ],
     };
 
     return validTransitions[currentStatus]?.includes(newStatus) ?? false;

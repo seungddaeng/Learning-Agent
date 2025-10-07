@@ -1,21 +1,21 @@
 import { useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
-import '../../components/exams/ExamForm.css';
-import '../../components/shared/Toast.css';
-import { ExamForm } from '../../components/exams/ExamForm';
-import type { ExamFormHandle } from '../../components/exams/ExamForm';
-import { Toast, useToast } from '../../components/shared/Toast';
-import { readJSON, saveJSON } from '../../services/storage/localStorage';
-import PageTemplate from '../../components/PageTemplate';
-import GlobalScrollbar from '../../components/GlobalScrollbar';
+import '../../../components/exams/ExamForm.css';
+import '../../../components/shared/Toast.css';
+import { ExamForm } from '../../../components/exams/ExamForm';
+import type { ExamFormHandle } from '../../../components/exams/ExamForm';
+import { Toast, useToast } from '../../../components/shared/Toast';
+import { readJSON, saveJSON } from '../../../services/storage/localStorage';
+import PageTemplate from '../../../components/PageTemplate';
+import GlobalScrollbar from '../../../components/GlobalScrollbar';
 import './ExamCreatePage.css';
-import { generateQuestions, createExamApproved, updateExamApprovedFull,type GeneratedQuestion } from '../../services/exams.service';
-import AiResults from './AiResults';
-import { normalizeToQuestions, cloneQuestion, replaceQuestion, reorderQuestions } from './ai-utils';
-import { isValidGeneratedQuestion } from '../../utils/aiValidation';
+import { generateQuestions, createExamApproved, updateExamApprovedFull,type GeneratedQuestion } from '../../../services/exams.service';
+import AiResults from '../../exams/AiResults';
+import { normalizeToQuestions, cloneQuestion, replaceQuestion, reorderQuestions } from '../../exams/ai-utils';
+import { isValidGeneratedQuestion } from '../../../utils/aiValidation';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { useExamsStore } from '../../store/examsStore';
-import type { ExamSummary } from '../../store/examsStore';
+import { useExamsStore } from '../../../store/examsStore';
+import type { ExamSummary } from '../../../store/examsStore';
 
 
 const layoutStyle: CSSProperties = {

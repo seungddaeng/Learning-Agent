@@ -1,47 +1,42 @@
 import { Module } from '@nestjs/common';
 import { ExamsChatController } from './infrastructure/http/exams.controller';
-import * as AiGenModule from './infrastructure/ai/ai-question.generator';
-import { EXAM_AI_GENERATOR } from './tokens';
+import { AIQuestionGenerator } from './infrastructure/ai/ai-question.generator';
+import { PrismaQuestionRepositoryAdapter } from './infrastructure/persistance/prisma-question-repository.adapter';
+import { PrismaAuditRepositoryAdapter } from './infrastructure/persistance/prisma-audit-repository.adapter';
+import { InMemoryMetricsService } from './infrastructure/persistance/in-memory-metrics.service';
+import { EXAM_AI_GENERATOR, EXAM_QUESTION_REPO } from './tokens';
+import { DOCUMENT_CHUNK_REPOSITORY_PORT } from '../repository_documents/tokens';
 import { GenerateOptionsForQuestionUseCase } from './application/usecases/generate-options-for-question.usecase';
+import { GetOrGenerateQuestionUseCase } from './application/usecases/get-or-generate-question.usecase';
+import { PublishGeneratedQuestionUseCase } from './application/usecases/publish-generated-question.usecase';
 import { InterviewModule } from '../interviewChat/interview.module';
-import { DsIntService } from '../interviewChat/infrastructure/dsInt.service';
-import { DeepseekAdapter } from '../llm/infrastructure/adapters/ds.adapter';
-import { LLM_PORT } from '../llm/tokens';
 import { PromptTemplateModule } from '../prompt-template/prompt-template.module';
 import { InterviewExamDbModule } from '../interview-exam-db/interview-exam-db.module';
 import { DocumentsModule } from '../repository_documents/documents.module';
-
-const AiGeneratorClass =
-  (AiGenModule as any).AIQuestionGenerator ??
-  (AiGenModule as any).AiQuestionGenerator ??
-  (AiGenModule as any).default;
-
-class AiGeneratorFallback {
-  async generateOptions(_text: string): Promise<string[]> {
-    throw new Error('AI generator not available');
-  }
-}
-
-const AiProvider =
-  typeof AiGeneratorClass === 'function'
-    ? { provide: EXAM_AI_GENERATOR, useClass: AiGeneratorClass }
-    : { provide: EXAM_AI_GENERATOR, useClass: AiGeneratorFallback };
+import { LlmModule } from '../llm/llm.module';
 
 @Module({
   imports: [
-    InterviewModule,
+    InterviewModule, // ← Ya exporta DsIntService, NO agregar en providers
     PromptTemplateModule,
     InterviewExamDbModule,
     DocumentsModule,
+    LlmModule,
   ],
   controllers: [ExamsChatController],
   providers: [
-    DsIntService,
-    AiProvider,
+    // REMOVER: DsIntService de aquí - ya viene de InterviewModule
+    { provide: EXAM_AI_GENERATOR, useClass: AIQuestionGenerator },
+    { provide: EXAM_QUESTION_REPO, useClass: PrismaQuestionRepositoryAdapter },
+    { provide: 'AUDIT_REPO', useClass: PrismaAuditRepositoryAdapter },
+    { provide: 'METRICS_SERVICE', useClass: InMemoryMetricsService },
+    {
+      provide: 'DOCUMENT_CHUNK_REPO',
+      useExisting: DOCUMENT_CHUNK_REPOSITORY_PORT,
+    },
     GenerateOptionsForQuestionUseCase,
-    DeepseekAdapter,
-    { provide: LLM_PORT, useExisting: DeepseekAdapter },
+    GetOrGenerateQuestionUseCase,
+    PublishGeneratedQuestionUseCase,
   ],
-  exports: [AiProvider],
 })
 export class ExamsChatModule {}

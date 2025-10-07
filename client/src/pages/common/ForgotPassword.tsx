@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { App, Button, Form, Input } from "antd";
 import { Link } from "react-router-dom";
-import { forgotPassword } from "../services/authService";
+import { forgotPassword } from "../../services/authService";
 
 export type ForgotValues = {
   email: string;

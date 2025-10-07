@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Alert, theme } from "antd";
-import PageTemplate from "../../components/PageTemplate";
-import TestModal from "../../components/tests/TestModal";
-import TestSummaryModal from "../../components/tests/TestSummaryModal";
-import TimerDisplay from "../../components/tests/Timer";
-import { useStudentTest } from "../../hooks/useStudentTest";
-import TestQuestion from "../../components/tests/TestQuestion";
-import TrueOrFalseQuestion from "../../components/tests/TrueOrFalseQuestion";
+import PageTemplate from "../../../components/PageTemplate";
+import TestModal from "../../../components/tests/TestModal";
+import TestSummaryModal from "../../../components/tests/TestSummaryModal";
+import TimerDisplay from "../../../components/tests/Timer";
+import { useStudentTest } from "../../../hooks/useStudentTest";
+import TestQuestion from "../../../components/tests/TestQuestion";
+import TrueOrFalseQuestion from "../../../components/tests/TrueOrFalseQuestion";
 
 export default function Test() {
   const navigate = useNavigate();

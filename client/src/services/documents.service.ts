@@ -7,7 +7,6 @@ import type {
   UploadResponse 
 } from "../interfaces/documentInterface";
 
-// Interface for HTTP errors
 interface HttpError {
   response?: {
     status: number;
@@ -16,12 +15,10 @@ interface HttpError {
   message?: string;
 }
 
-// Function to get user data from Zustand store
 const getUserFromStore = () => {
   return useUserStore.getState().user;
 };
 
-// Function to get authentication token
 const getAuthToken = async (): Promise<string> => {
   const authData = localStorage.getItem("auth");
   if (!authData) {
@@ -42,7 +39,6 @@ const getAuthToken = async (): Promise<string> => {
   }
 };
 
-// Interfaces for backend responses
 interface DocumentBackendResponse {
   id: string;
   fileName: string;
@@ -123,12 +119,8 @@ interface DocumentChunksBackendResponse {
 }
 
 export const documentService = {
-  /**
-   * Get list of documents with optional filters
-   */
   async getDocuments(filters?: { courseId?: string; classId?: string }): Promise<DocumentListResponse> {
     try {
-      // Build query parameters
       const params = new URLSearchParams();
       if (filters?.courseId) {
         params.append('courseId', filters.courseId);
@@ -140,7 +132,6 @@ export const documentService = {
       const url = `/api/documents${params.toString() ? `?${params.toString()}` : ''}`;
       const response = await apiClient.get<DocumentListBackendResponse>(url);
       
-      // Map the backend response to our interface
       const documents: Document[] = response.data.documents.map(doc => ({
         id: doc.id,
         fileName: doc.fileName,
@@ -166,28 +157,21 @@ export const documentService = {
     }
   },
 
-  /**
-   * Upload a document with optional course and class association
-   */
   async uploadDocument(
     file: File, 
     options?: { courseId?: string; classId?: string }
   ): Promise<UploadResponse> {
     try {
-      // Get user data from Zustand store
       const user = getUserFromStore();
       const userId = user?.id;
 
-      // Get authentication token
       const token = await getAuthToken();
-      
-      // Log user info for debugging
+    
       console.log('Uploading document for user:', userId);
 
       const formData = new FormData();
       formData.append('file', file);
-      
-      // Add courseId and classId if provided
+    
       if (options?.courseId) {
         formData.append('courseId', options.courseId);
       }
@@ -195,12 +179,10 @@ export const documentService = {
         formData.append('classId', options.classId);
       }
 
-      // Prepare headers (DO NOT include Content-Type for multipart/form-data)
       const headers = {
         'Authorization': `Bearer ${token}`,
       };
 
-      // Use axios directly to avoid conflicts with interceptors
       const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/";
       
       const response = await axios.post<UploadBackendResponse>(
@@ -212,12 +194,10 @@ export const documentService = {
         }
       );
 
-      // Verify document exists in response
       if (!response.data.document) {
         throw new Error('Server did not return document information');
       }
 
-      // Map backend response to our interface
       const document: Document = {
         id: response.data.document.id,
         fileName: response.data.document.fileName,
@@ -233,20 +213,18 @@ export const documentService = {
       return {
         success: true,
         data: document,
-        status: response.data.status, // Add the backend status.
+        status: response.data.status,
       };
     } catch (error: unknown) {
       console.error('Error uploading document:', error);
       
       const httpError = error as HttpError;
       
-      // Handling specific duplicate error codes (409)
       if (httpError.response?.status === 409) {
         const errorData = httpError.response.data as { message?: string };
         throw new Error(errorData?.message || 'Duplicate document detected');
       }
       
-      // Handle specific authentication errors
       if (httpError.response?.status === 401) {
         throw new Error('Unauthorized. Please log in again.');
       }
@@ -255,7 +233,6 @@ export const documentService = {
         throw new Error('No permissions to upload documents.');
       }
       
-      // If error from getAuthToken function, keep original message
       if ((error as Error).message?.includes('authentication') || 
           (error as Error).message?.includes('session')) {
         throw error;
@@ -265,9 +242,6 @@ export const documentService = {
     }
   },
 
-  /**
-   * Download a document using its ID
-   */
   async getDownloadUrl(documentId: string): Promise<string> {
     try {
       const response = await apiClient.get(`/api/documents/download/${documentId}`);
@@ -278,16 +252,11 @@ export const documentService = {
     }
   },
 
-  /**
-   * Download and save document using its ID
-   */
   async downloadAndSaveDocument(documentId: string, originalName: string): Promise<void> {
     try {
-      // Get the download URL using axios (our backend)
       const downloadUrlResponse = await apiClient.get(`/api/documents/download/${documentId}`);
       const downloadUrl = downloadUrlResponse.data.downloadUrl;
 
-      // Use fetch() for MinIO since axios may interfere with signed URLs
       const response = await fetch(downloadUrl);
       if (!response.ok) {
         throw new Error(`Download error: ${response.status} ${response.statusText}`);
@@ -295,20 +264,16 @@ export const documentService = {
       
       const blob = await response.blob();
 
-      // Create a temporary URL for the blob
       const blobUrl = window.URL.createObjectURL(blob);
 
-      // Create a temporary link for forced download
       const link = document.createElement('a');
       link.href = blobUrl;
       link.download = originalName.endsWith('.pdf') ? originalName : `${originalName}.pdf`;
 
-      // Force download
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
 
-      // Clean up blob URL to free memory
       window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
       console.error('Error downloading document:', error);
@@ -316,9 +281,6 @@ export const documentService = {
     }
   },
 
-  /**
-   * Delete a document
-   */
   async deleteDocument(documentId: string): Promise<void> {
     try {
       await apiClient.delete<DeleteBackendResponse>(`/api/documents/${documentId}`);
@@ -328,9 +290,6 @@ export const documentService = {
     }
   },
 
-  /**
-   * Process document chunks
-   */
   async processDocumentChunks(
     documentId: string,
     options?: {
@@ -355,9 +314,6 @@ export const documentService = {
     }
   },
 
-  /**
-   * Get chunks from a document
-   */
   async getDocumentChunks(documentId: string): Promise<DocumentChunksBackendResponse> {
     try {
       const response = await apiClient.get<DocumentChunksBackendResponse>(`/api/documents/${documentId}/chunks`);
@@ -367,10 +323,7 @@ export const documentService = {
       throw new Error('Error getting document chunks');
     }
   },
-
-  /**
-   * Generate embeddings for a document
-   */
+ 
   async generateDocumentEmbeddings(
     documentId: string,
     options?: {
@@ -417,9 +370,6 @@ export const documentService = {
     }
   },
 
-  /**
-   * Process document text
-   */
   async processDocumentText(documentId: string): Promise<{ success: boolean; message: string }> {
     try {
       const response = await apiClient.post(`/api/documents/${documentId}/process-text`);
@@ -430,9 +380,6 @@ export const documentService = {
     }
   },
 
-  /**
-   * Complete processing of a document (upload + process + chunks)
-   */
   async processDocumentComplete(
     file: File,
     onProgress?: (step: string, progress: number, message: string) => void
@@ -446,7 +393,6 @@ export const documentService = {
     };
   }> {
     try {
-      // Step 1: Upload
       onProgress?.('upload', 25, 'Uploading document...');
       const uploadResult = await this.uploadDocument(file);
       
@@ -454,11 +400,9 @@ export const documentService = {
         throw new Error('Document ID not obtained from upload');
       }
 
-      // Step 2: Process text
       onProgress?.('text', 50, 'Processing text...');
       await this.processDocumentText(uploadResult.data.id);
 
-      // Step 3: Process chunks
       onProgress?.('chunks', 75, 'Generating chunks...');
       const chunksResult = await this.processDocumentChunks(uploadResult.data.id);
 
@@ -479,9 +423,6 @@ export const documentService = {
     }
   },
 
-  /**
-   * Get the index of a document
-   */
   async getDocumentIndex(documentId: string): Promise<{
     success: boolean;
     message: string;
@@ -516,9 +457,6 @@ export const documentService = {
     }
   },
 
-  /**
-   * Generate an index for a document
-   */
   async generateDocumentIndex(documentId: string): Promise<{
     success: boolean;
     message: string;

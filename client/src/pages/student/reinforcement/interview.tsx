@@ -1,14 +1,15 @@
 import { useState } from "react";
 import { useNavigate, useParams, generatePath } from "react-router-dom";
 import { Button, theme } from "antd";
-import PageTemplate from "../../components/PageTemplate";
-import InterviewModal from "../../components/interview/InterviewModal";
-import InterviewSummaryModal from "../../components/interview/InterviewFeedbackModal";
-import OpenQuestion from "../../components/interview/OpenQuestion";
-import TeoricQuestion from "../../components/interview/TeoricQuestion";
-import MultipleQuestion from "../../components/interview/MultipleQuestion";
-import useInterview from "../../hooks/useInterview";
-
+import PageTemplate from "../../../components/PageTemplate";
+import InterviewModal from "../../../components/interview/InterviewModal";
+import InterviewSummaryModal from "../../../components/interview/InterviewFeedbackModal";
+import OpenQuestion from "../../../components/interview/OpenQuestion";
+import TeoricQuestion from "../../../components/interview/TeoricQuestion";
+import MultipleQuestion from "../../../components/interview/MultipleQuestion";
+import useInterview from "../../../hooks/useInterview";
+import type { DoubleOptionResponse, MultipleSelectionResponse } from '../../../interfaces/interviewInt';
+import { usePdfGenerator } from '../../../hooks/usePdfGenerator';
 export default function InterviewPage() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -16,7 +17,8 @@ export default function InterviewPage() {
 
   const [isInterviewStarted, setIsInterviewStarted] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
-
+  const [selectedValues, setSelectedValues] = useState<DoubleOptionResponse[]>([]);
+   const [mulSelectedValues, setMulSelectedValues] = useState<MultipleSelectionResponse[]>([]);
   const {
     isModalOpen,
     questionCount,
@@ -30,12 +32,22 @@ export default function InterviewPage() {
     if (!id) return;
     navigate(generatePath("/student/classes/:id/reinforcement", { id }));
   };
-
+  const { generatePDF } = usePdfGenerator();
   const handleStartInterview = (count: number) => {
     startExam(count);
     setIsInterviewStarted(true);
   };
 
+  const handleDownloadFeedback = async () => {
+    try {
+      console.log("Descargando feedback...");
+      // Combinar ambos tipos de datos
+      const allData = [...mulSelectedValues, ...selectedValues];
+      await generatePDF(allData);
+    } catch (error) {
+      console.error('Error al descargar el PDF:', error);
+    }
+  }
   const handleNextQuestion = () => {
     if (currentQuestion < questionCount) nextQuestion();
     else setShowSummary(true);
@@ -44,9 +56,9 @@ export default function InterviewPage() {
   const renderQuestion = () => {
     switch (currentType) {
       case "multiple":
-        return <MultipleQuestion onNext={handleNextQuestion} />;
+        return <MultipleQuestion onNext={nextQuestion} selectedValues={selectedValues} setSelectedValues={setSelectedValues}  />;
       case "teoric":
-        return <TeoricQuestion onNext={handleNextQuestion} />;
+        return <TeoricQuestion onNext={nextQuestion}selectedValues={mulSelectedValues} setSelectedValues={setMulSelectedValues}/>;
       case "open":
       default:
         return <OpenQuestion onNext={handleNextQuestion} />;
@@ -91,7 +103,9 @@ export default function InterviewPage() {
       <InterviewSummaryModal
         open={showSummary}
         onClose={goToReinforcement}
-        onDownload={() => {}}
+        onDownload={handleDownloadFeedback}
+        multipleSelectionData={mulSelectedValues} // Tus preguntas teóricas
+        doubleOptionData={selectedValues}
       />
     </PageTemplate>
   );
