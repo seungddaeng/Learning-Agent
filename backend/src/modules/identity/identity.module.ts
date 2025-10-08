@@ -20,6 +20,7 @@ import { GetMeUseCase } from './application/queries/get-me.usecase';
 import { JwtStrategy } from './infrastructure/http/jwt.strategy';
 import { RbacAuthzAdapter } from './infrastructure/authz/rbac-authz.adapter';
 import { RbacModule } from '../rbac/rbac.module';
+import { RequestInfoService } from './infrastructure/request-info.service';
 import { TokenExpirationService } from './domain/services/token-expiration.service';
 
 @Module({
@@ -31,7 +32,7 @@ import { TokenExpirationService } from './domain/services/token-expiration.servi
     LogoutUseCase,
     GetMeUseCase,
     JwtStrategy,
-    
+    RequestInfoService,
     { provide: USER_REPO, useClass: UserPrismaRepository },
     { provide: SESSION_REPO, useClass: SessionPrismaRepository },
     
