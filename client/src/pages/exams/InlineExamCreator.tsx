@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { Card, Divider, message } from 'antd';
 import { generateQuestions, createExamApproved, type GeneratedQuestion } from '../../services/exams.service';
-import AiResults from './AiResults';
+import AiResults from './ai-results/AiResults';
 
 import { normalizeToQuestions, cloneQuestion, reorderQuestions } from './ai-utils';
 import { isValidGeneratedQuestion } from '../../utils/aiValidation';
