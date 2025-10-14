@@ -1,54 +1,16 @@
-import { useEffect, useState } from "react";
 import { Card, Button, Statistic, Row, Col, Table, Tag, List, Skeleton, Space } from "antd";
 import { PlusOutlined, FileAddOutlined, DatabaseOutlined, BarChartOutlined } from "@ant-design/icons";
-
-type Snapshot = { courses: number; students: number; activeExams: number };
-type GradeRow = { key: string; student: string; exam: string; submittedAtISO: string; status: "pending" | "in-review" };
-type ScheduleItem = { id: string; whenISO: string; title: string };
+import { useProfessorHome } from "../../../hooks/useProfessorHome.tsx";
 
 export default function ProfessorHome() {
-  const [loading, setLoading] = useState(true);
-  const [snap, setSnap] = useState<Snapshot | null>(null);
-  const [queue, setQueue] = useState<GradeRow[]>([]);
-  const [calendar, setCalendar] = useState<ScheduleItem[]>([]);
-  const [bankStats, setBankStats] = useState<{ topics: number; questions: number; gaps: number } | null>(null);
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setSnap({ courses: 3, students: 92, activeExams: 2 });
-      setQueue([
-        { key: "1", student: "A. Mendoza", exam: "Graphs Quiz", submittedAtISO: new Date().toISOString(), status: "pending" },
-        { key: "2", student: "J. Rojas", exam: "DP Practice", submittedAtISO: new Date(Date.now() - 3600e3).toISOString(), status: "in-review" },
-      ]);
-      setCalendar([
-        { id: "a", whenISO: new Date(Date.now() + 86400e3).toISOString(), title: "Publish Midterm #2" },
-        { id: "b", whenISO: new Date(Date.now() + 172800e3).toISOString(), title: "Grade Quiz #5" },
-      ]);
-      setBankStats({ topics: 18, questions: 432, gaps: 4 });
-      setLoading(false);
-    }, 600);
-    return () => clearTimeout(t);
-  }, []);
-
-  const columns = [
-    { title: "Student", dataIndex: "student" },
-    { title: "Exam", dataIndex: "exam" },
-    {
-      title: "Submitted",
-      dataIndex: "submittedAtISO",
-      render: (v: string) => new Date(v).toLocaleString(),
-    },
-    {
-      title: "Status",
-      dataIndex: "status",
-      render: (s: GradeRow["status"]) =>
-        s === "pending" ? <Tag color="red">Pending</Tag> : <Tag color="gold">In review</Tag>,
-    },
-    {
-      title: "Action",
-      render: () => <Button type="link">Grade</Button>,
-    },
-  ];
+  const {
+    loading,
+    snap,
+    queue,
+    calendar,
+    bankStats,
+    columns,
+  } = useProfessorHome();
 
   return (
     <div className="p-4 md:p-6 lg:p-8">

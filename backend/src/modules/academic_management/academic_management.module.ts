@@ -33,16 +33,29 @@ import { GetCourseByIdUseCase } from './application/queries/get-course-by-id.use
 import { RbacModule } from '../rbac/rbac.module';
 import { AttendancePrismaRepository } from './infrastructure/persistence/attendance.prisma.repository';
 
+// Importamos los adaptadores locales
+import { UserServiceAdapter } from './infrastructure/adapters/user.service.adapter';
+import { RoleServiceAdapter } from './infrastructure/adapters/role.service.adapter';
+import { HasherAdapter } from './infrastructure/adapters/hasher.adapter';
+
 @Module({
   imports: [PrismaModule, IdentityModule, RbacModule],
   controllers: [AcademicManagementController],
   providers: [
-    {provide: CLASSES_REPO,  useClass: ClassesPrismaRepository }  ,
-    {provide: COURSE_REPO, useClass: CoursePrismaRepository},
-    {provide: STUDENT_REPO,  useClass: StudentPrismaRepository}  ,
-    {provide: TEACHER_REPO, useClass: TeacherPrismaRepository},
-    {provide: ENROLLMENT_REPO, useClass: EnrollmentPrismaRepository},
-    {provide: ATTENDANCE_REPO, useClass: AttendancePrismaRepository},
+    { provide: CLASSES_REPO, useClass: ClassesPrismaRepository },
+    { provide: COURSE_REPO, useClass: CoursePrismaRepository },
+    { provide: STUDENT_REPO, useClass: StudentPrismaRepository },
+    { provide: TEACHER_REPO, useClass: TeacherPrismaRepository },
+    { provide: ENROLLMENT_REPO, useClass: EnrollmentPrismaRepository },
+    { provide: ATTENDANCE_REPO, useClass: AttendancePrismaRepository },
+
+    // Adaptadores para los puertos locales
+    { provide: 'UserServicePort', useClass: UserServiceAdapter },
+    { provide: 'RoleServicePort', useClass: RoleServiceAdapter },
+    { provide: 'HasherPort', useClass: HasherAdapter },
+    { provide: 'StudentRepositoryPort', useClass: StudentPrismaRepository },
+
+    // Casos de uso
     ListClassesUseCase,
     ListStudentsUseCase,
     GetCourseByIdUseCase,

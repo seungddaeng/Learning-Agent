@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { Card, Divider } from 'antd';
-import AiResults from './AiResults';
+import AiResults from './ai-results/AiResults';
 import { useInlineExamCreator } from './inline-creator/useInlineExamCreator';
 import { ExamForm } from '../../components/exams/ExamForm';
 

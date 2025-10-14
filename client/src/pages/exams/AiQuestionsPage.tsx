@@ -10,7 +10,7 @@ import { readJSON } from '../../services/storage/localStorage';
 import PageTemplate from '../../components/PageTemplate';
 import { generateQuestions, type GeneratedQuestion } from '../../services/exams.service';
 import './ExamCreatePage.css';
-import AiResults from './AiResults';
+import AiResults from './ai-results/AiResults';
 import {
   normalizeToQuestions,
   cloneQuestion,
