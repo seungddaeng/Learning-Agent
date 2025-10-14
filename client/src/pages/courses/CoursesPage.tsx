@@ -1,94 +1,28 @@
-import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Button, Empty, Space, Input, message } from "antd";
+import { Button, Empty, Space, Input } from "antd";
 import { PlusOutlined, SolutionOutlined } from "@ant-design/icons";
 
 import { CreateCourseForm } from "./CreateCourseForm";
 import AccessDenied from "../../components/shared/AccessDenied";
 import CustomCard from "../../components/shared/CustomCard";
-import type { Course, CreateCourseDTO } from "../../interfaces/courseInterface";
-import GlobalScrollbar from '../../components/GlobalScrollbar';
 import PageTemplate from "../../components/PageTemplate";
-import useCourses from "../../hooks/useCourses";
-import { useUserStore } from "../../store/userStore";
+import { useCoursesPage } from "../../hooks/useCoursesPage";
+import GlobalScrollbar from "../../components/GlobalScrollbar";
 
 export default function CoursesPage() {
-  const user = useUserStore((s) => s.user);
-  const fetchUser = useUserStore((s) => s.fetchUser);
-  const { courses, createCourse, fetchCoursesByTeacher } = useCourses();
-  const [modalOpen, setModalOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filteredCourses, setFilteredCourses] = useState<Course[]>(courses);
-  const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchUser();
-  }, [fetchUser]);
+  const {
+    user,
+    modalOpen,
+    setModalOpen,
+    searchTerm,
+    setSearchTerm,
+    filteredCourses,
+    handleAddCourse,
+    goToCourse,
+    goToExams,
+    goToMaterials,
+  } = useCoursesPage();
 
-  const fetchCourses = useCallback(async () => {
-    if (!user) return
-
-    const res = await fetchCoursesByTeacher(user.id)
-    if (res.state == "error") {
-      message.error(res.message);
-      return
-    }
-  }, [user])
-
-  useEffect(() => {
-    fetchCourses()
-  }, [user, fetchCourses])
-
-  useEffect(() => {
-    const lower = searchTerm.trim().toLowerCase();
-    if (lower == "") {
-      setFilteredCourses(courses);
-      return;
-    }
-
-    const words = lower.split(" ");
-    const specialChars = /[!@#$%^&*?:{}|<>]/;
-
-    const filterWords = (c: Course, words: string[]) => {
-      let match = true;
-      for (const word of words) {
-        if (!match) return false;
-        if (specialChars.test(word)) continue;
-        match = match && c.name.toString().toLowerCase().includes(word);
-      }
-      return match;
-    };
-
-    const filtered = courses.filter((c) => filterWords(c, words));
-    setFilteredCourses(filtered);
-  }, [searchTerm, courses]);
-
-  const goToCourse = (id: string) => {
-    navigate(`${id}/periods`);
-  };
-
-  const goToExams = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    navigate(`${id}/exams`);
-  };
-
-  const goToMaterials = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    navigate(`${id}/documents`);
-  };
-
-  const handleAddCourse = async (values: CreateCourseDTO) => {
-    if (!values) {
-      message.error("No se pueden enviar datos vacíos")
-      return
-    }
-    const res = await createCourse(values.name);
-    if (res.state == "error") {
-      message.error(res.message)
-      return
-    }
-    message.success(res.message)
-  };
 
   return (
     <>

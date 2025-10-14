@@ -13,7 +13,7 @@ import DashboardPage from "../pages/common/DashboardPage";
 import ExamsCreatePage from "../pages/professor/exams/ExamCreatePage";
 import ExamManagementPage from "../pages/professor/exams/ExamManagementPage";
 import ForgotPasswordPage from "../pages/common/ForgotPassword";
-import Login from "../pages/common/Login";
+import LoginPage from "../pages/common/login/LoginPage";
 import SettingsPage from "../pages/common/SettingsPage";
 import CoursesPage from "../pages/courses/CoursesPage";
 import UploadDocumentPage from "../pages/common/UploadDocumentPage";
@@ -23,7 +23,7 @@ export const AppRoutes = () => {
     <BrowserRouter>
       <Routes>
         <Route element={<PublicRoute />}>
-          <Route path="/login" element={<Login />} />
+          <Route path="/login" element={<LoginPage />} />
           <Route path="/forgot" element={<ForgotPasswordPage />} />
           {/* <Route path="/register" element={<Register />} /> */}
         </Route>
