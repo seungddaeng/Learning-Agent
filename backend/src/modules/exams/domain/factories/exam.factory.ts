@@ -1,8 +1,8 @@
 import { randomUUID } from 'crypto';
-import { Exam } from '../../domain/entities/exam.entity';
-import { Difficulty } from '../../domain/entities/difficulty.vo';
-import { PositiveInt } from '../../domain/entities/positive-int.vo';
-import { EXAM_STATUS, type ExamStatus } from '../../domain/constants/exam.constants';
+import { Exam } from '../entities/exam.entity';
+import { Difficulty } from '../entities/difficulty.vo';
+import { PositiveInt } from '../entities/positive-int.vo';
+import { EXAM_STATUS, type ExamStatus } from '../constants/exam.constants';
 
 export type ExamProps = {
   title: string;

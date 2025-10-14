@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { CreateExamCommand } from './create-exam.command';
 import { EXAM_REPO } from '../../tokens';
 import type { ExamRepositoryPort } from '../../domain/ports/exam.repository.port';
-import { ExamFactory } from '../../infrastructure/utils/exam.factory';
+import { ExamFactory } from '../../domain/factories/exam.factory';
 import { BadRequestError, NotFoundError, UnauthorizedError } from 'src/shared/handler/errors';
 import { EXAM_STATUS, ALL_EXAM_STATUS, ALL_EXAM_DIFFICULTY } from '../../domain/constants/exam.constants';
 

@@ -2,7 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../../core/prisma/prisma.service';
 import { ExamRepositoryPort } from '../../domain/ports/exam.repository.port';
 import { Exam } from '../../domain/entities/exam.entity';
-import { ExamFactory } from '../utils/exam.factory';
+import { ExamFactory } from '../../domain/factories/exam.factory';
+import { ExamStatus } from '../../domain/constants/exam.constants';
 
 @Injectable()
 export class PrismaExamRepository implements ExamRepositoryPort {
@@ -10,24 +11,26 @@ export class PrismaExamRepository implements ExamRepositoryPort {
 
   constructor(private readonly prisma: PrismaService) {}
 
+
   async create(exam: Exam): Promise<Exam> {
     const created = await this.prisma.exam.create({
-      data: {
-        id: exam.id,
-        title: exam.title,
-        status: exam.status as any,
-        classId: exam.classId,
-        difficulty: exam.difficulty.getValue(),
-        attempts: exam.attempts.getValue(),
-        timeMinutes: exam.timeMinutes.getValue(),
-        reference: exam.reference,
-      },
-    });
+  data: {
+    id: exam.id,
+    title: exam.title,
+    status: exam.status,
+    classId: exam.classId,
+    difficulty: exam.difficulty.getValue(),
+    attempts: exam.attempts.getValue(),
+    timeMinutes: exam.timeMinutes.getValue(),
+    reference: exam.reference,
+  },
+});
+
 
     return ExamFactory.rehydrate({
       id: created.id,
       title: created.title,
-      status: created.status as any,
+      status: created.status as ExamStatus,
       classId: created.classId,
       difficulty: created.difficulty,
       attempts: created.attempts,
@@ -45,12 +48,13 @@ export class PrismaExamRepository implements ExamRepositoryPort {
         class: { course: { teacherId } },
       },
     });
+
     if (!found) return null;
 
     return ExamFactory.rehydrate({
       id: found.id,
       title: found.title,
-      status: found.status as any,
+      status: found.status as ExamStatus,
       classId: found.classId,
       difficulty: found.difficulty,
       attempts: found.attempts,
@@ -60,6 +64,7 @@ export class PrismaExamRepository implements ExamRepositoryPort {
       updatedAt: found.updatedAt,
     });
   }
+
 
   async listByClassOwned(classId: string, teacherId: string): Promise<Exam[]> {
     const rows = await this.prisma.exam.findMany({
@@ -74,7 +79,7 @@ export class PrismaExamRepository implements ExamRepositoryPort {
       ExamFactory.rehydrate({
         id: r.id,
         title: r.title,
-        status: r.status as any,
+        status: r.status as ExamStatus,
         classId: r.classId,
         difficulty: r.difficulty,
         attempts: r.attempts,
@@ -86,6 +91,7 @@ export class PrismaExamRepository implements ExamRepositoryPort {
     );
   }
 
+
   async updateMetaOwned(
     id: string,
     teacherId: string,
@@ -95,16 +101,18 @@ export class PrismaExamRepository implements ExamRepositoryPort {
       where: { id, class: { course: { teacherId } } },
       select: { id: true, classId: true },
     });
+
     if (!owned) {
-      this.logger.warn(`updateMetaOwned: examen no encontrado o ajeno. id=${id}, teacherId=${teacherId}`);
+      this.logger.warn(
+        `updateMetaOwned: examen no encontrado o ajeno. id=${id}, teacherId=${teacherId}`,
+      );
       const fallback = await this.prisma.exam.findUnique({ where: { id } });
-      if (!fallback) {
-        throw new Error('Exam not found');
-      }
+      if (!fallback) throw new Error('Exam not found');
+
       return ExamFactory.rehydrate({
         id: fallback.id,
         title: fallback.title,
-        status: fallback.status as any,
+        status: fallback.status as ExamStatus,
         classId: fallback.classId,
         difficulty: fallback.difficulty,
         attempts: fallback.attempts,
@@ -114,12 +122,14 @@ export class PrismaExamRepository implements ExamRepositoryPort {
         updatedAt: fallback.updatedAt,
       });
     }
+
     let nextClassId = patch.classId;
     if (nextClassId) {
       const target = await this.prisma.classes.findFirst({
         where: { id: nextClassId, course: { teacherId } },
         select: { id: true },
       });
+
       if (!target) {
         this.logger.warn(
           `updateMetaOwned: classId destino no pertenece al docente. classId=${nextClassId}, teacherId=${teacherId}. Se ignora el cambio.`,
@@ -132,15 +142,16 @@ export class PrismaExamRepository implements ExamRepositoryPort {
       where: { id },
       data: {
         ...(patch.title !== undefined ? { title: patch.title } : {}),
-        ...(patch.status !== undefined ? { status: patch.status as any } : {}),
+        ...(patch.status !== undefined ? { status: patch.status } : {}),
         ...(nextClassId !== undefined ? { classId: nextClassId } : {}),
+        updatedAt: new Date(),
       },
     });
 
     return ExamFactory.rehydrate({
       id: updated.id,
       title: updated.title,
-      status: updated.status as any,
+      status: updated.status as ExamStatus,
       classId: updated.classId,
       difficulty: updated.difficulty,
       attempts: updated.attempts,
@@ -159,7 +170,6 @@ export class PrismaExamRepository implements ExamRepositoryPort {
   }
 
   async deleteOwned(id: string, teacherId: string): Promise<void> {
-    // Sin excepciones de Nest aquí; los casos de uso validan antes.
     await this.prisma.exam.deleteMany({
       where: { id, class: { course: { teacherId } } },
     });
