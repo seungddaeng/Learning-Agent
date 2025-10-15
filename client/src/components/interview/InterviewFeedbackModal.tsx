@@ -1,11 +1,10 @@
-import React from "react";
 import {usePdfGenerator} from "../../hooks/usePdfGenerator";
 import type { InterviewQuestion } from "../../interfaces/interviewInt";
 import { Button, Space, Typography, theme } from "antd";
 import { FileTextOutlined, CloseOutlined } from "@ant-design/icons";
 import CustomModal from "../reinforcement/CustomModal";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 interface InterviewFeedbackModalProps {
   open: boolean;
