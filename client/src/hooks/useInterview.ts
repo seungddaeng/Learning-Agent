@@ -69,11 +69,6 @@ export default function useInterview(initialQuestions: InterviewType[] = [], onF
     }
   }, [currentQuestion, questionCount, randomizeType, order.length, onFinish]);
 
-  const next = useCallback(() => {
-    if (order.length === 0) return;
-    setIndex((prev) => (prev + 1) % order.length);
-  }, [order]);
-
   const finish = useCallback(() => {
     if (onFinish) onFinish();
     else if (id) navigate(`/classes/${id}/reinforcement`);

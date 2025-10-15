@@ -42,7 +42,7 @@ export default function StudentPreviewModal({
       .toLowerCase()
       .replace(/\s+/g, ' ')
       .trim();
-    return str.replace(/(^|\s|[-_/])(\p{L})/gu, (m, sep, ch) => sep + ch.toUpperCase());
+    return str.replace(/(^|\s|[-_/])(\p{L})/gu, (sep, ch) => sep + ch.toUpperCase());
   };
 
   const columns: ColumnsType<RowIn> = [

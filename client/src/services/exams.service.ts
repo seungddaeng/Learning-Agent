@@ -512,11 +512,11 @@ export async function deleteExamAny(examId: string | number): Promise<void> {
   await api.delete(`/api/exams/${id}`);
 }
 
-export async function deleteCourseExam(classId: string, examId: string | number): Promise<void> {
+export async function deleteCourseExam(examId: string | number): Promise<void> {
   await deleteExamAny(examId);
 }
 
-export async function deleteExamByCandidates(classId: string, candidates: Array<string | number>) {
+export async function deleteExamByCandidates(candidates: Array<string | number>) {
   const ids = Array.from(new Set((candidates || []).map((x) => String(x)).filter(Boolean)));
   for (const id of ids) {
     await deleteExamAny(id);

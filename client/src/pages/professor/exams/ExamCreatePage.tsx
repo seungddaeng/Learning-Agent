@@ -6,15 +6,7 @@ import { Toast} from '../../../components/shared/Toast';
 import PageTemplate from '../../../components/PageTemplate';
 import GlobalScrollbar from '../../../components/GlobalScrollbar';
 import './ExamCreatePage.css';
-import { generateQuestions, createExamApproved, updateExamApprovedFull,type GeneratedQuestion } from '../../../services/exams.service';
 import AiResults from '../../exams/ai-results/AiResults';
-import { normalizeToQuestions, cloneQuestion, replaceQuestion, reorderQuestions } from '../../exams/ai-utils';
-import { isValidGeneratedQuestion } from '../../../utils/aiValidation';
-import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { useExamsStore } from '../../../store/examsStore';
-import type { ExamSummary } from '../../../store/examsStore';
-
-import AiResults from '../../exams/AiResults';
 import { useExamCreate } from './create/useExamCreate';
 
 
