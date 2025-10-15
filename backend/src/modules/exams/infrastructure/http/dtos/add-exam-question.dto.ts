@@ -4,7 +4,7 @@ export class AddExamQuestionDto {
   @IsIn(['MULTIPLE_CHOICE','TRUE_FALSE','OPEN_ANALYSIS','OPEN_EXERCISE'])
   kind!: 'MULTIPLE_CHOICE'|'TRUE_FALSE'|'OPEN_ANALYSIS'|'OPEN_EXERCISE';
 
-  @IsString() @IsNotEmpty() @MaxLength(4000)
+  @IsString() @IsNotEmpty({ message: 'El campo "text" es obligatorio.' }) @MaxLength(4000)
   text!: string;
 
   // MCQ
@@ -22,7 +22,7 @@ export class AddExamQuestionDto {
   @IsOptional() @IsString()
   expectedAnswer?: string;
 
-  @IsIn(['start','middle','end'])
+  @IsIn(['start','middle','end'], { message: 'El campo "position" debe ser uno de: start | middle | end.' })
   position!: 'start'|'middle'|'end';
 
   @IsOptional()
