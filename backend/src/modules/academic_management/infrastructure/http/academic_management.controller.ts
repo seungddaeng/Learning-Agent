@@ -47,7 +47,7 @@ import { GetCourseByIdUseCase } from '../../application/queries/get-course-by-id
 import { SoftDeleteSingleEnrollmentUseCase } from '../../application/commands/soft-delete-single-enrollment.useCase';
 import { AttendenceGroupStudentDTO } from './dtos/attendence-group-student.dto';
 import { SaveAttendanceGroupStudentUseCase } from '../../application/commands/save-attendance-group-student-usecase';
-import { absencesByClassDTO } from './dtos/absences-by-class.dto';
+import { AbsencesByClassDTO } from './dtos/absences-by-class.dto';
 import { GetAbsencesByClass } from '../../application/queries/get-absences-by-class';
 
 const academicRoute = 'academic';
