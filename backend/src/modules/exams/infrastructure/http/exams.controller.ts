@@ -240,9 +240,6 @@ export class ExamsController {
       `[${cid(req)}] createExam -> title=${dto.title}, classId=${dto.classId}, difficulty=${dto.difficulty}, attempts=${dto.attempts}, time=${dto.timeMinutes}`,
     );
 
-    if (!dto.title?.trim()) throw new BadRequestError('El campo "title" es obligatorio.');
-    if (!dto.classId?.trim()) throw new BadRequestError('El campo "classId" es obligatorio.');
-
     const userId = (req as any).user?.sub as string | undefined;
     if (!userId) throw new UnauthorizedError('Acceso no autorizado');
 
@@ -268,7 +265,7 @@ export class ExamsController {
         teacherId: userId,
         subject: (dto as any).subject, 
         difficulty: dto.difficulty as any,
-        totalQuestions: dto.totalQuestions,
+        totalQuestions: dto.totalQuestions ?? 0,
         distribution: dto.distribution ?? undefined,
         reference: dto.reference ?? null,
         examId: exam.id,
@@ -323,11 +320,6 @@ export class ExamsController {
       `[${cid(req)}] generateQuestions -> subject=${dto.subject}, difficulty=${dto.difficulty}, total=${dto.totalQuestions}`,
     );
 
-    if (!dto.subject?.trim()) throw new BadRequestError('El campo "subject" es obligatorio.');
-    if (dto.totalQuestions == null || dto.totalQuestions <= 0) {
-      throw new BadRequestError('El campo "totalQuestions" debe ser mayor a 0.');
-    }
-
     const teacherId = (req as any).user?.sub as string | undefined;
     if (!teacherId) throw new UnauthorizedError('Acceso no autorizado');
 
@@ -363,12 +355,6 @@ export class ExamsController {
 
     const userId = (req as any).user?.sub as string | undefined;
     if (!userId) throw new UnauthorizedError('Acceso no autorizado');
-
-    const validPositions: InsertPosition[] = ['start', 'middle', 'end'];
-    if (!dto.text?.trim()) throw new BadRequestError('El campo "text" es obligatorio.');
-    if (!validPositions.includes(dto.position as InsertPosition)) {
-      throw new BadRequestError(`El campo "position" debe ser uno de: ${validPositions.join(' | ')}.`);
-    }
 
     const norm = normalizeFromCorrectAnswerForCreate(dto as any);
 
@@ -436,7 +422,6 @@ export class ExamsController {
 
     const user = (req as any).user as { sub: string } | undefined;
     if (!user?.sub) throw new UnauthorizedError('Acceso no autorizado');
-    if (!examId?.trim()) throw new BadRequestError('El campo "examId" es obligatorio.');
 
     const data = await this.getByIdUseCase.execute({ examId, teacherId: user.sub });
     this.logger.log(`[${cid(req)}] getExamById <- id=${data.exam.id}`);
@@ -448,7 +433,6 @@ export class ExamsController {
   async byClass(@Param('classId') classId: string, @Req() req: Request) {
     const user = (req as any).user as { sub: string } | undefined;
     if (!user?.sub) throw new UnauthorizedError('Acceso no autorizado');
-    if (!classId?.trim()) throw new BadRequestError('El campo "classId" es obligatorio.');
 
     const data = await this.listClassExams.execute({ classId, teacherId: user.sub });
     return responseSuccess(cid(req), data, 'Exámenes de la clase.', pathOf(req));
@@ -459,7 +443,6 @@ export class ExamsController {
   async deleteExam(@Param('examId') examId: string, @Req() req: Request) {
     const user = (req as any).user as { sub: string } | undefined;
     if (!user?.sub) throw new UnauthorizedError('Acceso no autorizado');
-    if (!examId?.trim()) throw new BadRequestError('El campo "examId" es obligatorio.');
 
     const cmd = new DeleteExamCommand(examId, user.sub);
     await this.deleteExamHandler.execute(cmd);

@@ -1,4 +1,4 @@
-import { IsEnum, IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateNested } from 'class-validator';
+import { IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class DistributionDTO {
@@ -9,10 +9,10 @@ class DistributionDTO {
 }
 
 export class CreateExamDto {
-  @IsString() @MaxLength(120)
+  @IsString() @IsNotEmpty({ message: 'El campo "title" es obligatorio.' }) @MaxLength(120)
   title!: string;
 
-  @IsUUID()
+  @IsUUID(4, { message: 'El campo "classId" debe ser un UUID válido.' }) @IsNotEmpty({ message: 'El campo "classId" es obligatorio.' })
   classId!: string;
 
   @IsString() @MaxLength(200)
@@ -24,8 +24,8 @@ export class CreateExamDto {
   @IsInt() @Min(1) @Max(10)
   attempts!: number;
 
-  @IsInt() @Min(1) @Max(1000)
-  totalQuestions!: number;
+  @IsOptional() @IsInt() @Min(1) @Max(1000)
+  totalQuestions?: number;
 
   @IsInt()
   @Min(45, { message: 'Tiempo (minutos) mínimo: 45.' })
