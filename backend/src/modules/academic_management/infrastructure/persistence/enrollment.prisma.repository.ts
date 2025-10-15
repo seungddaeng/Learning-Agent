@@ -52,7 +52,7 @@ export class EnrollmentPrismaRepository implements EnrollmentRepositoryPort {
     };
 
     async softDelete(studentId: string, classId: string): Promise<Enrollment> {
-        return this.prisma.enrollment.update({
+        const deletedEnrollment = await this.prisma.enrollment.update({
             where: {
                 studentId_classId: {
                     studentId,
@@ -63,10 +63,11 @@ export class EnrollmentPrismaRepository implements EnrollmentRepositoryPort {
                 isActive: false,
             },
         });
+        return EnrollmentMapper.toDomain(deletedEnrollment);
     };
 
     async enableEnrollment(studentId: string, classId: string): Promise<Enrollment> {
-        return this.prisma.enrollment.update({
+        const enabledEnrollment = await this.prisma.enrollment.update({
             where: {
                 studentId_classId: {
                     studentId,
@@ -77,5 +78,6 @@ export class EnrollmentPrismaRepository implements EnrollmentRepositoryPort {
                 isActive: true,
             },
         });
+        return EnrollmentMapper.toDomain(enabledEnrollment);
     };
 }

@@ -42,19 +42,21 @@ export class ClassesPrismaRepository implements ClassesRepositoryPort {
         if (dateBegin) data.dateBegin = dateBegin;
         if (dateEnd) data.dateEnd = dateEnd;
 
-        return this.prisma.classes.update({
+        const updatedClass = await this.prisma.classes.update({
             where: { id },
             data
-        })
+        });
+        return ClassesMapper.toDomain(updatedClass);
     }
 
     async softDelete(id: string): Promise<Classes> {
-        return this.prisma.classes.update({
+        const deletedClass = await this.prisma.classes.update({
             where: { id },
             data: {
                 isActive: false
             }
-        })
+        });
+        return ClassesMapper.toDomain(deletedClass);
     }
 
     async list(): Promise<Classes[]> {

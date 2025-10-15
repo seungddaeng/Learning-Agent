@@ -31,12 +31,13 @@ export class CoursePrismaRepository implements CourseRepositoryPort {
     }
 
     async softDelete(id: string): Promise<Course> {
-        return this.prisma.course.update({
+        const deletedCourse = await this.prisma.course.update({
             where: { id },
             data: {
                 isActive: false
             }
-        })
+        });
+        return CourseMapper.toDomain(deletedCourse);
     }
 
     async list(): Promise<Course[]> {
