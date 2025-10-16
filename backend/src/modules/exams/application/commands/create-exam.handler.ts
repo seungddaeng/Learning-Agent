@@ -46,6 +46,11 @@ export class CreateExamCommandHandler {
             reference: cmd.reference,
         });
 
-        return this.repo.create(exam);
+        return this.repo.createExamWithDependencies({
+            exam,
+            distributions: cmd.distributions ?? [],
+            chunks: cmd.documents ?? [],
+            });
+
     }
 }
