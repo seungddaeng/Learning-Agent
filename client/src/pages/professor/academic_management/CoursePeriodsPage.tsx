@@ -8,7 +8,7 @@ import { PeriodsGrid } from "./course-periods/PeriodsGrid";
 import { SearchHeader } from "./course-periods/SearchHeader";
 import { useCoursePeriods } from "./course-periods/useCoursePeriods";
 import { useUserStore } from "../../../store/userStore";
-import { useEffect } from "react";
+
 
 export default function CoursePeriodsPage() {
   const user = useUserStore((s) => s.user);
@@ -22,23 +22,14 @@ export default function CoursePeriodsPage() {
     filteredPeriods,
     actualCourse,
     setSearchTerm,
-    retry,
+
     handleCreatePeriod,
     goToPeriod,
     openCreateModal,
     closeCreateModal,
   } = useCoursePeriods();
 
-  useEffect(() => {
-    if (error) {
-      const timer = setTimeout(() => {
-        // Reintentar automáticamente después de 5 segundos 
-        retry();
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [error, retry]);
-  
+
   // Estado: Acceso denegado - No requiere reintento
   if (!user?.roles.includes("docente")) {
     return <AccessDenied />;
