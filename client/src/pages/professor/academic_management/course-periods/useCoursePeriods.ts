@@ -41,8 +41,6 @@ export function useCoursePeriods() {
         }
         return;
       }
-
-      console.log("Iniciando carga para courseId:", courseId);
       
       if (isMounted) {
         setLoading(true);
@@ -76,7 +74,7 @@ export function useCoursePeriods() {
         
       } catch (err) {
         if (!isMounted) return;
-        console.error("Error en fetchCoursePeriods:", err);
+        
         const errorMessage = err instanceof Error ? err.message : "Error al cargar los datos del curso";
         setError(errorMessage);
         setLoading(false);
