@@ -10,6 +10,7 @@ export function useCoursePeriods() {
   const navigate = useNavigate();
   
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [creatingPeriod, setCreatingPeriod] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -19,27 +20,37 @@ export function useCoursePeriods() {
   const { actualCourse, getCourseByID } = useCourses();
 
   const fetchCoursePeriods = async () => {
-    if (!courseId) return;
+    if (!courseId){
+      setError("ID del curso no proporcionado");
+      setLoading(false);
+      return;
+    } 
     setLoading(true);
-
+    setError(null);
     try {
       const courseRes = await getCourseByID(courseId);
       if (courseRes.state === "error") {
-        message.error(courseRes.message);
+        setError(courseRes.message || "Error al cargar el curso");
         return;
       }
 
       const periodsRes = await fetchClassesByCourse(courseId);
       if (periodsRes.state === "error") {
-        message.error(periodsRes.message);
+        setError(periodsRes.message || "Error al cargar los períodos");
         return;
       }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
-      message.error("Error al cargar los datos");
+      const errorMessage = "Error al cargar los datos del curso";
+      setError(errorMessage);
+      message.error(errorMessage);
     } finally {
       setLoading(false);
     }
+  };
+
+  const retry = () => {
+    fetchCoursePeriods();
   };
 
   useEffect(() => {
@@ -102,6 +113,7 @@ export function useCoursePeriods() {
 
   return {
     loading,
+    error,
     modalOpen,
     creatingPeriod,
     searchTerm,
@@ -109,7 +121,7 @@ export function useCoursePeriods() {
     actualCourse,
     
     setSearchTerm,
-    
+    retry,
     handleCreatePeriod,
     goToPeriod,
     openCreateModal,

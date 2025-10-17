@@ -8,30 +8,49 @@ import { PeriodsGrid } from "./course-periods/PeriodsGrid";
 import { SearchHeader } from "./course-periods/SearchHeader";
 import { useCoursePeriods } from "./course-periods/useCoursePeriods";
 import { useUserStore } from "../../../store/userStore";
+import { useEffect } from "react";
 
 export default function CoursePeriodsPage() {
   const user = useUserStore((s) => s.user);
   
   const {
     loading,
+    error,
     modalOpen,
     creatingPeriod,
     searchTerm,
     filteredPeriods,
     actualCourse,
     setSearchTerm,
+    retry,
     handleCreatePeriod,
     goToPeriod,
     openCreateModal,
     closeCreateModal,
   } = useCoursePeriods();
 
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        // Reintentar automáticamente después de 5 segundos 
+        retry();
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, retry]);
+  
+  // Estado: Acceso denegado - No requiere reintento
   if (!user?.roles.includes("docente")) {
     return <AccessDenied />;
   }
 
+  // Estado: Cargando - Muestra spinner de carga
+  // Rol: Indicar al usuario que la información se está cargando
   if (loading) return <LoadingState />;
-  if (!actualCourse) return <ErrorState />;
+  // Estado: Error - Muestra pantalla de error estándar
+  // Rol: Informar al usuario que ocurrió un error
+  // Limitación: ErrorState no tiene botón de reintento, el usuario debe recargar manualmente
+  if (error || !actualCourse) return <ErrorState />;
 
   return (
     <PageTemplate
@@ -59,6 +78,8 @@ export default function CoursePeriodsPage() {
           onCreateClick={openCreateModal}
           showCreateButton={true} 
         />
+        {/* PeriodsGrid maneja automáticamente el estado vacío cuando filteredPeriods.length === 0
+          Rol: Mostrar grid de períodos o mensaje "No hay períodos creados para esta materia" */}
 
         <PeriodsGrid
           periods={filteredPeriods}
