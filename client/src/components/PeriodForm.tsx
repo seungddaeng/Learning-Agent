@@ -301,7 +301,7 @@ function PeriodForm({
                 }
                 defaultPickerValue={
                   formik.values.semester
-                    ? ranges[formik.values.semester].start
+                    ? ranges[formik.values.semester]?.start
                     : undefined
                 }
                 onChange={(date) => {
@@ -337,7 +337,7 @@ function PeriodForm({
                 }
                 defaultPickerValue={
                   formik.values.semester
-                    ? ranges[formik.values.semester].start
+                    ? ranges[formik.values.semester]?.start
                     : undefined
                 }
                 onChange={(date) => {
